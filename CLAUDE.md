@@ -1,0 +1,160 @@
+# Manasphere
+
+Personal/hobby project: an atproto-based Magic: The Gathering collection
+tracker, scanner, and deck builder. MTG-first, designed not to paint into a
+corner if other TCGs are added later.
+
+Not a business. Running costs look light enough they may never need funding.
+WotC's Fan Content Policy, Scryfall's API terms and EDHREC's terms constrain
+what can be *built*, not only what can be charged for.
+
+`docs/roadmap.md` holds the fuller phase breakdown and the reasoning behind
+each decision. This file is the condensed orientation for picking the project
+back up.
+
+## Core architecture
+
+This is an **AppView** in atproto terms, not a normal app-owns-its-data
+backend:
+
+- **User data** (collection entries, decks, eventually shared/published state)
+  are atproto records written to *the user's own PDS*, not our database. We
+  don't host user data.
+- **The browser writes directly to the user's PDS** using its own OAuth
+  session. Our server never proxies a write and has no write handlers for user
+  data. OAuth is a browser-side public client (PKCE + DPoP); the `client_id` is
+  the URL of a static client metadata document we serve.
+- **Our server** ("the AppView") is a single Rust process that: (1) syncs
+  Scryfall card data into our own DB as a cache, (2) serves that catalog and
+  the app itself, (3) from Phase 3, consumes a filtered Jetstream firehose to
+  index *other people's* published records.
+- **v0 doesn't need the firehose at all.** The client reads its own records
+  straight from its own PDS (`listRecords`) and keeps a local view in
+  IndexedDB, so the PDS is the sync mechanism between a user's devices.
+  Indexing only earns its place when we need what the client can't do locally —
+  Explore, cross-user aggregates.
+- **Our database is disposable.** Everything in it derives from Scryfall or
+  from records we can re-read from PDSes; tokens live in the browser. Two
+  exceptions arrive with Phase 3: the list of known DIDs we subscribe to, and
+  activity history only ever seen over the firehose (Jetstream's replay window
+  is bounded).
+- Bias toward flexibility in the DB/AppView layer; be conservative about
+  lexicon NSIDs and required fields, since those are costly to change once real
+  records exist in other people's repos.
+
+## Data model
+
+- Card print cache from Scryfall's **Default Cards** bulk file (~78MB
+  compressed, gzipped JSONL — stream it, never parse whole). Refresh weekly,
+  per Scryfall's own guidance.
+- Default Cards omits most non-English printings; the **client resolves those
+  on demand** from Scryfall's API (CORS is `*`, 48h cache-control) and caches
+  them in IndexedDB. So All Cards (~392MB) isn't needed server-side until Phase
+  3.
+- Don't store images or image URIs — hotlink Scryfall's CDN, deriving URLs from
+  the card id. Keep `image_status`.
+- **Card objects aren't uniformly shaped.** `layout: reversible_card` has no
+  top-level `oracle_id`, `mana_cost`, `type_line`, `colors` or `image_uris` —
+  those live on `card_faces`. So `oracle_id` can't be `NOT NULL`, and the cache
+  needs `layout` and `card_faces`.
+- The client gets a trimmed subset, not the whole cache — English gameplay data
+  plus a name index for the languages that user owns.
+- Price cache: **separate table**, keyed by `scryfall_id` + source + timestamp.
+  Note there is **no prices bulk file** — prices exist only as fields inside
+  card objects, so a faster price cadence has no cheap mechanism. Cadence is an
+  open question for Phase 2.
+- Collection entries reference `scryfall_id` (exact print), not `oracle_id` —
+  we track specific physical cards (set/collector number/finish), same as
+  ManaBox.
+- **Owned vs referenced is the core split.** A *collection entry* is a card you
+  own, in exactly one *container* (binder, box, deck box). A *design* — deck or
+  list — is card references you may or may not own; a wishlist is a design with
+  no deck metadata.
+- "Built" is not stored. It's derived, and **scoped by whether the deck has a
+  container**: with one it means "how much is physically in that deck box",
+  without one it means "do you own enough copies anywhere". No setting needed.
+- Design entries carry `oracle_id` (required) and `scryfall_id` (optional).
+  Rules reasoning — legality, EDHREC — keys on `oracle_id`; display and flavour
+  key on the print. Omitting the print means "any printing". Deck and list
+  entries share one shape via a lexicon `defs` ref.
+- Collection entries are one record per stack; deck contents are an embedded
+  array in the deck record. A 10k-card collection can't be one record, a
+  100-card deck shouldn't be 100.
+- Lexicon NSIDs are rooted at `app.manasphere.*` (from `manasphere.app`) and
+  carry **no game segment**: `app.manasphere.collection`, not
+  `app.manasphere.mtg.collection`. Manasphere is an MTG app; a segment for a
+  game that may never exist would sit in every record forever. A second TCG
+  would be a fork sharing extracted libraries, not a branch of this namespace.
+
+## Firehose strategy (Phase 3, not v0)
+
+- Not needed for v0 (see Core architecture). Building a consumer earlier means
+  writing it for records nobody has created yet.
+- When it lands: `wantedCollections` scoped to our own NSIDs, network-wide, for
+  published/explore decks — cheap, because only Manasphere users ever match
+  those collections.
+- Use Jetstream's time-based cursor for reconnects; keep indexing idempotent.
+- Jetstream doesn't verify signatures — it's a convenience relay, not the
+  authenticated firehose. A real trust assumption once we're indexing arbitrary
+  users.
+
+## Stack decisions (already made — don't re-litigate without reason)
+
+- **Rust** workspace: `axum` (API), `sqlx` (SQLite — not Postgres, not
+  Pocketbase; chosen over rusqlite for built-in migrations and async fit),
+  `tokio`, `tokio-tungstenite` (Jetstream websocket). Use runtime-checked
+  `query()` while the schema churns; adopt `query!` once it settles.
+- **SQLite**, single file, single process. No separate DB server.
+- **Frontend**: TypeScript, built with **Bun** (not npm), lives in `web/`. PWA
+  with a service worker — client-side caching (IndexedDB) of the card catalog
+  is core to keeping server load light, especially for manual search.
+- **Deploy**: `web/dist` is embedded into the compiled `appview` binary via
+  `rust-embed` (+ `axum-embed` or a manual handler) — one binary, no separate
+  static file sync. Build orchestrated with a `justfile`, **not** `build.rs`
+  (build.rs would run on every `cargo check`, dragging Bun into routine Rust
+  iteration and making Bun a hard dependency for Rust-only builds/tests).
+- **Local dev**: frontend runs its own dev server (`bun run dev`, hot reload)
+  proxying to the Rust API port. Only run the full embed-and-build path when
+  preparing an actual deploy.
+- **Hosting**: existing Vultr VPS, 1 vCPU / 1GB RAM. Sufficient for
+  single-user/small-friend-group scale given the filtered-firehose approach —
+  the Scryfall bulk-data refresh is the bigger periodic resource event to
+  watch, not the firehose.
+
+## Repo layout
+
+```
+manasphere/
+  Cargo.toml             # workspace root, members = ["crates/*"]
+  crates/
+    api/                 # axum route handlers (lib)
+    appview/             # bin crate — wires the above together as tokio tasks
+    core/                # lexicon record structs, shared DB models/logic
+    jetstream/           # firehose consumer (lib)
+    scryfall/            # bulk-data fetch/parse (lib)
+  docs/
+    roadmap.md
+  lexicons/              # NSID JSON schema files
+  web/                   # TS frontend, own Bun toolchain, not in Cargo workspace
+  justfile
+```
+
+## Build order (where we are / what's next)
+
+1. Scaffold the Cargo workspace + crates above.
+2. `crates/scryfall` — bulk-data sync → SQLite card cache. **No atproto
+   dependency — do this first.**
+3. Design the lexicons. Now on the critical path, and the layer that's
+   expensive to change later.
+4. Serve the catalog artifact + the client metadata document. Small.
+5. Web client: OAuth, reads from own PDS, local view in IndexedDB, writes back.
+   Where the data model actually gets exercised, so no longer "last".
+6. A dev CLI writing records with an app password, to seed fixtures without the
+   UI. Cheap, and useful forever.
+
+Jetstream and the query API arrive with Phase 3 (Explore), not before.
+
+v0 scope is deliberately narrow: **collection tracking only** — manual search +
+CSV import, no scanner, no live pricing yet. Scanner, valuation, EDHREC assist,
+shared/published decks + explore, and the game toolkit (life
+totals/dice/history) are later phases — see `docs/roadmap.md`.
