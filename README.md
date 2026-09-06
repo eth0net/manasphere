@@ -23,14 +23,30 @@ Early scaffolding. Nothing runs yet.
 ```
 crates/core            lexicon record structs, shared DB models
 crates/api             axum route handlers
-crates/jetstream       firehose consumer
-crates/scryfall_sync   bulk-data fetch/parse
 crates/appview         the binary that wires them together
+crates/jetstream       firehose consumer
+crates/scryfall        bulk-data fetch/parse
+docs/roadmap.md        phases, decisions and why
 lexicons/              NSID JSON schemas
 web/                   frontend
-docs/roadmap.md        phases, decisions and why
 ```
 
-## Attribution
+## Contributing
 
-Developed with [Claude Code](https://claude.com/claude-code).
+See [CONTRIBUTING.md](CONTRIBUTING.md). Commits need a DCO sign-off
+(`git commit -s`); there's no CLA.
+
+## Licence
+
+The AppView is licensed under [AGPL-3.0](LICENSE) — self-host it freely, but if
+you run a modified version as a network service, your users get the source.
+
+`lexicons/` is [MIT](lexicons/LICENSE) instead. NSID schemas are shared
+vocabulary, and copyleft on a schema file would discourage the adoption that's
+the whole point of publishing them.
+
+Card data and images come from [Scryfall](https://scryfall.com) under the
+Wizards of the Coast Fan Content Policy. Manasphere is unofficial Fan Content
+permitted under the Fan Content Policy. Not approved or endorsed by Wizards.
+Portions of the materials used are property of Wizards of the Coast.
+©Wizards of the Coast LLC.
