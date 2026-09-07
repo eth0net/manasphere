@@ -2,9 +2,10 @@
 #
 #     prek install
 #
-# Read-only checks on pre-commit, anything that compiles on pre-push.
+# Read-only checks on pre-commit, anything that compiles on pre-push, the
+# sign-off check on commit-msg.
 
-default_install_hook_types = ["pre-commit", "pre-push"]
+default_install_hook_types = ["pre-commit", "pre-push", "commit-msg"]
 
 # Bundled with prek, so a fresh checkout runs these offline.
 [[repos]]
@@ -33,4 +34,13 @@ hooks = [
   { id = "cargo-clippy", name = "cargo clippy", entry = "cargo clippy --all-targets -- -D warnings", language = "system", files = '\.rs$|(^|/)Cargo\.(toml|lock)$', pass_filenames = false, require_serial = true },
   # Matches CI, so a red push costs no CI round trip.
   { id = "cargo-test", name = "cargo test", entry = "cargo test --all-targets", language = "system", files = '\.rs$|(^|/)Cargo\.(toml|lock)$', pass_filenames = false, require_serial = true, stages = ["pre-push"] },
+]
+
+# The sign-off CONTRIBUTING asks for. Git has no `commit.signOff`, so an
+# unenforced convention is the only alternative. Merge commits are exempt, as
+# DCO checks conventionally are — they carry no new work to certify.
+[[repos]]
+repo = "local"
+hooks = [
+  { id = "dco", name = "sign-off (git commit -s)", entry = "grep -qE '^(Signed-off-by: |Merge )'", language = "system", stages = ["commit-msg"] },
 ]
