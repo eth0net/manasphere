@@ -112,12 +112,52 @@ Two columns we would silently drop, both worth settling before import ships:
   is better, but the column has nowhere to land on import.
 
 ManaBox's Binder Name and Type map onto containers, and Dragon Shield's Date
-Bought onto `acquiredAt`, so both of those fields are carrying weight.
+Bought onto an acquisition's `at`. `note` and `tags` between them give
+serialised numbers, misprints, alters and provenance a home without a typed
+field each.
+
+### What you paid is not what it was worth
+
+ManaBox's `Purchase price` holds two different things. Left alone it fills in
+the market price at the moment you add a card, so a column named for what you
+paid is often just a snapshot, and afterwards the two are indistinguishable.
+That makes its profit-and-loss really "market drift since I added it" wearing
+a P&L label.
+
+Measured across a real 3,743-row export: 251 identity keys repeat, 216 of them
+differing only in price, and the recorded figures track market value — median
+ratio to current price 0.67, quartiles 0.37 and 1.20, with only 26% landing on
+a 5p boundary against the ~20% chance alone would give. Hand-typed prices
+would cluster on round numbers and sit far below market for bulk. These are
+snapshots taken on different days.
+
+So an acquisition carries both, named for what they are: `price` is what you
+paid and is absent when you didn't say, `marketValue` is what a copy was worth
+at the time. Both are decimal strings, because money is not a float, and both
+carry their own currency — Scryfall quotes USD and EUR, and you may well have
+paid in neither. `marketValue` has to be stored rather than derived later,
+since Scryfall publishes no price history and no prices bulk file.
+
+Two honest figures come out of that instead of one false one: what you paid
+against what it is worth now, over the cards where cost is known and showing
+that coverage, and drift since acquisition, which works everywhere because we
+snapshot it.
+
+**A ManaBox import writes `marketValue`, not `price`.** We cannot tell an
+edited row from an auto-filled one, and the costs are not symmetrical: putting
+an unpaid amount in `price` produces a confident lie in every comparison
+afterwards, where the reverse produces a gap. People who diligently edited
+theirs get an opt-in.
+
+Neither ManaBox nor MTGGoldfish nor TCGplayer exports any date, so an import
+leaves `createdAt` at import time rather than when the card was really added.
+Moxfield's `Last Modified` seeds `updatedAt`.
 
 ## Open questions
 
-**Price paid, and trade quantity.** Both appear in trackers we import from and
-have nowhere to land. See the comparison above.
+**Trade quantity.** Two of the trackers we import from carry one. A trade list
+is the better model, but the column has nowhere to land, so import and export
+both need a defined mapping rather than silent loss. See the comparison above.
 
 **Oracle properties are duplicated per printing.** `oracle_text` is 16MB across
 117,630 rows but only ~31,000 oracle ids, and `type_line`, `keywords` and `cmc`

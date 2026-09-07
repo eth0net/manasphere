@@ -47,8 +47,11 @@ Consequences:
   design entry to owned cards routes through the card cache to resolve
   `scryfall_id → oracle_id`. That join is the heart of the design-vs-built
   diff, and it isn't free.
-- Proxies and borrowed cards are the untidy edge. Deferred; an optional flag on
-  the collection entry if it matters.
+- **A proxy is flagged; every other physical oddity is a tag.** A proxy is the
+  one that behaves differently — it fills a deck slot but counts toward no
+  valuation. `altered`, `misprint` and `signed` only affect what a copy is
+  worth, which we never compute per copy since Scryfall prices the printing,
+  so tags are a permanent enough home. Borrowed cards are a note.
 
 ## Interface — one model, separate views
 

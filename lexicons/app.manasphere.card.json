@@ -25,7 +25,7 @@
             "type": "integer",
             "minimum": 1,
             "maximum": 10000,
-            "description": "Copies owned. Deleted rather than kept at zero."
+            "description": "Copies owned now. Deleted rather than kept at zero."
           },
           "condition": {
             "type": "string",
@@ -46,11 +46,77 @@
             "format": "at-uri",
             "description": "The container holding these copies. Absent means unfiled."
           },
-          "acquiredAt": {
-            "type": "string",
-            "format": "datetime"
+          "acquisitions": {
+            "type": "array",
+            "maxLength": 64,
+            "items": { "type": "ref", "ref": "#acquisition" },
+            "description": "How these copies were come by. History, so it need not sum to quantity."
           },
-          "createdAt": { "type": "string", "format": "datetime" }
+          "proxy": {
+            "type": "boolean",
+            "description": "Not a real card: fills a deck slot but counts toward no valuation."
+          },
+          "note": {
+            "type": "string",
+            "maxLength": 3000,
+            "maxGraphemes": 300,
+            "description": "Free text, and world-readable like every other field."
+          },
+          "tags": {
+            "type": "array",
+            "maxLength": 32,
+            "items": {
+              "type": "string",
+              "maxLength": 64,
+              "knownValues": ["altered", "misprint", "signed"]
+            },
+            "description": "Free-form labels. Moxfield exports these."
+          },
+          "createdAt": { "type": "string", "format": "datetime" },
+          "updatedAt": {
+            "type": "string",
+            "format": "datetime",
+            "description": "Client-declared, so it can be stale: a PDS records no modification time."
+          }
+        }
+      }
+    },
+    "acquisition": {
+      "type": "object",
+      "description": "One lot of copies, and what it cost.",
+      "required": ["quantity"],
+      "properties": {
+        "quantity": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 10000
+        },
+        "at": {
+          "type": "string",
+          "format": "datetime",
+          "description": "Absent when the source didn't record it — ManaBox exports no dates."
+        },
+        "price": {
+          "type": "string",
+          "maxLength": 32,
+          "description": "What you paid per copy, as a decimal string. Absent means you didn't say."
+        },
+        "currency": {
+          "type": "string",
+          "minLength": 3,
+          "maxLength": 3,
+          "description": "ISO 4217 for price."
+        },
+        "marketValue": {
+          "type": "string",
+          "maxLength": 32,
+          "description": "What a copy was worth when acquired — never what you paid."
+        },
+        "marketCurrency": {
+          "type": "string",
+          "minLength": 3,
+          "maxLength": 3,
+          "description": "ISO 4217 for marketValue. Scryfall quotes USD and EUR."
         }
       }
     }
