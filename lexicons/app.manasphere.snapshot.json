@@ -1,0 +1,42 @@
+{
+  "lexicon": 1,
+  "id": "app.manasphere.snapshot",
+  "defs": {
+    "main": {
+      "type": "record",
+      "description": "A complete named copy of a design. The only thing that delivers restore.",
+      "key": "tid",
+      "record": {
+        "type": "object",
+        "required": ["subject", "entries", "createdAt"],
+        "properties": {
+          "subject": {
+            "type": "ref",
+            "ref": "com.atproto.repo.strongRef",
+            "description": "The deck or list this snapshots; the cid records which version."
+          },
+          "name": {
+            "type": "string",
+            "maxLength": 640,
+            "maxGraphemes": 64,
+            "description": "What the version is called. Absent for an automatic snapshot."
+          },
+          "automatic": {
+            "type": "boolean",
+            "description": "Written by the client rather than named by a person."
+          },
+          "entries": {
+            "type": "array",
+            "maxLength": 10000,
+            "items": {
+              "type": "ref",
+              "ref": "app.manasphere.defs#designEntry"
+            },
+            "description": "Complete contents, not a diff."
+          },
+          "createdAt": { "type": "string", "format": "datetime" }
+        }
+      }
+    }
+  }
+}

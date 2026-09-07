@@ -85,11 +85,15 @@ backend:
 - Collection entries are one record per stack; deck contents are an embedded
   array in the deck record. A 10k-card collection can't be one record, a
   100-card deck shouldn't be 100.
+- **A print id already pins the language.** Every language of a printing has
+  its own Scryfall id (m10 #146 has nine), so collection entries carry no
+  `language` field — it would only ever contradict the id.
 - Lexicon NSIDs are rooted at `app.manasphere.*` (from `manasphere.app`) and
-  carry **no game segment**: `app.manasphere.collection`, not
-  `app.manasphere.mtg.collection`. Manasphere is an MTG app; a segment for a
-  game that may never exist would sit in every record forever. A second TCG
-  would be a fork sharing extracted libraries, not a branch of this namespace.
+  carry **no game segment**: `app.manasphere.card`, not
+  `app.manasphere.mtg.card`. Manasphere is an MTG app; a segment
+  for a game that may never exist would sit in every record forever. A second
+  TCG would be a fork sharing extracted libraries, not a branch of this
+  namespace.
 
 ## Firehose strategy (Phase 3, not v0)
 
@@ -140,6 +144,7 @@ manasphere/
   docs/
     roadmap.md
   lexicons/              # NSID JSON schema files
+  tools/lexicon-check/   # validates lexicons/ against atproto's own validator
   web/                   # TS frontend, own Bun toolchain, not in Cargo workspace
   justfile
 ```
@@ -152,8 +157,12 @@ manasphere/
 2. **Done** — card cache in `crates/core`: migrations, a full-replace sync
    fed by a `CardStream`, FTS5 name search, printing lookup for CSV import.
    94MB for 117,630 printings. `legalities` is a lookup table, not a column.
-3. Design the lexicons. **Next**, on the critical path, and the layer that's
-   expensive to change later.
+3. **Done, pending review** — lexicons enumerated in `lexicons/`, validated
+   in CI against atproto's own implementation plus records that must be
+   refused.
+   Deck, list and snapshot precede their implementation deliberately: the
+   design entry and collection entry interlock, so the join wants settling
+   together.
 4. Serve the catalog artifact + the client metadata document. Small.
 5. Web client: OAuth, reads from own PDS, local view in IndexedDB, writes back.
    Where the data model actually gets exercised, so no longer "last".

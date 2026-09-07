@@ -1,0 +1,58 @@
+{
+  "lexicon": 1,
+  "id": "app.manasphere.card",
+  "defs": {
+    "main": {
+      "type": "record",
+      "description": "A card you own, in however many identical copies.",
+      "key": "tid",
+      "record": {
+        "type": "object",
+        "required": ["scryfallId", "finish", "quantity", "createdAt"],
+        "properties": {
+          "scryfallId": {
+            "type": "string",
+            "maxLength": 64,
+            "description": "Scryfall print id: the exact printing, which also pins the language."
+          },
+          "finish": {
+            "type": "string",
+            "maxLength": 32,
+            "knownValues": ["nonfoil", "foil", "etched"],
+            "description": "Part of what identifies these copies; foil and nonfoil are separate records."
+          },
+          "quantity": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 10000,
+            "description": "Copies owned. Deleted rather than kept at zero."
+          },
+          "condition": {
+            "type": "string",
+            "maxLength": 32,
+            "knownValues": [
+              "mint",
+              "nearMint",
+              "excellent",
+              "good",
+              "lightPlayed",
+              "played",
+              "poor"
+            ],
+            "description": "The Cardmarket scale, as ManaBox exports. Absent means ungraded."
+          },
+          "container": {
+            "type": "string",
+            "format": "at-uri",
+            "description": "The container holding these copies. Absent means unfiled."
+          },
+          "acquiredAt": {
+            "type": "string",
+            "format": "datetime"
+          },
+          "createdAt": { "type": "string", "format": "datetime" }
+        }
+      }
+    }
+  }
+}

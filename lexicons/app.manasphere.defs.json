@@ -1,0 +1,89 @@
+{
+  "lexicon": 1,
+  "id": "app.manasphere.defs",
+  "description": "Shapes shared between designs — decks, lists and snapshots.",
+  "defs": {
+    "designEntry": {
+      "type": "object",
+      "description": "A card a design refers to, owned or not. Identity is (oracleId, scryfallId, finish).",
+      "required": ["oracleId", "quantity"],
+      "properties": {
+        "oracleId": {
+          "type": "string",
+          "maxLength": 64,
+          "description": "Scryfall oracle id: the card, not a printing."
+        },
+        "scryfallId": {
+          "type": "string",
+          "maxLength": 64,
+          "description": "Scryfall print id, when the printing is deliberate. Absent means any printing."
+        },
+        "finish": {
+          "type": "string",
+          "maxLength": 32,
+          "knownValues": ["nonfoil", "foil", "etched"],
+          "description": "Intended finish. Absent means any."
+        },
+        "quantity": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 1000,
+          "description": "Copies this entry calls for."
+        },
+        "section": {
+          "type": "string",
+          "maxLength": 32,
+          "knownValues": ["main", "side", "commander", "maybe"],
+          "description": "Which part of the deck. Absent means main; lists ignore it."
+        }
+      }
+    },
+    "visibility": {
+      "type": "string",
+      "maxLength": 32,
+      "knownValues": ["unlisted", "published"],
+      "description": "Whether this AppView surfaces the record. Not access control: atproto records are publicly fetchable regardless. Absent means unlisted."
+    },
+    "forkRef": {
+      "type": "object",
+      "description": "Where a design was forked from.",
+      "required": ["source"],
+      "properties": {
+        "source": {
+          "type": "ref",
+          "ref": "com.atproto.repo.strongRef",
+          "description": "The design forked from; the cid pins the version."
+        },
+        "snapshot": {
+          "type": "string",
+          "format": "at-uri",
+          "description": "The snapshot forked from, when it wasn't current state."
+        }
+      }
+    },
+    "change": {
+      "type": "object",
+      "description": "One invertible edit to a design's entries.",
+      "required": ["at", "op", "entry"],
+      "properties": {
+        "at": { "type": "string", "format": "datetime" },
+        "op": {
+          "type": "string",
+          "maxLength": 32,
+          "knownValues": ["add", "remove", "setQuantity"]
+        },
+        "entry": {
+          "type": "ref",
+          "ref": "#designEntry",
+          "description": "The entry after the change, with its resulting quantity."
+        },
+        "previousQuantity": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 1000,
+          "description": "Quantity before the change; what makes the edit invertible."
+        }
+      }
+    }
+  }
+}

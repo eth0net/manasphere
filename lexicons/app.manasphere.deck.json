@@ -1,0 +1,89 @@
+{
+  "lexicon": 1,
+  "id": "app.manasphere.deck",
+  "defs": {
+    "main": {
+      "type": "record",
+      "description": "A design with deck metadata, contents embedded rather than one record per card.",
+      "key": "tid",
+      "record": {
+        "type": "object",
+        "required": ["name", "createdAt"],
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 640,
+            "maxGraphemes": 64
+          },
+          "description": {
+            "type": "string",
+            "maxLength": 30000,
+            "maxGraphemes": 3000
+          },
+          "format": {
+            "type": "string",
+            "maxLength": 32,
+            "knownValues": [
+              "alchemy",
+              "brawl",
+              "commander",
+              "duel",
+              "gladiator",
+              "historic",
+              "legacy",
+              "modern",
+              "oathbreaker",
+              "oldschool",
+              "pauper",
+              "paupercommander",
+              "penny",
+              "pioneer",
+              "predh",
+              "premodern",
+              "standard",
+              "standardbrawl",
+              "timeless",
+              "vintage"
+            ],
+            "description": "Scryfall's legality keys, so a card can be checked by lookup."
+          },
+          "entries": {
+            "type": "array",
+            "maxLength": 1000,
+            "items": {
+              "type": "ref",
+              "ref": "app.manasphere.defs#designEntry"
+            },
+            "description": "The design. Order is not meaningful."
+          },
+          "container": {
+            "type": "string",
+            "format": "at-uri",
+            "description": "The deck box this deck occupies. Its presence scopes what \"built\" means."
+          },
+          "archived": {
+            "type": "boolean",
+            "description": "Drops the deck out of default listings. Reversible, and the only stored state."
+          },
+          "visibility": {
+            "type": "ref",
+            "ref": "app.manasphere.defs#visibility"
+          },
+          "forkedFrom": {
+            "type": "ref",
+            "ref": "app.manasphere.defs#forkRef"
+          },
+          "recentChanges": {
+            "type": "array",
+            "maxLength": 100,
+            "items": { "type": "ref", "ref": "app.manasphere.defs#change" },
+            "description": "Recent edits, newest first. How many to keep is client policy."
+          },
+          "createdAt": { "type": "string", "format": "datetime" },
+          "updatedAt": { "type": "string", "format": "datetime" }
+        }
+      }
+    }
+  }
+}

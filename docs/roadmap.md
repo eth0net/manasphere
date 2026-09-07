@@ -76,7 +76,7 @@ possession, or are they a reference?
 - **Container** — a named physical place: binder, box, deck box. A record with
   a name and a kind.
 - **Collection entry** — a card you own, in exactly one container. Carries
-  `scryfall_id`, finish, condition, language, quantity.
+  `scryfall_id`, finish, condition, quantity.
 - **Design** — card references you may or may not own. A *deck* is a design
   with deck metadata (format, commander, sideboard); a *list* is one without
   (wishlist, trade pile). Same entry shape, different parent.
@@ -106,11 +106,13 @@ Consequences:
 - **Design entries are keyed `(oracle_id, scryfall_id?, finish?)`**, so diffs
   and fork provenance have stable identity rather than array positions. The key
   also handles two entries for one card intended as different printings.
-- **Collection stacks are keyed differently**: `(scryfall_id, finish,
-  condition, language)` within a container. The keys share no fields and
-  collection entries carry no `oracle_id`, so matching a design entry to owned
-  cards routes through the card cache to resolve `scryfall_id → oracle_id`.
-  That join is the heart of the design-vs-built diff, and it isn't free.
+- **Owned cards are keyed differently**: `(scryfall_id, finish, condition)`
+  within a container. No `language`: every language of a printing has its own
+  Scryfall id (m10 #146 has nine), so the field could only contradict it.
+- The keys share no fields, and owned cards carry no `oracle_id`, so matching a
+  design entry to owned cards routes through the card cache to resolve
+  `scryfall_id → oracle_id`. That join is the heart of the design-vs-built
+  diff, and it isn't free.
 - Proxies and borrowed cards are the untidy edge. Deferred; an optional flag on
   the collection entry if it matters.
 
@@ -404,10 +406,6 @@ Explore's network-wide indexing, then price history's unbounded storage.
 
 ## Open questions
 
-**Lexicon NSIDs.** Nothing is enumerated yet — not collection entry, container,
-deck, list or snapshot. The critical path: the client can't read or write a
-record whose shape doesn't exist. Needs the domain question settled first.
-
 **Design-vs-built is an assignment problem.** Entries carry quantities, so
 states are per copy rather than per entry, and an "any printing" entry competes
 with a print-bound one for the same stack. Greedy matching gives different
@@ -421,6 +419,13 @@ happens to entries when a container is deleted, is unspecified.
 `applyWrites` is capped per call and accounts are rate-limited, so a large
 import may take hours and needs resumability. Verify against the target PDS —
 it may be the argument for coarser records.
+
+**Serialised cards.** A serialised card is individually numbered, so it is
+finer-grained than a printing and two copies are not interchangeable. The model
+keys on printing plus quantity and cannot tell them apart. An optional serial
+field on the card record covers it and is additive, so it can wait — but the
+shape wants deciding when there is an import path that carries one, rather than
+guessed at now.
 
 **Scryfall id migrations.** Scryfall merges and retires printing ids, and
 records in other people's PDSes reference them permanently. Scryfall publishes
@@ -700,13 +705,26 @@ personal-collection tool, not a marketplace.
 
 ## Lexicon notes
 
-NSIDs carry no game segment: `app.manasphere.collection`, not
-`app.manasphere.mtg.collection`. Manasphere is an MTG app, and a segment added
-against a game that may never exist would sit in every record forever. That
-reverses an earlier decision — the original argument was firehose filtering and
-cheap optionality, but filtering by NSID stays clean either way, and the
-optionality was speculation.
+NSIDs carry no game segment: `app.manasphere.card`, not
+`app.manasphere.mtg.card`. Manasphere is an MTG app, and a segment
+added against a game that may never exist would sit in every record forever.
+That reverses an earlier decision — the original argument was firehose
+filtering and cheap optionality, but filtering by NSID stays clean either way,
+and the optionality was speculation.
 
+- **Records sit flat under `app.manasphere.*`**, with an area segment only
+  where a genuine cluster earns one. Surveyed 2026-09-07: Leaflet, Streamplace,
+  Frontpage and Standard all put their record types directly under the app
+  authority and group only real clusters (Leaflet's 23 `blocks.*`). Bluesky's
+  uniform four segments come from having 404 lexicons across 47 authorities,
+  not from a rule. So `app.manasphere.game.*` later is fine — that is a
+  cluster — but a `collection.` segment holding one record would not be.
+- The owned-card record is `app.manasphere.card`, not
+  `app.manasphere.collection`: each record is one card in however many copies,
+  so "collection" would name the whole rather than the line. `card` matches
+  how the domain talks — ManaBox exports one row per card with a quantity
+  column. It does mean `manasphere_scryfall::Card` (a printing) and the record
+  type want distinguishable Rust names.
 - Adding a *new* lexicon collection later is cheap.
 - Changing an *existing* NSID's required shape is not. Records written under it
   are permanent, since we don't control other people's repos. Additive optional

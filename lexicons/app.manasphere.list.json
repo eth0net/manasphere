@@ -1,0 +1,58 @@
+{
+  "lexicon": 1,
+  "id": "app.manasphere.list",
+  "defs": {
+    "main": {
+      "type": "record",
+      "description": "A design without deck metadata: wishlist, trade pile, or scan staging.",
+      "key": "tid",
+      "record": {
+        "type": "object",
+        "required": ["name", "createdAt"],
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 640,
+            "maxGraphemes": 64
+          },
+          "description": {
+            "type": "string",
+            "maxLength": 30000,
+            "maxGraphemes": 3000
+          },
+          "purpose": {
+            "type": "string",
+            "maxLength": 32,
+            "knownValues": ["wishlist", "trade", "staging", "other"],
+            "description": "What the list is for. Drives visibility defaults."
+          },
+          "entries": {
+            "type": "array",
+            "maxLength": 10000,
+            "items": {
+              "type": "ref",
+              "ref": "app.manasphere.defs#designEntry"
+            },
+            "description": "Larger ceiling than a deck; a cube or bulk trade pile is a list."
+          },
+          "visibility": {
+            "type": "ref",
+            "ref": "app.manasphere.defs#visibility"
+          },
+          "forkedFrom": {
+            "type": "ref",
+            "ref": "app.manasphere.defs#forkRef"
+          },
+          "recentChanges": {
+            "type": "array",
+            "maxLength": 100,
+            "items": { "type": "ref", "ref": "app.manasphere.defs#change" }
+          },
+          "createdAt": { "type": "string", "format": "datetime" },
+          "updatedAt": { "type": "string", "format": "datetime" }
+        }
+      }
+    }
+  }
+}
