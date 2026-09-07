@@ -415,8 +415,14 @@ first, then any-printing, extras as the complement.
 **Container references.** How an entry points at its container, and what
 happens to entries when a container is deleted, is unspecified.
 
-**Serialised cards, and how to record which copy.** Researched below; the
-model is decided but not built.
+**Per-card notes and tags.** Would cover serialised numbers, misprints,
+alters, proxies and provenance in one shape rather than a boolean each, and
+Moxfield's `Tags` column needs somewhere to land on import. Notes are
+world-readable like every other field, so any interface has to present them as
+public annotation. Undecided.
+
+**Price paid, and trade quantity.** Both appear in trackers we import from and
+have nowhere to land. See the CSV comparison below.
 
 **Backfill.** Handled for a user's own data by reading their own PDS. Returns
 as a real problem at Phase 3, where the index needs other people's records that
@@ -484,6 +490,36 @@ Consume them weekly alongside the bulk sync. Remap merges silently; surface
 deletes, because 471 carry no metadata and an orphaned reference to one of
 those can't be interpreted at all. The rest preserve name, set, collector
 number and oracle id, so an orphan usually stays readable.
+
+### What other trackers actually export
+
+Sample CSVs from five tools, since these are the import targets and their
+columns are the evidence for what a collection row needs.
+
+| | container | trade qty | tags | notes | serial | price paid | date bought |
+|---|---|---|---|---|---|---|---|
+| ManaBox | Binder Name + Type | — | — | — | — | yes | — |
+| Moxfield | — | yes | yes | — | — | yes | — |
+| Dragon Shield | Folder Name | yes | — | — | — | yes | yes |
+| MTGGoldfish | — | — | — | — | — | — | — |
+| TCGplayer | — | — | — | — | — | — | — |
+
+**No tracker records a serial number**, which settles the serialised question:
+treat it as the promo printing it is. Scryfall lists `serialized` alongside
+`boosterfun` and `doublerainbow`, and a dedicated field's key invariant —
+quantity 1 — can't be expressed in a lexicon anyway, so it would be a
+client-side rule other implementers break.
+
+Two columns we would silently drop, both worth settling before import ships:
+
+- **Price paid**, in three of five, and Dragon Shield adds date bought. That is
+  collection data rather than market data, so it is not the Phase 2 price
+  cache.
+- **Trade quantity**, in two of five. Our model says that's a trade list, which
+  is better, but the column has nowhere to land on import.
+
+ManaBox's Binder Name and Type map onto containers, and Dragon Shield's Date
+Bought onto `acquiredAt`, so both of those fields are carrying weight.
 
 ### Localhost OAuth works, but only by default
 
