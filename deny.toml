@@ -11,7 +11,17 @@ ignore = []
 # under --deny warnings. Add each licence as a dependency brings it in, and
 # treat that as a licensing decision: AGPL-3.0-only can link permissive code,
 # not the reverse.
-allow = []
+# Each of these is the *only* option some crate offers. Dual-licensed crates
+# (r-efi's LGPL, memchr's Unlicense, miniz_oxide's Zlib) resolve against MIT or
+# Apache-2.0 and need no entry.
+allow = [
+  "Apache-2.0",
+  "BSD-3-Clause",
+  "CDLA-Permissive-2.0",  # webpki-root-certs — a data licence, for a data crate
+  "ISC",
+  "MIT",
+  "Unicode-3.0",
+]
 
 # Our own crates are publish = false and AGPL by definition; this check is
 # about what we pull in.
@@ -22,6 +32,14 @@ private = { ignore = true }
 # time. If two versions must coexist, add a skip saying what would remove it.
 multiple-versions = "deny"
 wildcards = "deny"
+skip = [
+  # macOS only. hyper-util pulls system-configuration 0.7, rustls-platform-verifier
+  # pulls security-framework 3.7, and they disagree. Gone when either bumps.
+  { crate = "core-foundation@0.9" },
+  # The icu chain under url is mid-migration: displaydoc is on syn 3, yoke-derive
+  # still on syn 2. Gone when synstructure releases against syn 3.
+  { crate = "syn@2" },
+]
 
 [sources]
 # A git or alternate-registry dependency means no yanking and no advisory
