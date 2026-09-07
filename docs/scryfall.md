@@ -15,14 +15,13 @@ terms are in [`ip.md`](ip.md).
   file; on-demand client resolution covers them instead, and the server DB
   stays small. All Cards may return at Phase 3, when the AppView indexes other
   people's records and has to resolve arbitrary printings itself.
-- **Don't push catalog load onto Scryfall wholesale.** Per-keystroke search
+- **Don't push catalogue load onto Scryfall wholesale.** Per-keystroke search
   against their API would be externalising our load onto a free service that
   publishes bulk files specifically so apps don't do that — and it's our API
   access that gets restricted. Serving a trimmed 4-5MB artifact ourselves is
   cheaper for everyone, and it's static, so a CDN makes it near-free.
-- The client gets English gameplay data plus a name index for the languages
-  that user owns. Non-English printings mostly share gameplay data with
-  English; what differs is name, type line, oracle text and image.
+- The client gets a subset of the cache, not all of it — what, and what it
+  weighs, is settled below.
 - Bulk files are **gzipped JSONL**, one card per line, served as
   `application/gzip` with an ETag and `accept-ranges`. Stream line by line;
   parsing whole will OOM a 1GB box. The index entry gives
@@ -186,6 +185,44 @@ difference between hitting a 4-5MB target and missing it.
 `kind`, `paper`, `printings` and `default_print` are derived onto the card row
 at sync time, so search needs no window functions and no `bm25` gymnastics.
 `printings` counts paper only, being what a collector could own.
+
+## What the client artifact holds
+
+Two files under one version. Positional rows with their column names in a
+header, gzipped once per sync and served from memory.
+
+| | rows | gzipped |
+|---|---|---|
+| cards | 37,563 | 1.5MB |
+| prints | 108,275 | 3.1MB |
+
+Measured 2026-09-07, against the 4-5MB target in
+[`architecture.md`](architecture.md).
+
+**Printings are grouped by card, in the cards file's order**, so a card's
+printings are the run of `printings` rows where the preceding counts end, and
+the leading row is the printing search would show. That is why the pair carries
+one version and why the build refuses to publish runs that don't add up: an
+index read against the wrong ordering is wrong quietly.
+
+**Names are per card. Printed names are per printing** — 2,525 paper printings
+carry one, 32KB in total, so a Japanese card is found by the name on its own
+printing and no per-language index is needed.
+
+**Ids stay 36-character hex.** Base64 of the UUID bytes saves 0.5MB of the 4.6
+and costs every consumer a decode before it can write a `scryfallId` or build
+an image URL. Held for when the artifact needs shrinking.
+
+**Rows are fixed width.** Trimming trailing nulls and zeros saved 1.8%, which
+doesn't pay for a format where a row's length means something.
+
+Low-cardinality columns are integers indexing tables in the header — sets,
+rarity, layout, image status, language, and finishes as a bitmask. Each list
+runs commonest first, so the value that repeats most is one digit.
+
+Left out: oracle text, keywords, power and toughness, legality, the reserved
+list and EDHREC rank. Collection tracking needs none of them and they are
+another 2.3MB, so they become a third file when decks arrive.
 
 ## What manual search surfaces
 

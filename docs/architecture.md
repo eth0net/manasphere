@@ -26,8 +26,20 @@ client metadata document we serve. Our server never proxies a write.
   checking before relying on it.
 
 **So v0 needs no firehose consumer and no query API.** The AppView serves the
-catalog, the app and the client metadata document, and runs the weekly Scryfall
-sync. Indexing earns its place at Phase 3.
+catalogue, the app and the client metadata document, and runs the weekly
+Scryfall sync. Indexing earns its place at Phase 3.
+
+## Serving the catalogue
+
+Built into memory after each sync and served from there — 4.6MB resident, and
+no per-request compression on one vCPU.
+
+Each file's name carries a hash of its own bytes, so a response can claim
+`immutable` for a year and a client that has the file never asks again. A small
+manifest names the current pair and is the only catalogue response that
+revalidates. The bytes sit gzipped and go out with `Content-Encoding: gzip`; a
+client that explicitly refuses gzip gets a 406 rather than several megabytes of
+decompression done on its behalf.
 
 ## Storage: why SQL
 
@@ -65,14 +77,13 @@ the firehose. Per-user cost is a few index rows and a trickle of events —
 nobody edits a collection thousands of times a day. What scales is bandwidth
 for static artifacts, which a CDN fixes cheaply.
 
-Sizing below is **estimates, not measurements**. Two UUIDs alone account for
-72 bytes of the per-printing figure; measure before relying on any of it.
-
-- Trimmed catalog: perhaps 120-150 bytes per printing over ~100k English
-  printings, so ~15MB raw and 4-5MB gzipped.
-- Scanner index: maybe under 1MB for perceptual hashes, ~25MB for embeddings.
+- Client artifact: **4.6MB gzipped**, 11.3MB before compression, for 37,563
+  cards and 108,275 paper printings. Measured; the shape is in
+  [`scryfall.md`](scryfall.md).
+- Scanner index: an estimate, so treat it as one — maybe under 1MB for
+  perceptual hashes, ~25MB for embeddings.
 - Weekly deltas have no mechanism yet — computing them means keeping a previous
-  catalog snapshot server-side, which sits awkwardly with a disposable DB.
+  catalogue snapshot server-side, which sits awkwardly with a disposable DB.
 
 | Users | Shape |
 |---|---|
@@ -87,8 +98,8 @@ line by line, and the scanner index build must not run on the VPS at all.
 What would break flat costs, likeliest first: a server-side scanner fallback,
 Explore's network-wide indexing, then price history's unbounded storage.
 
-- PWA + service worker: cache the trimmed catalog in IndexedDB so manual search
-  is client-side, not a round-trip per keystroke. Biggest lever for keeping the
+- PWA + service worker: cache the catalogue in IndexedDB so manual search is
+  client-side, not a round-trip per keystroke. Biggest lever for keeping the
   server light.
 
 ## If atproto goes away

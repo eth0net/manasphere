@@ -36,7 +36,7 @@ business.
 ## Phase 1 — Scanner
 
 **Client-side inference.** Recognition runs in the browser (WASM) against a
-precomputed index shipped with the catalog. No server in the per-scan path,
+precomputed index shipped with the catalogue. No server in the per-scan path,
 works offline, nothing leaves the device.
 
 **Beat ManaBox on printing identification.** ManaBox matches art only, so the

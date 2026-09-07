@@ -22,17 +22,22 @@ warning-free `cargo clippy --all-targets --all-features`, `cargo test` and the
 sign-off check — on commit and push, so a red build costs no round trip. CI
 itself also runs on macOS and Windows.
 
+[just](https://github.com/casey/just) wraps the longer commands: `just serve`
+starts the server, `just check` does the lot in one go. `just --list` for the
+rest.
+
 Tests are offline, against Scryfall responses captured under
 `crates/*/tests/fixtures`. The parts that talk to Scryfall are examples, run by
 hand, since they pull ~78MB from a free service:
 
 ```sh
-cargo run --release -p manasphere-scryfall --example stream   # parse only
-cargo run --release -p manasphere-core --example sync -- cards.db
+cargo run --release -p manasphere-scryfall --example stream  # parse only
+just sync                                                    # into the cache
 ```
 
-Keep the bulk file and pass it to `sync` as a second argument, so iterating
-doesn't re-download it.
+Keep the bulk file and pass it to `just sync` as an argument, so iterating
+doesn't re-download it. `just catalog` then builds the client artifact from
+whatever the cache holds, and needs no network at all.
 
 ## Commits
 

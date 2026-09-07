@@ -32,7 +32,7 @@ backend:
   data. OAuth is a browser-side public client (PKCE + DPoP); the `client_id` is
   the URL of a static client metadata document we serve.
 - **Our server** ("the AppView") is a single Rust process that: (1) syncs
-  Scryfall card data into our own DB as a cache, (2) serves that catalog and
+  Scryfall card data into our own DB as a cache, (2) serves that catalogue and
   the app itself, (3) from Phase 3, consumes a filtered Jetstream firehose to
   index *other people's* published records.
 - **v0 doesn't need the firehose at all.** The client reads its own records
@@ -72,8 +72,10 @@ backend:
   `rarity`, `set_type`, `finishes`, `games`, `legalities`. New values appear
   unannounced and must not fail an unattended sync. Colours are typed; the
   rules close that set.
-- The client gets a trimmed subset, not the whole cache — English gameplay data
-  plus a name index for the languages that user owns.
+- **The client artifact is two files under one version**: cards, and paper
+  printings grouped by card in the cards file's order, 4.6MB gzipped.
+  Positional rows with integer codes for low-cardinality columns, and no
+  oracle text or legality — collection tracking needs neither.
 - Price cache: **separate table**, keyed by `scryfall_id` + source + timestamp.
   Not built — nothing writes it before Phase 2, so the schema would be dead.
   Note there is **no prices bulk file** — prices exist only as fields inside
@@ -131,7 +133,7 @@ backend:
   `query()` while the schema churns; adopt `query!` once it settles.
 - **SQLite**, single file, single process. No separate DB server.
 - **Frontend**: TypeScript, built with **Bun** (not npm), lives in `web/`. PWA
-  with a service worker — client-side caching (IndexedDB) of the card catalog
+  with a service worker — client-side caching (IndexedDB) of the card catalogue
   is core to keeping server load light, especially for manual search.
 - **Deploy**: `web/dist` is embedded into the compiled `appview` binary via
   `rust-embed` (+ `axum-embed` or a manual handler) — one binary, no separate
@@ -153,7 +155,7 @@ manasphere/
   Cargo.toml             # workspace root, members = ["crates/*"]
   crates/
     api/                 # axum route handlers (lib)
-    appview/             # bin crate — wires the above together as tokio tasks
+    appview/             # bin crate — the `manasphere` binary
     core/                # lexicon record structs, shared DB models/logic
     jetstream/           # firehose consumer (lib)
     scryfall/            # bulk-data fetch/parse (lib)
@@ -177,14 +179,16 @@ manasphere/
    that streams the real file.
 2. **Done** — card cache in `crates/core`: migrations, a full-replace sync
    fed by a `CardStream`, FTS5 name search, printing lookup for CSV import.
-   94MB for 117,630 printings. `legalities` is a lookup table, not a column.
-3. **Done, pending review** — lexicons enumerated in `lexicons/`, validated
-   in CI against atproto's own implementation plus records that must be
-   refused.
+   81MB for 117,630 printings. `legalities` is a lookup table, not a column.
+3. **Done** — lexicons enumerated in `lexicons/`, validated in CI against
+   atproto's own implementation plus records that must be refused.
    Deck, list and snapshot precede their implementation deliberately: the
    design entry and collection entry interlock, so the join wants settling
    together.
-4. Serve the catalog artifact + the client metadata document. Small.
+4. **Done** — the `manasphere` binary. Builds the client artifact from the
+   cache, serves it content-addressed behind a manifest, serves the OAuth
+   client metadata document, and refreshes the cache weekly. Configured from
+   the environment; `just serve`.
 5. Web client: OAuth, reads from own PDS, local view in IndexedDB, writes back.
    Where the data model actually gets exercised, so no longer "last".
 6. A dev CLI writing records with an app password, to seed fixtures without the

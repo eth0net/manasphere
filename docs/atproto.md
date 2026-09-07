@@ -62,6 +62,19 @@ works unless a PDS explicitly disables it.
 aren't matched, so a shifting dev-server port is fine. Refresh tokens are
 granted.
 
+## The client metadata document
+
+Served at its own `client_id`, and generated from the configured public URL so
+the two can't drift apart. A public client: PKCE, DPoP-bound tokens, and no
+authentication at the token endpoint, since a browser keeps no secret.
+
+Scopes are granular — `repo:app.manasphere.card` and one per other record type
+we write, which is all a client that writes only its own records needs. Reads
+need no scope, records being publicly fetchable. `transition:generic` is listed
+too, because a PDS without permissions support rejects the granular ones
+outright; it grants app-password-level access to the whole repo, so the client
+asks for it last and the entry comes out once granular scopes can be assumed.
+
 ## Domains: three, not one
 
 Three concerns that don't need the same domain, and conflating them is what
@@ -154,6 +167,8 @@ predate our subscription.
   — PDS and app want separate domains
 - [atproto OAuth spec](https://atproto.com/specs/oauth) — loopback client
   rules; the allowance is optional for the authorization server
+- [atproto permissions spec](https://atproto.com/specs/permission) — `repo:`
+  scope syntax, and the transitional scopes it replaces
 - PDS write limits are in the reference implementation rather than the specs:
   `packages/pds/src/rate-limits.ts` for the point budgets and
   `packages/pds/src/api/com/atproto/repo/applyWrites.ts` for the 200-write cap

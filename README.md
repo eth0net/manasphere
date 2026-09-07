@@ -9,10 +9,11 @@ game toolkit later.
 
 ## Status
 
-Pre-v0. The card cache works: `crates/scryfall` streams Scryfall's bulk data
-and `crates/core` shreds 117,630 printings of 38,633 cards into an 81MB SQLite
-file with full-text name search. The lexicons are enumerated and validated
-against atproto's own implementation in CI. No server and no client yet.
+Pre-v0, and it runs. `crates/scryfall` streams Scryfall's bulk data,
+`crates/core` shreds 117,630 printings of 38,633 cards into an 81MB SQLite
+file, and the `manasphere` binary serves the 4.6MB client artifact built from
+it alongside the OAuth client metadata document. The lexicons are validated
+against atproto's own implementation in CI. No client yet.
 
 ## Stack
 
@@ -24,14 +25,12 @@ against atproto's own implementation in CI. No server and no client yet.
 ## Layout
 
 ```
-crates/core            lexicon record structs, shared DB models
-crates/api             axum route handlers
-crates/appview         the binary that wires them together
-crates/jetstream       firehose consumer
 crates/scryfall        bulk-data fetch/parse
+crates/core            card cache, and the artifact the client caches
+crates/api             axum route handlers
+crates/appview         the `manasphere` binary
 docs/                  roadmap, and the reasoning behind each decision
 lexicons/              NSID JSON schemas
-web/                   frontend
 ```
 
 ## Contributing
