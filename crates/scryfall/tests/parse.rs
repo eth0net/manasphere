@@ -159,3 +159,21 @@ async fn bulk_index_tolerates_unknown_types() {
     let index: BulkIndex = serde_json::from_str(BULK_INDEX).expect("index should parse");
     assert!(index.data.iter().any(|entry| entry.kind == "art_tags"));
 }
+
+#[tokio::test]
+async fn non_english_printings_keep_their_printed_name() {
+    let cards = collect(LAYOUTS).await;
+    assert!(
+        cards.iter().all(|card| card.printed_name.is_none()),
+        "the fixture is English, so nothing should carry a printed name"
+    );
+}
+
+#[tokio::test]
+async fn colors_sort_into_wubrg_order() {
+    use manasphere_scryfall::Color::{B, G, R, U, W};
+
+    let mut colors = vec![G, B, W, R, U];
+    colors.sort();
+    assert_eq!(colors, [W, U, B, R, G]);
+}

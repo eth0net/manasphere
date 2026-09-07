@@ -25,6 +25,11 @@ pub struct Card {
     pub id: Uuid,
     pub oracle_id: Option<Uuid>,
     pub name: String,
+    /// The name in `lang` when that isn't English — 2,673 printings in Default
+    /// Cards, and the only way to find them by name.
+    pub printed_name: Option<String>,
+    pub printed_type_line: Option<String>,
+    pub printed_text: Option<String>,
     pub lang: String,
     pub released_at: String,
     pub layout: String,
@@ -97,6 +102,9 @@ pub struct Prices {
 }
 
 /// Magic's five colours — the one Scryfall taxonomy the game's rules close.
+///
+/// Declared in WUBRG order, so sorting a slice canonicalises it and colour
+/// identities compare as strings.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Deserialize)]
 pub enum Color {
     W,
