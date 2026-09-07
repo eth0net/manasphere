@@ -155,9 +155,14 @@ records being publicly readable.
 
 ## Open questions
 
-**Backfill.** Handled for a user's own data by reading their own PDS. Returns
-as a real problem at Phase 3, where the index needs other people's records that
-predate our subscription.
+**Backfill has an upstream answer.** Handled for a user's own data by reading
+their own PDS, and a real problem only at Phase 3, where the index needs
+records predating our subscription. Tangled's Bobbin doesn't build it: Hydrant
+tails the firehose, pulls every repo's CAR and replays it from cursor 0 over a
+websocket, while Slingshot caches single record and identity lookups to cover
+the warm-up. That rebuilds their entire dataset in 30 seconds to 20 minutes
+with no disk at all. Neither has a public instance, so what's worth copying is
+the pattern rather than a service to consume.
 
 ## References
 
@@ -169,6 +174,8 @@ predate our subscription.
   rules; the allowance is optional for the authorization server
 - [atproto permissions spec](https://atproto.com/specs/permission) — `repo:`
   scope syntax, and the transitional scopes it replaces
+- [Introducing Bobbin](https://blog.tangled.org/bobbin/) — a diskless AppView,
+  and the Hydrant/Slingshot pair that makes backfill someone else's problem
 - PDS write limits are in the reference implementation rather than the specs:
   `packages/pds/src/rate-limits.ts` for the point budgets and
   `packages/pds/src/api/com/atproto/repo/applyWrites.ts` for the 200-write cap
