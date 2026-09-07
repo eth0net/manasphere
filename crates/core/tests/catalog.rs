@@ -1,8 +1,7 @@
 //! The catalog artifact, built from the same printings as `cache.rs`.
 
-use std::io::{Cursor, Read as _};
+use std::io::Cursor;
 
-use flate2::read::GzDecoder;
 use manasphere_core::{Error, cards, catalog, open_memory};
 use manasphere_scryfall::{BulkData, CardStream};
 use serde_json::Value;
@@ -34,12 +33,8 @@ async fn seeded_with(ndjson: &str) -> SqlitePool {
     pool
 }
 
-fn read(gzip: &[u8]) -> Value {
-    let mut json = String::new();
-    GzDecoder::new(gzip)
-        .read_to_string(&mut json)
-        .expect("the artifact should be gzip");
-    serde_json::from_str(&json).expect("the artifact should be JSON")
+fn read(json: &[u8]) -> Value {
+    serde_json::from_slice(json).expect("the artifact should be JSON")
 }
 
 fn rows(file: &Value, key: &str) -> Vec<Vec<Value>> {
@@ -68,7 +63,7 @@ async fn each_file_names_its_own_columns() {
     let built = catalog::build(&pool).await.unwrap();
 
     for (artifact, key) in [(&built.cards, "cards"), (&built.prints, "prints")] {
-        let file = read(&artifact.gzip);
+        let file = read(&artifact.json);
         assert_eq!(file["version"], built.version);
 
         let fields = file["fields"].as_array().expect("fields should be listed");
@@ -88,8 +83,8 @@ async fn each_file_names_its_own_columns() {
 async fn printings_group_into_the_runs_the_cards_claim() {
     let pool = seeded_with(CARDS).await;
     let built = catalog::build(&pool).await.unwrap();
-    let cards = rows(&read(&built.cards.gzip), "cards");
-    let prints = rows(&read(&built.prints.gzip), "prints");
+    let cards = rows(&read(&built.cards.json), "cards");
+    let prints = rows(&read(&built.prints.json), "prints");
 
     let mut offset = 0;
     for card in &cards {
@@ -144,7 +139,7 @@ async fn a_file_is_named_after_its_contents() {
 async fn finishes_survive_as_a_bitmask() {
     let pool = seeded_with(CARDS).await;
     let built = catalog::build(&pool).await.unwrap();
-    let file = read(&built.prints.gzip);
+    let file = read(&built.prints.json);
     let names: Vec<String> = serde_json::from_value(file["finishes"].clone()).unwrap();
 
     for row in rows(&file, "prints") {
@@ -164,4 +159,35 @@ async fn finishes_survive_as_a_bitmask() {
         let expected: Vec<String> = serde_json::from_str(&json).unwrap();
         assert_eq!(decoded, expected.iter().collect::<Vec<_>>());
     }
+}
+
+/// The layout the CDN cache rules depend on: content-addressed files in a
+/// directory of their own, the manifest above it, so one rule can't match both.
+#[tokio::test]
+async fn writing_keeps_the_manifest_out_of_the_immutable_directory() {
+    let pool = seeded_with(CARDS).await;
+    let built = catalog::build(&pool).await.unwrap();
+
+    let dir = std::env::temp_dir().join(format!("manasphere-write-{}", std::process::id()));
+    built.write(&dir).await.unwrap();
+
+    let manifest: Value =
+        serde_json::from_slice(&std::fs::read(dir.join("manifest.json")).unwrap()).unwrap();
+    assert_eq!(manifest["version"], built.version);
+
+    for kind in ["cards", "prints"] {
+        let entry = &manifest[kind];
+        let (path, name) = (
+            entry["path"].as_str().unwrap(),
+            entry["name"].as_str().unwrap(),
+        );
+        assert!(path.starts_with("/catalog/files/"), "{kind} at {path}");
+        assert!(path.ends_with(name), "{path} should name {name}");
+        assert!(
+            dir.join(catalog::FILES).join(name).is_file(),
+            "{name} was not written"
+        );
+    }
+
+    std::fs::remove_dir_all(dir).unwrap();
 }

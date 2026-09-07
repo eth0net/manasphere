@@ -8,9 +8,9 @@
 //! cargo run --release -p manasphere-core --example catalog -- cards.db out/
 //! ```
 
+use std::env;
 use std::error::Error;
 use std::time::Instant;
-use std::{env, fs};
 
 use manasphere_core::{catalog, open};
 
@@ -25,24 +25,22 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let built = catalog::build(&pool).await?;
     let elapsed = started.elapsed().as_secs_f64();
 
+    if let Some(dir) = &out {
+        built.write(dir).await?;
+    }
+
     let mut total = 0;
     for file in [&built.cards, &built.prints] {
-        total += file.gzip.len();
-        if let Some(dir) = &out {
-            fs::create_dir_all(dir)?;
-            // Named as served: the bytes are gzip, the path says JSON, and the
-            // response carries `Content-Encoding`.
-            fs::write(format!("{dir}/{}.gz", file.name), &file.gzip)?;
-        }
+        total += file.json.len();
         println!(
             "  {:<28} {:>7} rows  {:>6.2}MB",
             file.name,
             file.rows,
-            megabytes(file.gzip.len()),
+            megabytes(file.json.len()),
         );
     }
     println!(
-        "{} in {elapsed:.1}s, {:.2}MB gzipped",
+        "{} in {elapsed:.1}s, {:.2}MB uncompressed",
         built.version,
         megabytes(total),
     );

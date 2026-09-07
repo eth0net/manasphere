@@ -1,29 +1,23 @@
 //! HTTP handlers.
 //!
-//! v0 serves three things: the catalog artifact, the OAuth client metadata
-//! document, and a health check. There are no write handlers, and there will
-//! not be — the browser writes to the user's own PDS. See
-//! `docs/architecture.md`.
+//! Production serves the app, the catalog artifact and the client metadata
+//! document from a CDN, all three being static files. What is left here is a
+//! health check and a server for that directory, so the client can be
+//! developed against it. There are no write handlers and there will not be —
+//! the browser writes to the user's own PDS. See `docs/architecture.md`.
 
-use std::sync::{Arc, PoisonError, RwLock};
+use std::path::PathBuf;
 
 use axum::Router;
-use axum::body::Bytes;
-use axum::extract::{Path, State};
-use axum::http::header::{
-    ACCEPT_ENCODING, CACHE_CONTROL, CONTENT_ENCODING, CONTENT_TYPE, ETAG, IF_NONE_MATCH,
-};
-use axum::http::{HeaderMap, StatusCode};
+use axum::extract::State;
+use axum::http::StatusCode;
+use axum::http::header::{CACHE_CONTROL, CONTENT_TYPE};
 use axum::response::{IntoResponse, Response};
 use axum::routing::get;
-use manasphere_core::catalog::{Artifact, Catalog};
+use manasphere_core::cards;
 use serde::Serialize;
-
-const JSON: &str = "application/json";
-
-/// Catalog files are named after their own content, so a client that has one
-/// never needs to ask about it again.
-const IMMUTABLE: &str = "public, max-age=31536000, immutable";
+use sqlx::SqlitePool;
+use tower_http::services::ServeDir;
 
 /// Every scope the client may request; a request can narrow this but not widen
 /// it. `transition:generic` grants far more than the `repo:` scopes and is
@@ -47,124 +41,19 @@ pub struct Config {
     pub public_url: String,
 }
 
-/// What the handlers share.
-#[derive(Debug)]
-pub struct AppState {
-    /// Absent until the first sync completes.
-    published: RwLock<Option<Arc<Published>>>,
-    client_metadata: Vec<u8>,
+/// The OAuth client metadata document.
+///
+/// Written to the site directory rather than served from a handler: its only
+/// requirement is living at the `client_id` it declares, and login should not
+/// fail because this process is down.
+///
+/// # Errors
+///
+/// Fails only if the document won't serialize.
+pub fn client_metadata(config: &Config) -> serde_json::Result<Vec<u8>> {
+    serde_json::to_vec_pretty(&ClientMetadata::new(&config.public_url))
 }
 
-impl AppState {
-    /// # Errors
-    ///
-    /// Fails if the client metadata document won't serialize.
-    pub fn new(config: &Config) -> serde_json::Result<Self> {
-        Ok(Self {
-            published: RwLock::new(None),
-            client_metadata: serde_json::to_vec_pretty(&ClientMetadata::new(&config.public_url))?,
-        })
-    }
-
-    /// Swaps in a freshly built catalog.
-    pub fn publish(&self, catalog: Catalog) {
-        // The lock guards one Arc swap, so poisoning it can't leave a
-        // half-written catalog and recovering from it loses nothing.
-        *self
-            .published
-            .write()
-            .unwrap_or_else(PoisonError::into_inner) = Some(Arc::new(Published::new(catalog)));
-    }
-
-    fn published(&self) -> Option<Arc<Published>> {
-        self.published
-            .read()
-            .unwrap_or_else(PoisonError::into_inner)
-            .clone()
-    }
-}
-
-/// A catalog with its manifest rendered and its bodies refcounted. All of it
-/// changes together.
-#[derive(Debug)]
-struct Published {
-    version: String,
-    manifest: Bytes,
-    etag: String,
-    files: [File; 2],
-}
-
-#[derive(Debug)]
-struct File {
-    name: String,
-    etag: String,
-    body: Bytes,
-}
-
-impl From<Artifact> for File {
-    fn from(artifact: Artifact) -> Self {
-        Self {
-            name: artifact.name,
-            etag: artifact.etag,
-            body: Bytes::from(artifact.gzip),
-        }
-    }
-}
-
-impl Published {
-    fn new(catalog: Catalog) -> Self {
-        let manifest = serde_json::to_vec(&Manifest {
-            version: &catalog.version,
-            cards: Entry::new(&catalog.cards),
-            prints: Entry::new(&catalog.prints),
-        })
-        .expect("the manifest is plain data");
-
-        let Catalog {
-            version,
-            cards,
-            prints,
-        } = catalog;
-
-        Self {
-            version,
-            manifest: Bytes::from(manifest),
-            // Both files change together, so either hash identifies the pair.
-            etag: cards.etag.clone(),
-            files: [cards.into(), prints.into()],
-        }
-    }
-}
-
-/// What a client fetches first: the paths of the current pair.
-#[derive(Debug, Serialize)]
-struct Manifest<'a> {
-    version: &'a str,
-    cards: Entry<'a>,
-    prints: Entry<'a>,
-}
-
-#[derive(Debug, Serialize)]
-struct Entry<'a> {
-    path: String,
-    rows: usize,
-    /// Compressed, which is how it is served.
-    bytes: usize,
-    etag: &'a str,
-}
-
-impl<'a> Entry<'a> {
-    fn new(artifact: &'a Artifact) -> Self {
-        Self {
-            path: format!("/catalog/{}", artifact.name),
-            rows: artifact.rows,
-            bytes: artifact.gzip.len(),
-            etag: &artifact.etag,
-        }
-    }
-}
-
-/// The OAuth client metadata document, served at its own `client_id`.
 #[derive(Debug, Serialize)]
 struct ClientMetadata {
     client_id: String,
@@ -197,131 +86,42 @@ impl ClientMetadata {
     }
 }
 
-/// Every route the server answers.
-pub fn router(state: Arc<AppState>) -> Router {
+/// Every route the server answers, with `site` served as files underneath.
+///
+/// Nothing here sets `Cache-Control`: production caching is declared in the
+/// site's own `_headers`, and a dev server wants none of it.
+pub fn router(pool: SqlitePool, site: PathBuf) -> Router {
     Router::new()
         .route("/health", get(health))
-        .route("/oauth/client-metadata.json", get(client_metadata))
-        .route("/catalog/manifest.json", get(manifest))
-        .route("/catalog/{file}", get(catalog_file))
-        .with_state(state)
+        .with_state(pool)
+        .fallback_service(ServeDir::new(site))
 }
 
 #[derive(Debug, Serialize)]
 struct Health {
-    /// The bulk file the served catalog was built from, absent before the
-    /// first sync finishes.
-    catalog: Option<String>,
+    /// The bulk file the cache holds, absent before the first sync.
+    cache: Option<String>,
 }
 
-async fn health(State(state): State<Arc<AppState>>) -> Response {
-    let catalog = state.published().map(|published| published.version.clone());
-    let body = serde_json::to_vec(&Health { catalog }).expect("plain data");
-    json(StatusCode::OK, "no-store", Bytes::from(body))
-}
-
-async fn client_metadata(State(state): State<Arc<AppState>>) -> Response {
-    json(
-        StatusCode::OK,
-        "public, max-age=3600",
-        Bytes::from(state.client_metadata.clone()),
-    )
-}
-
-async fn manifest(State(state): State<Arc<AppState>>, headers: HeaderMap) -> Response {
-    let Some(published) = state.published() else {
-        return unavailable();
-    };
-    if unchanged(&headers, &published.etag) {
-        return not_modified(&published.etag);
-    }
-
-    (
-        [
-            (CONTENT_TYPE, JSON),
-            // Small, and the paths it names change weekly, so it is the one
-            // catalog response a client has to revalidate.
-            (CACHE_CONTROL, "no-cache"),
-            (ETAG, published.etag.as_str()),
-        ],
-        published.manifest.clone(),
-    )
-        .into_response()
-}
-
-async fn catalog_file(
-    State(state): State<Arc<AppState>>,
-    Path(name): Path<String>,
-    headers: HeaderMap,
-) -> Response {
-    let Some(published) = state.published() else {
-        return unavailable();
-    };
-    let Some(file) = published.files.iter().find(|file| file.name == name) else {
-        return (StatusCode::NOT_FOUND, "no such catalog file\n").into_response();
-    };
-    if unchanged(&headers, &file.etag) {
-        return not_modified(&file.etag);
-    }
-    if !accepts_gzip(&headers) {
-        // Stored gzipped and served as-is: decompressing on demand would hand
-        // a caller several megabytes of work per request.
+async fn health(State(pool): State<SqlitePool>) -> Response {
+    let Ok(cache) = cards::last_synced(&pool, "default_cards").await else {
+        // A health check that reports healthy when the database is gone is
+        // worse than none.
         return (
-            StatusCode::NOT_ACCEPTABLE,
-            "the catalog is only served gzip-encoded\n",
+            StatusCode::SERVICE_UNAVAILABLE,
+            "the database is not answering\n",
         )
             .into_response();
-    }
-
-    (
-        [
-            (CONTENT_TYPE, JSON),
-            (CONTENT_ENCODING, "gzip"),
-            (CACHE_CONTROL, IMMUTABLE),
-            (ETAG, file.etag.as_str()),
-        ],
-        file.body.clone(),
-    )
-        .into_response()
-}
-
-fn json(status: StatusCode, cache: &'static str, body: Bytes) -> Response {
-    (status, [(CONTENT_TYPE, JSON), (CACHE_CONTROL, cache)], body).into_response()
-}
-
-fn unavailable() -> Response {
-    (
-        StatusCode::SERVICE_UNAVAILABLE,
-        [(CACHE_CONTROL, "no-store")],
-        "the catalog has not been built yet\n",
-    )
-        .into_response()
-}
-
-fn not_modified(etag: &str) -> Response {
-    (StatusCode::NOT_MODIFIED, [(ETAG, etag)]).into_response()
-}
-
-/// Whether the client already holds this exact body. `*` matches anything, and
-/// a list is compared entry by entry rather than as one string.
-fn unchanged(headers: &HeaderMap, etag: &str) -> bool {
-    headers
-        .get(IF_NONE_MATCH)
-        .and_then(|value| value.to_str().ok())
-        .is_some_and(|value| {
-            value
-                .split(',')
-                .any(|candidate| candidate.trim() == etag || candidate.trim() == "*")
-        })
-}
-
-/// An absent header means anything is acceptable. Weights aren't parsed — no
-/// browser refuses gzip, and the cost of getting it wrong is a 406.
-fn accepts_gzip(headers: &HeaderMap) -> bool {
-    let Some(accept) = headers.get(ACCEPT_ENCODING) else {
-        return true;
     };
-    accept
-        .to_str()
-        .is_ok_and(|value| value.contains("gzip") || value.contains('*'))
+
+    let body = serde_json::to_vec(&Health { cache }).expect("plain data");
+    (
+        StatusCode::OK,
+        [
+            (CONTENT_TYPE, "application/json"),
+            (CACHE_CONTROL, "no-store"),
+        ],
+        body,
+    )
+        .into_response()
 }

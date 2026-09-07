@@ -1,19 +1,24 @@
 //! The catalog artifact: the slice of the cache a browser needs.
 //!
-//! Two files of positional rows, gzipped once per sync and served from memory.
-//! Which fields, and what they cost, is in `docs/scryfall.md`.
+//! Two files of positional rows, written uncompressed and left to a CDN to
+//! compress — brotli beats what we would ship by a fifth. Which fields, and
+//! what they cost, is in `docs/scryfall.md`.
 
 use std::collections::HashMap;
 use std::hash::{DefaultHasher, Hash as _, Hasher as _};
 use std::io::Write as _;
+use std::path::Path;
 
-use flate2::Compression;
-use flate2::write::GzEncoder;
 use futures_util::TryStreamExt as _;
 use serde::Serialize;
 use sqlx::SqlitePool;
+use tokio::fs;
 
 use crate::{Error, Result};
+
+/// Where the content-addressed files sit, relative to the catalog directory.
+/// Kept apart from the manifest so one CDN cache rule can't match both.
+pub const FILES: &str = "files";
 
 /// Bit `i` of a printing's `finishes` is this list's `i`th entry.
 const FINISHES: [&str; 3] = ["nonfoil", "foil", "etched"];
@@ -70,28 +75,26 @@ struct PrintHeader<'a> {
 /// A set as the client lists it: code, name, kind, first release.
 type Set = (String, String, String, String);
 
-/// One file, gzipped and named after its own content.
+/// One file, named after its own content.
 #[derive(Debug, Clone)]
 pub struct Artifact {
-    /// Path segment with the hash in it, so a response can be immutable.
+    /// Filename with the hash in it, so a response can claim to be immutable.
     pub name: String,
-    pub etag: String,
     pub rows: usize,
-    pub gzip: Vec<u8>,
+    pub json: Vec<u8>,
 }
 
 impl Artifact {
-    fn new(kind: &str, rows: usize, gzip: Vec<u8>) -> Self {
+    fn new(kind: &str, rows: usize, json: Vec<u8>) -> Self {
         // A cache key, not a signature, so a non-cryptographic hash is
         // enough — it only has to change when the bytes do.
         let mut hasher = DefaultHasher::new();
-        gzip.hash(&mut hasher);
+        json.hash(&mut hasher);
         let hash = format!("{:016x}", hasher.finish());
         Self {
             name: format!("{kind}.{hash}.json"),
-            etag: format!("\"{hash}\""),
             rows,
-            gzip,
+            json,
         }
     }
 }
@@ -104,6 +107,68 @@ pub struct Catalog {
     pub version: String,
     pub cards: Artifact,
     pub prints: Artifact,
+}
+
+/// What a client fetches first: the paths of the current pair.
+#[derive(Debug, Serialize)]
+struct Manifest<'a> {
+    version: &'a str,
+    cards: Entry<'a>,
+    prints: Entry<'a>,
+}
+
+#[derive(Debug, Serialize)]
+struct Entry<'a> {
+    path: String,
+    name: &'a str,
+    rows: usize,
+    bytes: usize,
+}
+
+impl<'a> Entry<'a> {
+    fn new(artifact: &'a Artifact) -> Self {
+        Self {
+            path: format!("/catalog/{FILES}/{}", artifact.name),
+            name: &artifact.name,
+            rows: artifact.rows,
+            bytes: artifact.json.len(),
+        }
+    }
+}
+
+impl Catalog {
+    /// The manifest naming the current pair, which is the only part of the
+    /// artifact a client has to re-fetch.
+    ///
+    /// # Errors
+    ///
+    /// Fails only if the manifest won't serialize.
+    pub fn manifest(&self) -> Result<Vec<u8>> {
+        Ok(serde_json::to_vec(&Manifest {
+            version: &self.version,
+            cards: Entry::new(&self.cards),
+            prints: Entry::new(&self.prints),
+        })?)
+    }
+
+    /// Writes both files and the manifest under `dir`, ready to deploy.
+    ///
+    /// Stale files are left in place: their names address their contents, so a
+    /// client mid-load can still fetch the pair it was told about.
+    ///
+    /// # Errors
+    ///
+    /// Fails if a directory can't be created or a file can't be written.
+    pub async fn write(&self, dir: impl AsRef<Path>) -> Result<()> {
+        let dir = dir.as_ref();
+        let files = dir.join(FILES);
+        fs::create_dir_all(&files).await?;
+        for artifact in [&self.cards, &self.prints] {
+            fs::write(files.join(&artifact.name), &artifact.json).await?;
+        }
+        fs::write(dir.join("manifest.json"), self.manifest()?).await?;
+        Ok(())
+    }
 }
 
 /// Builds both files from the cache.
@@ -287,10 +352,10 @@ fn finish_mask(json: &str) -> u8 {
         .fold(0, |mask, bit| mask | 1 << bit)
 }
 
-/// Writes the JSON straight into the gzip stream, so neither file is ever held
-/// uncompressed.
+/// Streams rows into the buffer as they arrive, so no intermediate `Vec` of
+/// a hundred thousand rows exists.
 struct Writer {
-    gzip: GzEncoder<Vec<u8>>,
+    out: Vec<u8>,
     rows: usize,
 }
 
@@ -302,22 +367,22 @@ impl Writer {
         // comes off here and `finish` puts it back.
         json.pop();
 
-        let mut gzip = GzEncoder::new(Vec::new(), Compression::best());
-        write!(gzip, "{json},\"{array}\":[")?;
-        Ok(Self { gzip, rows: 0 })
+        let mut out = Vec::new();
+        write!(out, "{json},\"{array}\":[")?;
+        Ok(Self { out, rows: 0 })
     }
 
     fn row<T: Serialize>(&mut self, row: &T) -> Result<()> {
         if self.rows > 0 {
-            self.gzip.write_all(b",")?;
+            self.out.write_all(b",")?;
         }
-        serde_json::to_writer(&mut self.gzip, row)?;
+        serde_json::to_writer(&mut self.out, row)?;
         self.rows += 1;
         Ok(())
     }
 
     fn finish(mut self) -> Result<Vec<u8>> {
-        self.gzip.write_all(b"]}")?;
-        Ok(self.gzip.finish()?)
+        self.out.write_all(b"]}")?;
+        Ok(self.out)
     }
 }

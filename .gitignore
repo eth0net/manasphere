@@ -19,6 +19,8 @@ bun-debug.log*
 *.sqlite3
 /data/
 scryfall-bulk/
+# Generated from the cache by the binary, then deployed
+/site/
 
 # Secrets / local config
 .env
