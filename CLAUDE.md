@@ -203,7 +203,8 @@ manasphere/
 6. A dev CLI writing records with an app password, to seed fixtures without the
    UI. Cheap, and useful forever.
 
-Jetstream and the query API arrive with Phase 3 (Explore), not before.
+Jetstream and the query API arrive with Phase 3 (Explore), not before. That
+API is XRPC, and nothing else is — see `docs/atproto.md`.
 
 v0 scope is deliberately narrow: **collection tracking only** — manual search +
 CSV import, no scanner, no live pricing yet. Scanner, valuation, EDHREC assist,

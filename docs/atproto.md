@@ -75,6 +75,33 @@ too, because a PDS without permissions support rejects the granular ones
 outright; it grants app-password-level access to the whole repo, so the client
 asks for it last and the entry comes out once granular scopes can be assumed.
 
+## The query API is XRPC, everything else is plain HTTP
+
+XRPC is nothing like gRPC despite the name: plain HTTP and JSON at
+`/xrpc/<nsid>`, GET for a lexicon `query` and POST for a `procedure`, flat URL
+query parameters, errors shaped `{"error": "...", "message": "..."}`. Adopting
+it is a path convention and a schema language over the HTTP we would write
+anyway, not a transport.
+
+- **The `rpc:` scope is defined in terms of XRPC methods**, so a call carrying
+  the user's identity is expressible as a permission. A hand-rolled path isn't,
+  and our client metadata already declares scopes.
+- Any atproto client can call it. Bobbin's opening complaint is that Tangled's
+  AppView had no API to build on.
+- Methods are lexicon files, so `tools/lexicon-check` covers them alongside the
+  record schemas.
+
+The catalog, its manifest and the health check stay plain HTTP — static files
+and operations, with nothing atproto about them. `/xrpc/` is a reserved
+top-level prefix, so both live on one server the way every PDS does. **No
+parallel REST mirror**: two surfaces for the same methods is two things to keep
+in sync, and an XRPC query is already a REST call.
+
+Errors are stringly-typed, query inputs are flat so nested input needs a
+procedure with a body, and streaming is a separate `subscription` type over
+websocket — which is how the firehose itself is defined. None of that bites
+anything planned.
+
 ## Domains: three, not one
 
 Three concerns that don't need the same domain, and conflating them is what
@@ -176,6 +203,8 @@ the pattern rather than a service to consume.
   scope syntax, and the transitional scopes it replaces
 - [Introducing Bobbin](https://blog.tangled.org/bobbin/) — a diskless AppView,
   and the Hydrant/Slingshot pair that makes backfill someone else's problem
+- [XRPC spec](https://atproto.com/specs/xrpc) — `/xrpc/<nsid>`, query versus
+  procedure, and the error body
 - PDS write limits are in the reference implementation rather than the specs:
   `packages/pds/src/rate-limits.ts` for the point budgets and
   `packages/pds/src/api/com/atproto/repo/applyWrites.ts` for the 200-write cap
