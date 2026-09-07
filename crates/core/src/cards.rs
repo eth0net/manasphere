@@ -264,42 +264,100 @@ pub async fn printing_id(
     Ok(row.map(|(id,)| id))
 }
 
-/// Enough of a printing to render a search result.
+/// Enough of a card to render a search result.
 #[derive(Debug, Clone, sqlx::FromRow)]
 pub struct CardBrief {
     pub id: String,
+    pub oracle_id: Option<String>,
     pub name: String,
     pub printed_name: Option<String>,
     pub set_code: String,
     pub collector_number: String,
     pub lang: String,
+    pub layout: String,
     pub image_status: String,
+    /// Printings of this card, so a grouped result needn't count them again.
+    pub printings: i64,
+}
+
+/// What a search should surface.
+///
+/// Digital printings are never returned: they can't be owned on paper.
+#[derive(Debug, Clone, Copy)]
+pub struct Search {
+    /// One row per card rather than per printing.
+    pub group_printings: bool,
+    pub tokens: bool,
+    pub art_series: bool,
+    pub limit: u32,
+}
+
+impl Default for Search {
+    fn default() -> Self {
+        Self {
+            group_printings: true,
+            tokens: true,
+            art_series: true,
+            limit: 20,
+        }
+    }
 }
 
 /// Name search, for a client that hasn't cached the catalogue yet.
 ///
-/// Unfiltered: digital-only printings, tokens and art series all match. What
-/// manual search should surface is still open — see `docs/scryfall.md`.
+/// Ranks cards above tokens above art series, and an exact name match above
+/// all three.
 ///
 /// # Errors
 ///
 /// Fails on a database error.
-pub async fn search(pool: &SqlitePool, query: &str, limit: u32) -> Result<Vec<CardBrief>> {
+pub async fn search(pool: &SqlitePool, query: &str, opts: Search) -> Result<Vec<CardBrief>> {
     let Some(fts) = fts_query(query) else {
         return Ok(Vec::new());
     };
 
     Ok(sqlx::query_as(
-        "SELECT cards.id, cards.name, cards.printed_name, cards.set_code,
-                cards.collector_number, cards.lang, cards.image_status
-         FROM cards_fts
-         JOIN cards ON cards.rowid = cards_fts.rowid
-         WHERE cards_fts MATCH ?
-         ORDER BY bm25(cards_fts)
-         LIMIT ?",
+        // bm25 cannot share a SELECT with a window function, hence two CTEs.
+        "WITH matched AS (
+           SELECT cards.rowid AS rid, bm25(cards_fts) AS relevance
+           FROM cards_fts
+           JOIN cards ON cards.rowid = cards_fts.rowid
+           WHERE cards_fts MATCH ?1 AND NOT cards.digital
+         ),
+         hits AS (
+           SELECT c.id, c.oracle_id, c.name, c.printed_name, c.set_code,
+                  c.collector_number, c.lang, c.layout, c.image_status,
+                  m.relevance,
+                  CASE WHEN c.layout IN ('token', 'double_faced_token', 'emblem') THEN 1
+                       WHEN c.layout = 'art_series' THEN 2
+                       ELSE 0 END AS tier,
+                  CASE WHEN lower(c.name) = lower(?2)
+                         OR lower(coalesce(c.printed_name, '')) = lower(?2)
+                       THEN 0 ELSE 1 END AS inexact,
+                  row_number() OVER (
+                    PARTITION BY coalesce(c.oracle_id, c.id)
+                    ORDER BY CASE WHEN c.set_type IN ('expansion', 'core') THEN 0 ELSE 1 END,
+                             c.booster DESC, c.released_at DESC
+                  ) AS printing,
+                  count(*) OVER (PARTITION BY coalesce(c.oracle_id, c.id)) AS printings
+           FROM matched m
+           JOIN cards c ON c.rowid = m.rid
+         )
+         SELECT id, oracle_id, name, printed_name, set_code, collector_number,
+                lang, layout, image_status, printings
+         FROM hits
+         WHERE (?3 = 0 OR printing = 1)
+           AND (tier <> 1 OR ?4)
+           AND (tier <> 2 OR ?5)
+         ORDER BY inexact, tier, relevance, printing
+         LIMIT ?6",
     )
     .bind(fts)
-    .bind(limit)
+    .bind(query.trim())
+    .bind(opts.group_printings)
+    .bind(opts.tokens)
+    .bind(opts.art_series)
+    .bind(opts.limit)
     .fetch_all(pool)
     .await?)
 }

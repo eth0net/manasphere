@@ -41,9 +41,9 @@ terms are in [`ip.md`](ip.md).
   are the exception: the game's rules close that set.
 - Measured on 2026-09-07: 117,630 printings, streamed and parsed in 2.4s. The
   parse is not the expensive part of a refresh.
-- The bulk files include digital-only printings, tokens and art series. Decide
-  what manual search surfaces before shipping the catalog, or users get Alchemy
-  rebalances in their results.
+- The bulk files include digital-only printings, tokens and art series. Which
+  of those search surfaces is settled below; the cache keeps all of them,
+  since a printing you can own has to be findable.
 - Refresh weekly — Scryfall says gameplay data needs fetching "once per week or
   right after set releases". The API also requires an accurate `User-Agent`
   naming the app (`Manasphere/0.1`), explicitly not a library default.
@@ -153,6 +153,34 @@ Neither ManaBox nor MTGGoldfish nor TCGplayer exports any date, so an import
 leaves `createdAt` at import time rather than when the card was really added.
 Moxfield's `Last Modified` seeds `updatedAt`.
 
+## What manual search surfaces
+
+Filtering was the wrong first instinct: almost everything is a real card
+someone can own. Only digital printings can't be, which makes them a category
+error rather than a preference, so they are excluded outright and no toggle
+reaches them. Un-sets, special editions and oversized cards stay searchable —
+Unfinity acorn cards are Legacy-legal, and someone with a 30th Anniversary Mox
+searching and finding nothing is a worse failure than a noisy result.
+
+The noise was mostly a grouping problem. Paper alone is 108,275 printings
+across 37,563 cards, so "Forest" returned 865 rows. One row per card, with a
+count, and a representative printing chosen by preferring booster printings
+from expansions and core sets:
+
+| | printings | rank |
+|---|---|---|
+| cards | 96,657 | first |
+| tokens, emblems | 3,245 | second |
+| art series | 2,650 | third |
+
+Art series carry their own `oracle_id`, so grouping alone would leave them
+competing with the card they depict — hence the tier. An exact name match
+still beats the tier, because someone typing a token's name means the token.
+
+Tokens and art series each have a toggle, and so does grouping, all on by
+default. Shipping the extras costs about 18% more client artifact (~1.6MB of
+~8.9MB of index), so the toggles work offline rather than needing a round trip.
+
 ## Open questions
 
 **Trade quantity.** Two of the trackers we import from carry one. A trade list
@@ -165,10 +193,11 @@ repeat the same way. Splitting an oracle table from the print table is both the
 right model and roughly 4x smaller, but it wants doing alongside the client
 catalogue subset rather than guessed at before it.
 
-**What manual search surfaces.** The cache holds digital-only printings, tokens
-and art series, and name search currently returns all of them — a search for
-"lightning bolt" leads with art cards. Needs a filter, and a decision about
-what belongs in the client artifact.
+**Repeated tokens.** Tokens from different sets carry different oracle ids,
+so grouping doesn't collapse them: searching "goblin" still returns five rows
+of Goblin token. Grouping them wants a key that isn't `oracle_id` — name plus
+type plus power and toughness, probably — and that's guesswork until someone
+complains.
 
 ## References
 

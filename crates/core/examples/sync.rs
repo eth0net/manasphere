@@ -10,7 +10,8 @@ use std::env;
 use std::error::Error;
 use std::time::Instant;
 
-use manasphere_core::{cards, open};
+use manasphere_core::cards::{self, Search};
+use manasphere_core::open;
 use manasphere_scryfall::{BulkKind, CardStream, Client};
 use tokio::fs::File;
 
@@ -48,7 +49,16 @@ async fn main() -> Result<(), Box<dyn Error>> {
     );
 
     println!("cache holds {} printings", cards::count(&pool).await?);
-    for hit in cards::search(&pool, "lightning bolt", 3).await? {
+    for hit in cards::search(
+        &pool,
+        "lightning bolt",
+        Search {
+            limit: 3,
+            ..Search::default()
+        },
+    )
+    .await?
+    {
         println!(
             "  {} {} #{} ({})",
             hit.name, hit.set_code, hit.collector_number, hit.lang

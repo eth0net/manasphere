@@ -6,7 +6,7 @@
 
 use std::io::Cursor;
 
-use manasphere_core::cards::{self, SyncReport};
+use manasphere_core::cards::{self, Search, SyncReport};
 use manasphere_core::{Error, open_memory};
 use manasphere_scryfall::{BulkData, CardStream};
 use sqlx::SqlitePool;
@@ -225,7 +225,16 @@ async fn a_printing_is_found_by_set_number_and_language() {
 async fn search_finds_a_card_by_name_prefix() {
     let (pool, _) = seeded().await;
 
-    let hits = cards::search(&pool, "admiral beck", 10).await.unwrap();
+    let hits = cards::search(
+        &pool,
+        "admiral beck",
+        Search {
+            limit: 10,
+            ..Search::default()
+        },
+    )
+    .await
+    .unwrap();
     assert_eq!(hits.len(), 1);
     assert!(hits[0].name.starts_with("Admiral Beckett"));
 }
@@ -234,7 +243,16 @@ async fn search_finds_a_card_by_name_prefix() {
 async fn search_finds_a_non_english_printing_by_its_printed_name() {
     let (pool, _) = seeded().await;
 
-    let hits = cards::search(&pool, "暴虐", 10).await.unwrap();
+    let hits = cards::search(
+        &pool,
+        "暴虐",
+        Search {
+            limit: 10,
+            ..Search::default()
+        },
+    )
+    .await
+    .unwrap();
     assert_eq!(hits.len(), 1);
     assert_eq!(hits[0].lang, "ja");
     assert!(hits[0].printed_name.is_some());
@@ -246,9 +264,16 @@ async fn search_treats_fts_syntax_as_text() {
     let (pool, _) = seeded().await;
 
     for query in ["\"", "admiral OR NOT", "a*(b)", "^admiral", ""] {
-        cards::search(&pool, query, 10)
-            .await
-            .unwrap_or_else(|error| panic!("{query:?} should not error: {error}"));
+        cards::search(
+            &pool,
+            query,
+            Search {
+                limit: 10,
+                ..Search::default()
+            },
+        )
+        .await
+        .unwrap_or_else(|error| panic!("{query:?} should not error: {error}"));
     }
 }
 
@@ -290,7 +315,20 @@ async fn replacing_does_not_accumulate() {
 
     assert_eq!(report.written, 4);
     assert_eq!(cards::count(&pool).await.unwrap(), 4);
-    assert_eq!(cards::search(&pool, "admiral", 10).await.unwrap().len(), 1);
+    assert_eq!(
+        cards::search(
+            &pool,
+            "admiral",
+            Search {
+                limit: 10,
+                ..Search::default()
+            }
+        )
+        .await
+        .unwrap()
+        .len(),
+        1
+    );
 }
 
 #[tokio::test]
@@ -310,4 +348,184 @@ async fn a_bad_line_is_skipped_and_counted() {
         }
     );
     assert_eq!(cards::count(&pool).await.unwrap(), 1);
+}
+
+/// Builds a stream from the fixture's first card plus mutated copies of it, so
+/// ranking and grouping can be exercised without a second fixture.
+fn variants(mutations: &[&[(&str, serde_json::Value)]]) -> String {
+    let base: serde_json::Value =
+        serde_json::from_str(CARDS.lines().next().unwrap()).expect("fixture parses");
+    let mut out = base.to_string();
+    for (n, muts) in mutations.iter().enumerate() {
+        let mut card = base.clone();
+        card["id"] = serde_json::json!(format!("00000000-0000-4000-8000-{n:012}"));
+        card["collector_number"] = serde_json::json!(format!("v{n}"));
+        for (key, value) in *muts {
+            card[*key] = value.clone();
+        }
+        out.push('\n');
+        out.push_str(&card.to_string());
+    }
+    out.push('\n');
+    out
+}
+
+async fn seeded_with(ndjson: String) -> SqlitePool {
+    let pool = open_memory().await.unwrap();
+    cards::replace(&pool, &bulk("x"), &mut stream(ndjson))
+        .await
+        .expect("variants should sync");
+    pool
+}
+
+#[tokio::test]
+async fn grouping_collapses_printings_of_one_card() {
+    // Same oracle_id, so the two are printings of one card.
+    let pool = seeded_with(variants(&[&[]])).await;
+
+    let grouped = cards::search(&pool, "admiral", Search::default())
+        .await
+        .unwrap();
+    assert_eq!(grouped.len(), 1, "two printings, one card");
+    assert_eq!(grouped[0].printings, 2, "and it says how many");
+
+    let all = cards::search(
+        &pool,
+        "admiral",
+        Search {
+            group_printings: false,
+            ..Search::default()
+        },
+    )
+    .await
+    .unwrap();
+    assert_eq!(all.len(), 2);
+}
+
+#[tokio::test]
+async fn cards_rank_above_tokens_above_art_series() {
+    let pool = seeded_with(variants(&[
+        &[
+            ("layout", serde_json::json!("token")),
+            (
+                "oracle_id",
+                serde_json::json!("11111111-1111-4111-8111-111111111111"),
+            ),
+        ],
+        &[
+            ("layout", serde_json::json!("art_series")),
+            (
+                "oracle_id",
+                serde_json::json!("22222222-2222-4222-8222-222222222222"),
+            ),
+        ],
+    ]))
+    .await;
+
+    let hits = cards::search(&pool, "admiral", Search::default())
+        .await
+        .unwrap();
+    let layouts: Vec<&str> = hits.iter().map(|h| h.layout.as_str()).collect();
+    assert_eq!(layouts, ["normal", "token", "art_series"]);
+}
+
+#[tokio::test]
+async fn tokens_and_art_series_can_each_be_hidden() {
+    let pool = seeded_with(variants(&[
+        &[
+            ("layout", serde_json::json!("token")),
+            (
+                "oracle_id",
+                serde_json::json!("11111111-1111-4111-8111-111111111111"),
+            ),
+        ],
+        &[
+            ("layout", serde_json::json!("art_series")),
+            (
+                "oracle_id",
+                serde_json::json!("22222222-2222-4222-8222-222222222222"),
+            ),
+        ],
+    ]))
+    .await;
+
+    let without = |tokens, art_series| Search {
+        tokens,
+        art_series,
+        ..Search::default()
+    };
+    let layouts =
+        |hits: Vec<cards::CardBrief>| hits.into_iter().map(|h| h.layout).collect::<Vec<_>>();
+
+    assert_eq!(
+        layouts(
+            cards::search(&pool, "admiral", without(false, true))
+                .await
+                .unwrap()
+        ),
+        ["normal", "art_series"]
+    );
+    assert_eq!(
+        layouts(
+            cards::search(&pool, "admiral", without(true, false))
+                .await
+                .unwrap()
+        ),
+        ["normal", "token"]
+    );
+    assert_eq!(
+        layouts(
+            cards::search(&pool, "admiral", without(false, false))
+                .await
+                .unwrap()
+        ),
+        ["normal"]
+    );
+}
+
+/// A paper collection can't hold an Arena-only printing, so no toggle reaches
+/// them.
+#[tokio::test]
+async fn digital_printings_never_surface() {
+    let pool = seeded_with(variants(&[&[
+        ("digital", serde_json::json!(true)),
+        (
+            "oracle_id",
+            serde_json::json!("33333333-3333-4333-8333-333333333333"),
+        ),
+    ]]))
+    .await;
+
+    for opts in [
+        Search::default(),
+        Search {
+            group_printings: false,
+            ..Search::default()
+        },
+    ] {
+        let hits = cards::search(&pool, "admiral", opts).await.unwrap();
+        assert_eq!(hits.len(), 1, "only the paper printing");
+        assert_eq!(hits[0].layout, "normal");
+    }
+}
+
+/// An exact name match wins the tier, because someone typing a token's name
+/// means the token.
+#[tokio::test]
+async fn an_exact_name_match_outranks_its_tier() {
+    let pool = seeded_with(variants(&[&[
+        ("layout", serde_json::json!("token")),
+        ("name", serde_json::json!("Admiral")),
+        (
+            "oracle_id",
+            serde_json::json!("44444444-4444-4444-8444-444444444444"),
+        ),
+    ]]))
+    .await;
+
+    let hits = cards::search(&pool, "Admiral", Search::default())
+        .await
+        .unwrap();
+    assert_eq!(hits[0].name, "Admiral", "the token is named exactly that");
+    assert_eq!(hits[0].layout, "token");
 }
