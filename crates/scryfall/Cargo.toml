@@ -1,6 +1,6 @@
 [package]
 name = "manasphere-scryfall"
-version = "0.1.0"
+version.workspace = true
 description = "Fetches and parses Scryfall's bulk card data."
 edition.workspace = true
 rust-version.workspace = true

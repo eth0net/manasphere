@@ -33,6 +33,10 @@ private = { ignore = true }
 # time. If two versions must coexist, add a skip saying what would remove it.
 multiple-versions = "deny"
 wildcards = "deny"
+# Our own path dependencies carry no version, because nothing here is published
+# and a version on a path dep is just another number to keep in sync. Registry
+# wildcards are still refused.
+allow-wildcard-paths = true
 skip = [
   # macOS only. hyper-util pulls system-configuration 0.7, rustls-platform-verifier
   # pulls security-framework 3.7, and they disagree. Gone when either bumps.
