@@ -171,9 +171,13 @@ two shapes, and that is a fact about the objects.
 **The split repairs reversible printings rather than merely deduplicating
 them.** They carry no top-level gameplay data at all, so there was nowhere for
 it to come from; the card's row is filled from the best-ranked printing and any
-field still missing from whichever printing has it. 80 of the 81 now resolve to
-a card with a type line and a mana cost. The remaining one is Mechtitan, a
-token whose only other printing is also face-only.
+field still missing from whichever printing has it. All 81 now resolve to a
+card with a type line.
+
+Best-ranked is not first-seen: 8 cards have a reversible printing as their
+best, so a printing arriving later can displace what earlier ones established.
+The two merge either way round rather than the later one starting over, or the
+file's order would decide what a card's type line is.
 
 Measured: the database goes from 94MB to 81MB, and the client's gameplay
 payload from 20.3MB to 7.5MB — the artifact is the real prize, being the

@@ -5,6 +5,7 @@
 //! `cards` holds one physical printing each. Why, in `docs/scryfall.md`.
 
 use std::cmp::Reverse;
+use std::collections::hash_map::Entry;
 use std::collections::{BTreeSet, HashMap};
 
 use manasphere_scryfall::{BulkData, Card, CardStream, Color, Error as ScryfallError};
@@ -192,9 +193,11 @@ impl Oracle {
             game_changer: card.game_changer,
             kind: kind(card),
             paper: !card.digital,
-            printings: 0,
+            // Paper only: the count is what a collector could own, and search
+            // never returns a card that exists nowhere but Arena.
+            printings: i64::from(!card.digital),
             default_print: card.id.to_string(),
-            printed_names: BTreeSet::new(),
+            printed_names: card.printed_name.clone().into_iter().collect(),
         }
     }
 
@@ -204,38 +207,43 @@ impl Oracle {
         let Some(id) = oracle_id(card) else {
             return;
         };
-        let entry = oracles.entry(id).or_insert_with(|| Self::from(card));
+        let incoming = Self::from(card);
 
-        if rank(card) < entry.rank {
-            let printings = entry.printings;
-            let names = std::mem::take(&mut entry.printed_names);
-            *entry = Self::from(card);
-            entry.printings = printings;
-            entry.printed_names = names;
+        match oracles.entry(id) {
+            Entry::Vacant(slot) => {
+                slot.insert(incoming);
+            }
+            // Whichever ranks better keeps its own fields and folds the other
+            // in, so the file's order can't decide what a card's type line is.
+            Entry::Occupied(slot) => {
+                let entry = slot.into_mut();
+                if incoming.rank < entry.rank {
+                    let displaced = std::mem::replace(entry, incoming);
+                    entry.merge(displaced);
+                } else {
+                    entry.merge(incoming);
+                }
+            }
         }
+    }
 
-        // Paper only: the count is what a collector could own, and search
-        // never returns a card that exists nowhere but Arena.
-        entry.printings += i64::from(!card.digital);
-        entry.paper |= !card.digital;
-        entry.kind = entry.kind.min(kind(card));
-        if let Some(printed) = &card.printed_name {
-            entry.printed_names.insert(printed.clone());
-        }
+    /// Folds in a printing this one outranks: counts add, and anything missing
+    /// here comes from there.
+    fn merge(&mut self, other: Self) {
+        self.printings += other.printings;
+        self.printed_names.extend(other.printed_names);
+        self.kind = self.kind.min(other.kind);
+        self.paper |= other.paper;
 
-        // Anything the best printing left null, take from one that has it.
-        fill(&mut entry.type_line, card.type_line.as_ref());
-        fill(&mut entry.mana_cost, card.mana_cost.as_ref());
-        fill(&mut entry.cmc, card.cmc.map(f64::from).as_ref());
-        fill(&mut entry.text, card.oracle_text.as_ref());
-        fill(
-            &mut entry.colors,
-            card.colors.as_deref().map(canonical_colors).as_ref(),
-        );
-        fill(&mut entry.power, card.power.as_ref());
-        fill(&mut entry.toughness, card.toughness.as_ref());
-        fill(&mut entry.loyalty, card.loyalty.as_ref());
-        fill(&mut entry.defense, card.defense.as_ref());
+        fill(&mut self.type_line, other.type_line);
+        fill(&mut self.mana_cost, other.mana_cost);
+        fill(&mut self.cmc, other.cmc);
+        fill(&mut self.text, other.text);
+        fill(&mut self.colors, other.colors);
+        fill(&mut self.power, other.power);
+        fill(&mut self.toughness, other.toughness);
+        fill(&mut self.loyalty, other.loyalty);
+        fill(&mut self.defense, other.defense);
     }
 
     async fn insert(&self, tx: &mut Transaction<'_, Sqlite>, id: &str) -> Result<()> {
@@ -287,9 +295,9 @@ impl Oracle {
     }
 }
 
-fn fill<T: Clone>(slot: &mut Option<T>, from: Option<&T>) {
+fn fill<T>(slot: &mut Option<T>, from: Option<T>) {
     if slot.is_none() {
-        *slot = from.cloned();
+        *slot = from;
     }
 }
 

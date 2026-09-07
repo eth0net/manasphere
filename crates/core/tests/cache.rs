@@ -47,6 +47,7 @@ async fn seeded() -> (SqlitePool, SyncReport) {
 #[derive(Debug, sqlx::FromRow)]
 struct Row {
     oracle_id: String,
+    type_line: Option<String>,
     mana_cost: Option<String>,
     card_faces: Option<String>,
     colors: Option<String>,
@@ -56,8 +57,8 @@ struct Row {
 
 async fn row(pool: &SqlitePool, card: &str) -> Row {
     sqlx::query_as(
-        "SELECT o.id AS oracle_id, o.mana_cost, o.colors, o.color_identity,
-                c.card_faces, c.layout
+        "SELECT o.id AS oracle_id, o.type_line, o.mana_cost, o.colors,
+                o.color_identity, c.card_faces, c.layout
          FROM oracle o
          JOIN cards c ON c.oracle_id = o.id
          WHERE o.name LIKE ?",
@@ -578,4 +579,35 @@ async fn a_reversible_printing_inherits_gameplay_data_from_a_normal_one() {
         .unwrap();
     assert_eq!(hits.len(), 1);
     assert_eq!(hits[0].printings, 2);
+}
+
+/// The same repair with the printings the other way round. The faceless one
+/// ranks better, so it displaces what the first printing established and the
+/// merge has to fold that back in.
+#[tokio::test]
+async fn gameplay_data_survives_a_better_ranked_faceless_printing() {
+    let faceless: serde_json::Value =
+        serde_json::from_str(CARDS.lines().nth(1).unwrap()).expect("fixture parses");
+
+    let mut normal = faceless.clone();
+    normal["id"] = serde_json::json!("00000000-0000-4000-8000-000000000000");
+    normal["collector_number"] = serde_json::json!("v0");
+    normal["layout"] = serde_json::json!("normal");
+    normal["type_line"] = serde_json::json!("Legendary Creature — Elf Druid");
+    normal["mana_cost"] = serde_json::json!("{R/G}{G}{G/W}");
+
+    // A booster expansion outranks the box set the fixture printing came from.
+    let mut better = faceless;
+    better["set_type"] = serde_json::json!("expansion");
+    better["booster"] = serde_json::json!(true);
+
+    let pool = seeded_with(format!("{normal}\n{better}\n")).await;
+
+    let jinnie = row(&pool, "Jinnie Fay").await;
+    assert_eq!(jinnie.mana_cost.as_deref(), Some("{R/G}{G}{G/W}"));
+    assert_eq!(
+        jinnie.type_line.as_deref(),
+        Some("Legendary Creature — Elf Druid")
+    );
+    assert_eq!(cards::count(&pool).await.unwrap(), 2);
 }

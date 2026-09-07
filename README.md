@@ -10,8 +10,9 @@ game toolkit later.
 ## Status
 
 Pre-v0. The card cache works: `crates/scryfall` streams Scryfall's bulk data
-and `crates/core` shreds 117,630 printings into a 94MB SQLite file with
-full-text name search. No server, no client and no lexicons yet.
+and `crates/core` shreds 117,630 printings of 38,633 cards into an 81MB SQLite
+file with full-text name search. The lexicons are enumerated and validated
+against atproto's own implementation in CI. No server and no client yet.
 
 ## Stack
 
