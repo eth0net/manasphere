@@ -18,7 +18,7 @@ CREATE TABLE oracle (
     mana_cost      TEXT,
     cmc            REAL,
     oracle_text    TEXT,
-    -- Canonical WUBRG order, so a colour identity compares as a string.
+    -- Canonical WUBRG order, so a color identity compares as a string.
     colors         TEXT,
     color_identity TEXT    NOT NULL,
     power          TEXT,

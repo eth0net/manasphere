@@ -81,14 +81,14 @@ pub async fn replace(
                 Oracle::absorb(&mut oracles, &card);
                 report.written += 1;
             }
-            // One unparseable line shouldn't cost the whole refresh.
+            // One unparsable line shouldn't cost the whole refresh.
             Err(ScryfallError::Parse { .. }) => report.skipped += 1,
             Err(other) => return Err(other.into()),
         }
     }
 
     if report.written == 0 {
-        // Dropping the transaction rolls back the DELETEs.
+        // Dropping the transaction rolls back the deletes.
         return Err(Error::EmptySync);
     }
 

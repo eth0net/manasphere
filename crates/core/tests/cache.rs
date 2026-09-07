@@ -134,7 +134,7 @@ async fn every_printing_resolves_to_an_oracle_id() {
 }
 
 #[tokio::test]
-async fn colours_are_canonicalised_to_wubrg_order() {
+async fn colors_are_canonicalized_to_wubrg_order() {
     let (pool, _) = seeded().await;
 
     // Scryfall sends this one as ["B","R","U"].
