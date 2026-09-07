@@ -161,10 +161,10 @@ async fn finishes_survive_as_a_bitmask() {
     }
 }
 
-/// The layout the CDN cache rules depend on: content-addressed files in a
-/// directory of their own, the manifest above it, so one rule can't match both.
+/// The manifest names its files relative to itself, so the catalog can be
+/// served from any origin without the format changing.
 #[tokio::test]
-async fn writing_keeps_the_manifest_out_of_the_immutable_directory() {
+async fn the_manifest_names_files_that_sit_beside_it() {
     let pool = seeded_with(CARDS).await;
     let built = catalog::build(&pool).await.unwrap();
 
@@ -177,16 +177,13 @@ async fn writing_keeps_the_manifest_out_of_the_immutable_directory() {
 
     for kind in ["cards", "prints"] {
         let entry = &manifest[kind];
-        let (path, name) = (
-            entry["path"].as_str().unwrap(),
-            entry["name"].as_str().unwrap(),
-        );
-        assert!(path.starts_with("/catalog/files/"), "{kind} at {path}");
-        assert!(path.ends_with(name), "{path} should name {name}");
         assert!(
-            dir.join(catalog::FILES).join(name).is_file(),
-            "{name} was not written"
+            entry.get("path").is_none(),
+            "{kind} carries an absolute path, which pins it to one origin"
         );
+
+        let name = entry["name"].as_str().unwrap();
+        assert!(dir.join(name).is_file(), "{name} was not written");
     }
 
     std::fs::remove_dir_all(dir).unwrap();

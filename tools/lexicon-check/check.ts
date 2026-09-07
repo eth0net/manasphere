@@ -1,5 +1,6 @@
 // Validates ../../lexicons against atproto's own lexicon implementation, then
-// against records that must be accepted and records that must be refused.
+// against records that must be accepted and records that must be refused, then
+// the OAuth client metadata document against both.
 //
 //     bun install && bun run check
 //
@@ -274,6 +275,45 @@ for (const [label, record] of refused) {
   } catch (error) {
     ok(`${label} — ${(error as Error).message}`);
   }
+}
+
+// The client metadata document. It is committed rather than generated, because
+// the client imports these same bytes to decide what to request, so this is
+// where the two are held to each other. See docs/atproto.md.
+const OAUTH = join(
+  dirname(dirname(import.meta.dir)),
+  "web/public/oauth/client-metadata.json",
+);
+const client = JSON.parse(readFileSync(OAUTH, "utf8"));
+const scopes: string[] = client.scope.split(" ");
+
+console.log("\nclient metadata:");
+const expect = (label: string, condition: boolean, detail = "") =>
+  condition ? ok(label) : fail(`${label}${detail && ` — ${detail}`}`);
+
+expect(
+  "client_uri is the parent of client_id",
+  client.client_id === `${client.client_uri}/oauth/client-metadata.json`,
+  `${client.client_id} under ${client.client_uri}`,
+);
+expect(
+  "every redirect_uri is https",
+  client.redirect_uris.every((uri: string) => uri.startsWith("https://")),
+);
+expect("a browser client authenticates with none", client.token_endpoint_auth_method === "none");
+expect("tokens are DPoP-bound", client.dpop_bound_access_tokens === true);
+expect("atproto comes first in scope", scopes[0] === "atproto");
+expect(
+  "no scope globs a prefix, which repo: does not support",
+  !scopes.some((scope) => scope.includes("*")),
+);
+
+// Adding a record type without its scope costs every existing user a fresh
+// consent, since repo: takes an exact NSID and there is no prefix form.
+for (const file of files) {
+  const doc = JSON.parse(readFileSync(join(DIR, file), "utf8"));
+  if (doc.defs?.main?.type !== "record") continue;
+  expect(`${doc.id} has a repo: scope`, scopes.includes(`repo:${doc.id}`));
 }
 
 console.log(failed ? "\nFAILED" : "\nall green");

@@ -1,8 +1,9 @@
 //! The catalog artifact: the slice of the cache a browser needs.
 //!
 //! Two files of positional rows, written uncompressed and left to a CDN to
-//! compress — brotli beats what we would ship by a fifth. Which fields, and
-//! what they cost, is in `docs/scryfall.md`.
+//! compress — brotli beats what we would ship by a fifth. They are uploaded to
+//! object storage on their own origin, so nothing here knows a URL. Which
+//! fields, and what they cost, is in `docs/scryfall.md`.
 
 use std::collections::HashMap;
 use std::hash::{DefaultHasher, Hash as _, Hasher as _};
@@ -15,10 +16,6 @@ use sqlx::SqlitePool;
 use tokio::fs;
 
 use crate::{Error, Result};
-
-/// Where the content-addressed files sit, relative to the catalog directory.
-/// Kept apart from the manifest so one CDN cache rule can't match both.
-pub const FILES: &str = "files";
 
 /// Bit `i` of a printing's `finishes` is this list's `i`th entry.
 const FINISHES: [&str; 3] = ["nonfoil", "foil", "etched"];
@@ -119,7 +116,8 @@ struct Manifest<'a> {
 
 #[derive(Debug, Serialize)]
 struct Entry<'a> {
-    path: String,
+    /// Resolved against the manifest's own URL, so the catalog can move to
+    /// another origin without the format changing.
     name: &'a str,
     rows: usize,
     bytes: usize,
@@ -128,7 +126,6 @@ struct Entry<'a> {
 impl<'a> Entry<'a> {
     fn new(artifact: &'a Artifact) -> Self {
         Self {
-            path: format!("/catalog/{FILES}/{}", artifact.name),
             name: &artifact.name,
             rows: artifact.rows,
             bytes: artifact.json.len(),
@@ -151,20 +148,20 @@ impl Catalog {
         })?)
     }
 
-    /// Writes both files and the manifest under `dir`, ready to deploy.
+    /// Writes both files and the manifest under `dir`, ready to upload.
     ///
-    /// Stale files are left in place: their names address their contents, so a
-    /// client mid-load can still fetch the pair it was told about.
+    /// Stale files are left in place. Uploading to object storage adds the new
+    /// pair without removing the old one, so a client mid-load can still fetch
+    /// what it was told about.
     ///
     /// # Errors
     ///
-    /// Fails if a directory can't be created or a file can't be written.
+    /// Fails if the directory can't be created or a file can't be written.
     pub async fn write(&self, dir: impl AsRef<Path>) -> Result<()> {
         let dir = dir.as_ref();
-        let files = dir.join(FILES);
-        fs::create_dir_all(&files).await?;
+        fs::create_dir_all(dir).await?;
         for artifact in [&self.cards, &self.prints] {
-            fs::write(files.join(&artifact.name), &artifact.json).await?;
+            fs::write(dir.join(&artifact.name), &artifact.json).await?;
         }
         fs::write(dir.join("manifest.json"), self.manifest()?).await?;
         Ok(())
