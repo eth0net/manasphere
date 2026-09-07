@@ -1,0 +1,25 @@
+[workspace]
+resolver = "3"
+members = ["crates/*"]
+
+[workspace.package]
+edition = "2024"
+# Pinned rather than tracking stable so a contributor on an older toolchain
+# gets a clear error instead of a confusing one. Raise it deliberately.
+rust-version = "1.98"
+license = "AGPL-3.0-only"
+authors = ["eth0net <eth0net@pm.me>"]
+repository = "https://github.com/eth0net/manasphere"
+
+[workspace.lints.rust]
+missing_debug_implementations = "warn"
+unreachable_pub = "warn"
+
+[workspace.lints.clippy]
+all = { level = "warn", priority = -1 }
+pedantic = { level = "warn", priority = -1 }
+
+# A name on crates.io cannot be given back and a version cannot be withdrawn,
+# so the default stays safe and each crate opts in.
+[workspace.metadata]
+publish = false
