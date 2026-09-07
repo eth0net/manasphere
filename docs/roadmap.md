@@ -415,21 +415,8 @@ first, then any-printing, extras as the complement.
 **Container references.** How an entry points at its container, and what
 happens to entries when a container is deleted, is unspecified.
 
-**PDS write limits.** A 10k-card collection is thousands of records.
-`applyWrites` is capped per call and accounts are rate-limited, so a large
-import may take hours and needs resumability. Verify against the target PDS —
-it may be the argument for coarser records.
-
-**Serialised cards.** A serialised card is individually numbered, so it is
-finer-grained than a printing and two copies are not interchangeable. The model
-keys on printing plus quantity and cannot tell them apart. An optional serial
-field on the card record covers it and is additive, so it can wait — but the
-shape wants deciding when there is an import path that carries one, rather than
-guessed at now.
-
-**Scryfall id migrations.** Scryfall merges and retires printing ids, and
-records in other people's PDSes reference them permanently. Scryfall publishes
-migrations; consuming them is small work but unplanned.
+**Serialised cards, and how to record which copy.** Researched below; the
+model is decided but not built.
 
 **Backfill.** Handled for a user's own data by reading their own PDS. Returns
 as a real problem at Phase 3, where the index needs other people's records that
@@ -448,6 +435,67 @@ catalogue subset rather than guessed at before it.
 and art series, and name search currently returns all of them — a search for
 "lightning bolt" leads with art cards. Needs a filter, and a decision about
 what belongs in the client artifact.
+
+## Researched 2026-09-07
+
+### Import speed is the Phase 0 constraint
+
+Measured against the reference PDS, not assumed. `applyWrites` caps at **200
+writes per call** with a 1MB body, and writes are rate-limited per account in
+two windows: `repo-write-hour` 5,000 points and `repo-write-day` 35,000, where
+a create costs 3 points. So **1,666 creates an hour, 11,666 a day**.
+
+A 10,000-*stack* import is therefore about six hours and 86% of the day's
+budget. A 10,000-*card* collection is far fewer stacks, since bulk commons
+duplicate heavily, so this doesn't force coarser records — but it does mean
+import is a resumable background job that has to be honest about taking hours.
+
+`com.atproto.repo.importRepo` is not an escape hatch: it needs `ACCESS_FULL`
+with `repo:manage`, and a signed CAR file a browser client can't produce
+because the PDS holds the signing key.
+
+These are the shipped defaults. A self-hoster can raise them; other people's
+PDSes can't be assumed to have.
+
+### Serialised cards are a printing, not a copy
+
+Scryfall models the printing and stops there. A serialised card carries
+`serialized` in `promo_types` — 299 printings across 20 sets, collector numbers
+ending `z`, and `is:serialized` filters them. The Lord of the Rings 1-of-1 One
+Ring is collector number `0`.
+
+**Neither the print-run size nor the individual number exists anywhere in
+Scryfall.** So "042/500" is data we hold with nothing to validate it against.
+An optional `serial` string on `app.manasphere.card` covers it, with quantity 1
+whenever it's set, since numbered copies aren't interchangeable. Additive, so
+it can wait for an import path that carries one.
+
+### Scryfall id migrations are smaller than they look
+
+2,581 migrations exist: 2,354 deletes and 227 merges. A merge gives
+`new_scryfall_id`, so it's a remap; a delete gives no replacement.
+
+Most are corrections of printings that never existed — 1,043 "Localized version
+doesn't actually exist", 532 phantom Portuguese CMM cards, 404 "Mistakenly
+imported" — which nobody can have owned. The rate has collapsed too: 1,270 in
+2023 against 65 so far in 2026.
+
+Consume them weekly alongside the bulk sync. Remap merges silently; surface
+deletes, because 471 carry no metadata and an orphaned reference to one of
+those can't be interpreted at all. The rest preserve name, set, collector
+number and oracle id, so an orphan usually stays readable.
+
+### Localhost OAuth works, but only by default
+
+The spec makes the loopback allowance optional for authorization servers, and
+the reference provider defaults it on (`atprotoLoopbackClientMetadata`), so it
+works unless a PDS explicitly disables it.
+
+`client_id` must be exactly `http://localhost` — no port, no path, and
+`127.0.0.1` is rejected. Redirect URIs go in query parameters on the
+`client_id`, defaulting to `http://127.0.0.1/` and `http://[::1]/`, and ports
+aren't matched, so a shifting dev-server port is fine. Refresh tokens are
+granted.
 
 ## Phase 0 — Collection tracking (current focus)
 
@@ -748,3 +796,11 @@ and the optionality was speculation.
   access control, not confidentiality; alpha as of Aug 2026
 - [atproto going to production](https://atproto.com/guides/going-to-production)
   — PDS and app want separate domains
+- [Scryfall migrations](https://api.scryfall.com/migrations) — retired and
+  merged printing ids
+- [atproto OAuth spec](https://atproto.com/specs/oauth) — loopback client
+  rules; the allowance is optional for the authorization server
+- PDS write limits are in the reference implementation rather than the specs:
+  `packages/pds/src/rate-limits.ts` for the point budgets and
+  `packages/pds/src/api/com/atproto/repo/applyWrites.ts` for the 200-write cap
+  and per-operation costs, in `bluesky-social/atproto`

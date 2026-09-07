@@ -74,6 +74,11 @@ backend:
   Note there is **no prices bulk file** — prices exist only as fields inside
   card objects, so a faster price cadence has no cheap mechanism. Cadence is an
   open question for Phase 2.
+- **Import speed is the Phase 0 constraint.** A PDS allows 1,666 record creates
+  an hour and 11,666 a day by default (`applyWrites` caps at 200 per call; a
+  create costs 3 of an hourly 5,000-point budget). A large import is a
+  resumable background job measured in hours, and `importRepo` can't shortcut
+  it. See `docs/roadmap.md`.
 - Collection entries reference `scryfall_id` (exact print), not `oracle_id` —
   we track specific physical cards (set/collector number/finish), same as
   ManaBox.
