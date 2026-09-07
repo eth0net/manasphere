@@ -42,21 +42,25 @@ async fn seeded() -> (SqlitePool, SyncReport) {
     (pool, report)
 }
 
-/// The columns these tests assert on. sqlx 0.9 only takes `&'static str` SQL,
-/// which rules out building the column name into the query.
+/// The columns these tests assert on, across both tables. sqlx 0.9 only takes
+/// `&'static str` SQL, which rules out building the column name into the query.
 #[derive(Debug, sqlx::FromRow)]
 struct Row {
-    oracle_id: Option<String>,
+    oracle_id: String,
     mana_cost: Option<String>,
     card_faces: Option<String>,
     colors: Option<String>,
     color_identity: String,
+    layout: String,
 }
 
 async fn row(pool: &SqlitePool, card: &str) -> Row {
     sqlx::query_as(
-        "SELECT oracle_id, mana_cost, card_faces, colors, color_identity
-         FROM cards WHERE name LIKE ?",
+        "SELECT o.id AS oracle_id, o.mana_cost, o.colors, o.color_identity,
+                c.card_faces, c.layout
+         FROM oracle o
+         JOIN cards c ON c.oracle_id = o.id
+         WHERE o.name LIKE ?",
     )
     .bind(format!("{card}%"))
     .fetch_one(pool)
@@ -82,6 +86,7 @@ async fn replace_writes_every_card_and_records_the_file() {
         report,
         SyncReport {
             written: 4,
+            cards: 4,
             skipped: 0
         }
     );
@@ -103,13 +108,15 @@ async fn reversible_cards_get_their_oracle_id_from_the_faces() {
     let (pool, _) = seeded().await;
 
     let jinnie = row(&pool, "Jinnie Fay").await;
-    assert_eq!(
-        jinnie.oracle_id.as_deref(),
-        Some("61fbaaf2-4286-4e9a-b9cb-aa31262b596a"),
+    assert_eq!(jinnie.oracle_id, "61fbaaf2-4286-4e9a-b9cb-aa31262b596a");
+    assert_eq!(jinnie.layout, "reversible_card");
+    assert!(
+        jinnie.card_faces.is_some(),
+        "the faces stay on the printing"
     );
-    // The rest of the gameplay data still only exists on the faces.
+    // Nothing else in the fixture shares this oracle id, so there is nothing
+    // to fill the nulls from — see the test below for when there is.
     assert_eq!(jinnie.mana_cost, None);
-    assert!(jinnie.card_faces.is_some());
 }
 
 /// Every printing in Default Cards resolves to an oracle id one way or the
@@ -134,7 +141,8 @@ async fn colours_are_canonicalised_to_wubrg_order() {
     assert_eq!(admiral.colors.as_deref(), Some("UBR"));
     assert_eq!(admiral.color_identity, "UBR");
 
-    // The faces carry the colours, so the column is null rather than empty.
+    // The reversible printing carries no colours and nothing else in the
+    // fixture shares its oracle id, so the card has none to inherit.
     assert_eq!(row(&pool, "Jinnie Fay").await.colors, None);
 }
 
@@ -144,8 +152,10 @@ async fn json_columns_are_queryable_as_json() {
 
     let (legal,): (String,) = sqlx::query_as(
         "SELECT json_extract(legalities.json, '$.commander')
-         FROM cards JOIN legalities ON legalities.id = cards.legalities_id
-         WHERE cards.name LIKE 'Admiral%'",
+         FROM cards
+         JOIN legalities ON legalities.id = cards.legalities_id
+         JOIN oracle ON oracle.id = cards.oracle_id
+         WHERE oracle.name LIKE 'Admiral%'",
     )
     .fetch_one(&pool)
     .await
@@ -254,8 +264,10 @@ async fn search_finds_a_non_english_printing_by_its_printed_name() {
     .await
     .unwrap();
     assert_eq!(hits.len(), 1);
-    assert_eq!(hits[0].lang, "ja");
-    assert!(hits[0].printed_name.is_some());
+    assert_eq!(
+        hits[0].lang, "ja",
+        "the Japanese printing is its own card's only one"
+    );
 }
 
 /// User input reaches FTS5, which has its own query syntax.
@@ -344,6 +356,7 @@ async fn a_bad_line_is_skipped_and_counted() {
         report,
         SyncReport {
             written: 1,
+            cards: 1,
             skipped: 1
         }
     );
@@ -353,8 +366,12 @@ async fn a_bad_line_is_skipped_and_counted() {
 /// Builds a stream from the fixture's first card plus mutated copies of it, so
 /// ranking and grouping can be exercised without a second fixture.
 fn variants(mutations: &[&[(&str, serde_json::Value)]]) -> String {
+    variants_of(0, mutations)
+}
+
+fn variants_of(line: usize, mutations: &[&[(&str, serde_json::Value)]]) -> String {
     let base: serde_json::Value =
-        serde_json::from_str(CARDS.lines().next().unwrap()).expect("fixture parses");
+        serde_json::from_str(CARDS.lines().nth(line).unwrap()).expect("fixture parses");
     let mut out = base.to_string();
     for (n, muts) in mutations.iter().enumerate() {
         let mut card = base.clone();
@@ -528,4 +545,37 @@ async fn an_exact_name_match_outranks_its_tier() {
         .unwrap();
     assert_eq!(hits[0].name, "Admiral", "the token is named exactly that");
     assert_eq!(hits[0].layout, "token");
+}
+
+/// The repair the split buys. A reversible printing carries no top-level
+/// gameplay data at all, so before the oracle row existed there was nowhere for
+/// it to come from; now any printing of the same card supplies it.
+#[tokio::test]
+async fn a_reversible_printing_inherits_gameplay_data_from_a_normal_one() {
+    // The fixture's Jinnie Fay is reversible-only; give it a normal printing.
+    let pool = seeded_with(variants_of(
+        1,
+        &[&[
+            ("layout", serde_json::json!("normal")),
+            ("mana_cost", serde_json::json!("{R/G}{G}{G/W}")),
+            (
+                "type_line",
+                serde_json::json!("Legendary Creature — Elf Druid"),
+            ),
+            ("colors", serde_json::json!(["G", "R", "W"])),
+        ]],
+    ))
+    .await;
+
+    let jinnie = row(&pool, "Jinnie Fay").await;
+    assert_eq!(jinnie.mana_cost.as_deref(), Some("{R/G}{G}{G/W}"));
+    assert_eq!(jinnie.colors.as_deref(), Some("WRG"));
+
+    // Both printings are still there, under one card.
+    assert_eq!(cards::count(&pool).await.unwrap(), 2);
+    let hits = cards::search(&pool, "Jinnie", Search::default())
+        .await
+        .unwrap();
+    assert_eq!(hits.len(), 1);
+    assert_eq!(hits[0].printings, 2);
 }

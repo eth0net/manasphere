@@ -1,7 +1,11 @@
-//! The Scryfall print cache: one full replace per bulk file, plus the lookups
+//! The Scryfall card cache: one full replace per bulk file, plus the lookups
 //! v0 needs.
+//!
+//! Split in two: `oracle` holds what the rules see, one row per card, and
+//! `cards` holds one physical printing each. Why, in `docs/scryfall.md`.
 
-use std::collections::HashMap;
+use std::cmp::Reverse;
+use std::collections::{BTreeSet, HashMap};
 
 use manasphere_scryfall::{BulkData, Card, CardStream, Color, Error as ScryfallError};
 use sqlx::{Sqlite, SqlitePool, Transaction};
@@ -11,8 +15,10 @@ use crate::{Error, Result};
 /// What one replace did.
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
 pub struct SyncReport {
-    /// `i64` to match what SQLite stores and what [`count`] returns.
+    /// Printings written.
     pub written: i64,
+    /// Distinct cards those printings belong to.
+    pub cards: i64,
     /// Lines that didn't parse. Skipped rather than fatal, so one odd record
     /// doesn't cost a week's refresh — but a jump here means Scryfall changed
     /// something, and it's the caller's job to notice.
@@ -20,8 +26,6 @@ pub struct SyncReport {
 }
 
 /// The `updated_at` of the last file ingested for `kind`, if any.
-///
-/// Compare it against a fresh index entry to skip a file already in the cache.
 ///
 /// # Errors
 ///
@@ -51,18 +55,29 @@ pub async fn replace(
     let mut tx = pool.begin().await?;
     let mut report = SyncReport::default();
     let mut legalities = HashMap::new();
+    let mut oracles: HashMap<String, Oracle> = HashMap::new();
 
-    sqlx::query("DELETE FROM cards").execute(&mut *tx).await?;
-    sqlx::query("DELETE FROM legalities")
+    // Printings are written before their oracle rows exist, since printings
+    // are what decide a card's representative one.
+    sqlx::query("PRAGMA defer_foreign_keys = ON")
         .execute(&mut *tx)
         .await?;
+    for statement in [
+        "DELETE FROM card_search",
+        "DELETE FROM cards",
+        "DELETE FROM oracle",
+        "DELETE FROM legalities",
+    ] {
+        sqlx::query(statement).execute(&mut *tx).await?;
+    }
 
     loop {
         match cards.try_next().await {
             Ok(None) => break,
             Ok(Some(card)) => {
                 let legalities_id = intern_legalities(&mut tx, &mut legalities, &card).await?;
-                insert(&mut tx, &card, legalities_id).await?;
+                insert_printing(&mut tx, &card, legalities_id).await?;
+                Oracle::absorb(&mut oracles, &card);
                 report.written += 1;
             }
             // One unparseable line shouldn't cost the whole refresh.
@@ -72,14 +87,14 @@ pub async fn replace(
     }
 
     if report.written == 0 {
-        // Dropping the transaction rolls back the DELETE.
+        // Dropping the transaction rolls back the DELETEs.
         return Err(Error::EmptySync);
     }
 
-    // Cheaper than per-row triggers, and the sync is the only writer.
-    sqlx::query("INSERT INTO cards_fts(cards_fts) VALUES ('rebuild')")
-        .execute(&mut *tx)
-        .await?;
+    report.cards = i64::try_from(oracles.len()).unwrap_or(i64::MAX);
+    for (id, oracle) in &oracles {
+        oracle.insert(&mut tx, id).await?;
+    }
 
     sqlx::query(
         "INSERT INTO bulk_sync (kind, updated_at, card_count) VALUES (?, ?, ?)
@@ -105,6 +120,179 @@ pub async fn replace(
     Ok(report)
 }
 
+/// A card under construction, accumulated across its printings.
+///
+/// Fields come from the best-ranked printing, then anything still missing from
+/// whichever printing has it — which is what fills in reversible printings.
+#[derive(Debug)]
+struct Oracle {
+    rank: Rank,
+    name: String,
+    type_line: Option<String>,
+    mana_cost: Option<String>,
+    cmc: Option<f64>,
+    text: Option<String>,
+    colors: Option<String>,
+    color_identity: String,
+    power: Option<String>,
+    toughness: Option<String>,
+    loyalty: Option<String>,
+    defense: Option<String>,
+    keywords: String,
+    reserved: bool,
+    edhrec_rank: Option<i64>,
+    game_changer: Option<bool>,
+    kind: i64,
+    paper: bool,
+    printings: i64,
+    default_print: String,
+    printed_names: BTreeSet<String>,
+}
+
+/// Orders printings so the one a person means comes first: paper over digital,
+/// a set someone drafted over a boutique release, then newest.
+type Rank = (bool, bool, bool, Reverse<String>);
+
+fn rank(card: &Card) -> Rank {
+    (
+        card.digital,
+        !matches!(card.set_type.as_str(), "expansion" | "core"),
+        !card.booster,
+        Reverse(card.released_at.clone()),
+    )
+}
+
+/// 0 card, 1 token or emblem, 2 art series. Search ranks in that order.
+fn kind(card: &Card) -> i64 {
+    match card.layout.as_str() {
+        "token" | "double_faced_token" | "emblem" => 1,
+        "art_series" => 2,
+        _ => 0,
+    }
+}
+
+impl Oracle {
+    fn from(card: &Card) -> Self {
+        Self {
+            rank: rank(card),
+            name: card.name.clone(),
+            type_line: card.type_line.clone(),
+            mana_cost: card.mana_cost.clone(),
+            cmc: card.cmc.map(f64::from),
+            text: card.oracle_text.clone(),
+            colors: card.colors.as_deref().map(canonical_colors),
+            color_identity: canonical_colors(&card.color_identity),
+            power: card.power.clone(),
+            toughness: card.toughness.clone(),
+            loyalty: card.loyalty.clone(),
+            defense: card.defense.clone(),
+            keywords: json(&card.keywords),
+            reserved: card.reserved,
+            edhrec_rank: card.edhrec_rank.map(i64::from),
+            game_changer: card.game_changer,
+            kind: kind(card),
+            paper: !card.digital,
+            printings: 0,
+            default_print: card.id.to_string(),
+            printed_names: BTreeSet::new(),
+        }
+    }
+
+    fn absorb(oracles: &mut HashMap<String, Self>, card: &Card) {
+        // The lifted id, not `card.oracle_id`: a reversible printing has none
+        // at the top level, and must still land under the card it depicts.
+        let Some(id) = oracle_id(card) else {
+            return;
+        };
+        let entry = oracles.entry(id).or_insert_with(|| Self::from(card));
+
+        if rank(card) < entry.rank {
+            let printings = entry.printings;
+            let names = std::mem::take(&mut entry.printed_names);
+            *entry = Self::from(card);
+            entry.printings = printings;
+            entry.printed_names = names;
+        }
+
+        // Paper only: the count is what a collector could own, and search
+        // never returns a card that exists nowhere but Arena.
+        entry.printings += i64::from(!card.digital);
+        entry.paper |= !card.digital;
+        entry.kind = entry.kind.min(kind(card));
+        if let Some(printed) = &card.printed_name {
+            entry.printed_names.insert(printed.clone());
+        }
+
+        // Anything the best printing left null, take from one that has it.
+        fill(&mut entry.type_line, card.type_line.as_ref());
+        fill(&mut entry.mana_cost, card.mana_cost.as_ref());
+        fill(&mut entry.cmc, card.cmc.map(f64::from).as_ref());
+        fill(&mut entry.text, card.oracle_text.as_ref());
+        fill(
+            &mut entry.colors,
+            card.colors.as_deref().map(canonical_colors).as_ref(),
+        );
+        fill(&mut entry.power, card.power.as_ref());
+        fill(&mut entry.toughness, card.toughness.as_ref());
+        fill(&mut entry.loyalty, card.loyalty.as_ref());
+        fill(&mut entry.defense, card.defense.as_ref());
+    }
+
+    async fn insert(&self, tx: &mut Transaction<'_, Sqlite>, id: &str) -> Result<()> {
+        sqlx::query(
+            "INSERT INTO oracle (
+                id, name, type_line, mana_cost, cmc, oracle_text, colors,
+                color_identity, power, toughness, loyalty, defense, keywords,
+                reserved, edhrec_rank, game_changer, kind, paper, printings,
+                default_print
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        )
+        .bind(id)
+        .bind(&self.name)
+        .bind(&self.type_line)
+        .bind(&self.mana_cost)
+        .bind(self.cmc)
+        .bind(&self.text)
+        .bind(&self.colors)
+        .bind(&self.color_identity)
+        .bind(&self.power)
+        .bind(&self.toughness)
+        .bind(&self.loyalty)
+        .bind(&self.defense)
+        .bind(&self.keywords)
+        .bind(self.reserved)
+        .bind(self.edhrec_rank)
+        .bind(self.game_changer)
+        .bind(self.kind)
+        .bind(self.paper)
+        .bind(self.printings)
+        .bind(&self.default_print)
+        .execute(&mut **tx)
+        .await?;
+
+        sqlx::query("INSERT INTO card_search (name, printed_names, oracle_id) VALUES (?, ?, ?)")
+            .bind(&self.name)
+            .bind(
+                self.printed_names
+                    .iter()
+                    .cloned()
+                    .collect::<Vec<_>>()
+                    .join(" "),
+            )
+            .bind(id)
+            .execute(&mut **tx)
+            .await?;
+
+        Ok(())
+    }
+}
+
+fn fill<T: Clone>(slot: &mut Option<T>, from: Option<&T>) {
+    if slot.is_none() {
+        *slot = from.cloned();
+    }
+}
+
 /// Stores each distinct legality combination once and hands back its id.
 async fn intern_legalities(
     tx: &mut Transaction<'_, Sqlite>,
@@ -124,33 +312,30 @@ async fn intern_legalities(
     Ok(id)
 }
 
-async fn insert(tx: &mut Transaction<'_, Sqlite>, card: &Card, legalities_id: i64) -> Result<()> {
+async fn insert_printing(
+    tx: &mut Transaction<'_, Sqlite>,
+    card: &Card,
+    legalities_id: i64,
+) -> Result<()> {
     sqlx::query(
         "INSERT INTO cards (
-            id, oracle_id, name, printed_name, lang, released_at, layout,
+            id, oracle_id, printed_name, lang, released_at, layout,
             set_code, set_name, set_type, collector_number, rarity,
-            mana_cost, cmc, type_line, oracle_text, colors, color_identity,
-            power, toughness, loyalty, defense,
-            keywords, legalities_id, games, finishes,
+            legalities_id, games, finishes,
             digital, promo, reprint, variation, oversized, booster, full_art,
-            textless, reserved,
-            border_color, frame, artist, flavor_text, image_status,
-            card_faces, edhrec_rank, game_changer
+            textless, border_color, frame, artist, flavor_text, image_status,
+            card_faces
         ) VALUES (
-            ?, ?, ?, ?, ?, ?, ?,
-            ?, ?, ?, ?, ?,
             ?, ?, ?, ?, ?, ?,
-            ?, ?, ?, ?,
-            ?, ?, ?, ?,
-            ?, ?, ?, ?, ?, ?, ?,
-            ?, ?,
             ?, ?, ?, ?, ?,
-            ?, ?, ?
+            ?, ?, ?,
+            ?, ?, ?, ?, ?, ?, ?,
+            ?, ?, ?, ?, ?, ?,
+            ?
         )",
     )
     .bind(card.id.to_string())
     .bind(oracle_id(card))
-    .bind(&card.name)
     .bind(&card.printed_name)
     .bind(&card.lang)
     .bind(&card.released_at)
@@ -160,17 +345,6 @@ async fn insert(tx: &mut Transaction<'_, Sqlite>, card: &Card, legalities_id: i6
     .bind(&card.set_type)
     .bind(&card.collector_number)
     .bind(&card.rarity)
-    .bind(&card.mana_cost)
-    .bind(card.cmc.map(f64::from))
-    .bind(&card.type_line)
-    .bind(&card.oracle_text)
-    .bind(card.colors.as_deref().map(canonical_colors))
-    .bind(canonical_colors(&card.color_identity))
-    .bind(&card.power)
-    .bind(&card.toughness)
-    .bind(&card.loyalty)
-    .bind(&card.defense)
-    .bind(json(&card.keywords))
     .bind(legalities_id)
     .bind(json(&card.games))
     .bind(json(&card.finishes))
@@ -182,15 +356,12 @@ async fn insert(tx: &mut Transaction<'_, Sqlite>, card: &Card, legalities_id: i6
     .bind(card.booster)
     .bind(card.full_art)
     .bind(card.textless)
-    .bind(card.reserved)
     .bind(&card.border_color)
     .bind(&card.frame)
     .bind(&card.artist)
     .bind(&card.flavor_text)
     .bind(&card.image_status)
     .bind(card.card_faces.as_ref().map(|faces| faces.get().to_owned()))
-    .bind(card.edhrec_rank.map(i64::from))
-    .bind(card.game_changer)
     .execute(&mut **tx)
     .await?;
 
@@ -200,9 +371,6 @@ async fn insert(tx: &mut Transaction<'_, Sqlite>, card: &Card, legalities_id: i6
 /// Scryfall omits the top-level `oracle_id` on `reversible_card` printings, but
 /// both faces carry it and across all 81 they agree. Lift it, or a card you own
 /// can't be referenced by a deck: design entries key on `oracle_id`.
-///
-/// Still nullable in the schema — a future layout might carry neither, and that
-/// shouldn't fail a sync.
 fn oracle_id(card: &Card) -> Option<String> {
     #[derive(serde::Deserialize)]
     struct Face {
@@ -267,22 +435,22 @@ pub async fn printing_id(
 /// Enough of a card to render a search result.
 #[derive(Debug, Clone, sqlx::FromRow)]
 pub struct CardBrief {
-    pub id: String,
-    pub oracle_id: Option<String>,
+    pub oracle_id: String,
     pub name: String,
-    pub printed_name: Option<String>,
+    pub type_line: Option<String>,
+    /// Printings of this card, so a grouped result needn't count them again.
+    pub printings: i64,
+    pub print_id: String,
     pub set_code: String,
     pub collector_number: String,
     pub lang: String,
     pub layout: String,
     pub image_status: String,
-    /// Printings of this card, so a grouped result needn't count them again.
-    pub printings: i64,
 }
 
 /// What a search should surface.
 ///
-/// Digital printings are never returned: they can't be owned on paper.
+/// Digital-only cards are never returned: they can't be owned on paper.
 #[derive(Debug, Clone, Copy)]
 pub struct Search {
     /// One row per card rather than per printing.
@@ -303,10 +471,41 @@ impl Default for Search {
     }
 }
 
+/// One row per card, showing its representative printing.
+const GROUPED: &str = "\
+    SELECT o.id AS oracle_id, o.name, o.type_line, o.printings,
+           c.id AS print_id, c.set_code, c.collector_number, c.lang,
+           c.layout, c.image_status
+    FROM card_search s
+    JOIN oracle o ON o.id = s.oracle_id
+    JOIN cards c ON c.id = o.default_print
+    WHERE card_search MATCH ?1 AND o.paper
+      AND (o.kind <> 1 OR ?3) AND (o.kind <> 2 OR ?4)
+    ORDER BY CASE WHEN lower(o.name) = lower(?2) THEN 0 ELSE 1 END,
+             o.kind, bm25(card_search)
+    LIMIT ?5";
+
+/// Every printing, ordered within its card the way the representative is
+/// chosen: paper first, then a set someone drafted, then newest.
+const UNGROUPED: &str = "\
+    SELECT o.id AS oracle_id, o.name, o.type_line, o.printings,
+           c.id AS print_id, c.set_code, c.collector_number, c.lang,
+           c.layout, c.image_status
+    FROM card_search s
+    JOIN oracle o ON o.id = s.oracle_id
+    JOIN cards c ON c.oracle_id = o.id
+    WHERE card_search MATCH ?1 AND o.paper AND NOT c.digital
+      AND (o.kind <> 1 OR ?3) AND (o.kind <> 2 OR ?4)
+    ORDER BY CASE WHEN lower(o.name) = lower(?2) THEN 0 ELSE 1 END,
+             o.kind, bm25(card_search),
+             CASE WHEN c.set_type IN ('expansion', 'core') THEN 0 ELSE 1 END,
+             c.booster DESC, c.released_at DESC
+    LIMIT ?5";
+
 /// Name search, for a client that hasn't cached the catalogue yet.
 ///
 /// Ranks cards above tokens above art series, and an exact name match above
-/// all three.
+/// all three: someone typing a token's name means the token.
 ///
 /// # Errors
 ///
@@ -316,45 +515,13 @@ pub async fn search(pool: &SqlitePool, query: &str, opts: Search) -> Result<Vec<
         return Ok(Vec::new());
     };
 
-    Ok(sqlx::query_as(
-        // bm25 cannot share a SELECT with a window function, hence two CTEs.
-        "WITH matched AS (
-           SELECT cards.rowid AS rid, bm25(cards_fts) AS relevance
-           FROM cards_fts
-           JOIN cards ON cards.rowid = cards_fts.rowid
-           WHERE cards_fts MATCH ?1 AND NOT cards.digital
-         ),
-         hits AS (
-           SELECT c.id, c.oracle_id, c.name, c.printed_name, c.set_code,
-                  c.collector_number, c.lang, c.layout, c.image_status,
-                  m.relevance,
-                  CASE WHEN c.layout IN ('token', 'double_faced_token', 'emblem') THEN 1
-                       WHEN c.layout = 'art_series' THEN 2
-                       ELSE 0 END AS tier,
-                  CASE WHEN lower(c.name) = lower(?2)
-                         OR lower(coalesce(c.printed_name, '')) = lower(?2)
-                       THEN 0 ELSE 1 END AS inexact,
-                  row_number() OVER (
-                    PARTITION BY coalesce(c.oracle_id, c.id)
-                    ORDER BY CASE WHEN c.set_type IN ('expansion', 'core') THEN 0 ELSE 1 END,
-                             c.booster DESC, c.released_at DESC
-                  ) AS printing,
-                  count(*) OVER (PARTITION BY coalesce(c.oracle_id, c.id)) AS printings
-           FROM matched m
-           JOIN cards c ON c.rowid = m.rid
-         )
-         SELECT id, oracle_id, name, printed_name, set_code, collector_number,
-                lang, layout, image_status, printings
-         FROM hits
-         WHERE (?3 = 0 OR printing = 1)
-           AND (tier <> 1 OR ?4)
-           AND (tier <> 2 OR ?5)
-         ORDER BY inexact, tier, relevance, printing
-         LIMIT ?6",
-    )
+    Ok(sqlx::query_as(if opts.group_printings {
+        GROUPED
+    } else {
+        UNGROUPED
+    })
     .bind(fts)
     .bind(query.trim())
-    .bind(opts.group_printings)
     .bind(opts.tokens)
     .bind(opts.art_series)
     .bind(opts.limit)

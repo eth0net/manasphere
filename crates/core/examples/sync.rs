@@ -42,26 +42,21 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let started = Instant::now();
     let report = cards::replace(&pool, &bulk, &mut stream).await?;
     println!(
-        "wrote {} cards, skipped {}, in {:.1}s",
+        "wrote {} printings of {} cards, skipped {}, in {:.1}s",
         report.written,
+        report.cards,
         report.skipped,
         started.elapsed().as_secs_f64(),
     );
 
-    println!("cache holds {} printings", cards::count(&pool).await?);
-    for hit in cards::search(
-        &pool,
-        "lightning bolt",
-        Search {
-            limit: 3,
-            ..Search::default()
-        },
-    )
-    .await?
-    {
+    let opts = Search {
+        limit: 3,
+        ..Search::default()
+    };
+    for hit in cards::search(&pool, "lightning bolt", opts).await? {
         println!(
-            "  {} {} #{} ({})",
-            hit.name, hit.set_code, hit.collector_number, hit.lang
+            "  {} — {} {} #{}, {} printings",
+            hit.name, hit.set_code, hit.lang, hit.collector_number, hit.printings
         );
     }
 

@@ -49,12 +49,13 @@ Keeping whole card objects would put the bulk file's uncompressed bulk on a
 small VPS disk — and several gigabytes of it if All Cards ever lands. Shred
 what's queried, keep `card_faces` as JSON, discard the rest.
 
-Measured on 2026-09-07: 117,630 printings shred to a 94MB file including the
-FTS5 index, written in about 4 seconds. Legalities are the one column worth
-normalising — Scryfall repeats ~480 bytes on every printing and only 611
-distinct combinations exist, so inline they were 47% of the database. The sync
-truncates the WAL when it commits, which otherwise sits at roughly the size of
-the database again.
+Measured on 2026-09-07: 117,630 printings of 38,633 cards shred to an 81MB
+file including the FTS5 index, written in about 5 seconds. Two columns earn
+normalising. Legalities repeat ~480 bytes on every printing for only 611
+distinct combinations, which inline was 47% of the database; the rest of what
+a card's rules say is its own table, for the reasons in
+[`scryfall.md`](scryfall.md). The sync truncates the WAL when it commits,
+which otherwise sits at roughly the size of the database again.
 
 ## Server load & scaling
 

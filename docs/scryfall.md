@@ -153,6 +153,36 @@ Neither ManaBox nor MTGGoldfish nor TCGplayer exports any date, so an import
 leaves `createdAt` at import time rather than when the card was really added.
 Moxfield's `Last Modified` seeds `updatedAt`.
 
+## Oracle and printing are two tables
+
+Which fields belong to a card rather than a printing was measured, not
+guessed: group all 117,630 printings by `oracle_id` and count the columns that
+disagree. Six never do — `color_identity`, `defense`, `edhrec_rank`,
+`game_changer`, `keywords`, `reserved`. Ten more disagree for 71 cards out of
+38,633, and every one of those 71 is a reversible printing sharing an id with
+a normal one, whose nulls are the whole disagreement.
+
+So `name`, `type_line`, `mana_cost`, `cmc`, `oracle_text`, `colors`, `power`,
+`toughness`, `loyalty` and `defense` are card-level. `legalities` is not: 2% of
+cards have printings that disagree, because a gold-bordered reprint is legal
+nowhere. Neither is `layout` — a card printed both normally and reversibly has
+two shapes, and that is a fact about the objects.
+
+**The split repairs reversible printings rather than merely deduplicating
+them.** They carry no top-level gameplay data at all, so there was nowhere for
+it to come from; the card's row is filled from the best-ranked printing and any
+field still missing from whichever printing has it. 80 of the 81 now resolve to
+a card with a type line and a mana cost. The remaining one is Mechtitan, a
+token whose only other printing is also face-only.
+
+Measured: the database goes from 94MB to 81MB, and the client's gameplay
+payload from 20.3MB to 7.5MB — the artifact is the real prize, being the
+difference between hitting a 4-5MB target and missing it.
+
+`kind`, `paper`, `printings` and `default_print` are derived onto the card row
+at sync time, so search needs no window functions and no `bm25` gymnastics.
+`printings` counts paper only, being what a collector could own.
+
 ## What manual search surfaces
 
 Filtering was the wrong first instinct: almost everything is a real card
@@ -186,12 +216,6 @@ default. Shipping the extras costs about 18% more client artifact (~1.6MB of
 **Trade quantity.** Two of the trackers we import from carry one. A trade list
 is the better model, but the column has nowhere to land, so import and export
 both need a defined mapping rather than silent loss. See the comparison above.
-
-**Oracle properties are duplicated per printing.** `oracle_text` is 16MB across
-117,630 rows but only ~31,000 oracle ids, and `type_line`, `keywords` and `cmc`
-repeat the same way. Splitting an oracle table from the print table is both the
-right model and roughly 4x smaller, but it wants doing alongside the client
-catalogue subset rather than guessed at before it.
 
 **Repeated tokens.** Tokens from different sets carry different oracle ids,
 so grouping doesn't collapse them: searching "goblin" still returns five rows

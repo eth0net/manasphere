@@ -60,6 +60,10 @@ backend:
   3.
 - Don't store images or image URIs — hotlink Scryfall's CDN, deriving URLs from
   the card id. Keep `image_status`.
+- **The cache is two tables.** `oracle` holds what the rules see, one row per
+  card, verified constant across printings; `cards` holds one physical
+  printing each. `legalities` and `layout` stay per printing. The split also
+  fills in reversible printings, which carry no top-level gameplay data.
 - **Card objects aren't uniformly shaped.** `layout: reversible_card` has no
   top-level `oracle_id`, `cmc`, `mana_cost`, `type_line`, `oracle_text`,
   `colors` or `image_uris` — those live on `card_faces`. So `oracle_id` can't
