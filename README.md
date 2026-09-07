@@ -9,7 +9,9 @@ game toolkit later.
 
 ## Status
 
-Early scaffolding. Nothing runs yet.
+Pre-v0. The card cache works: `crates/scryfall` streams Scryfall's bulk data
+and `crates/core` shreds 117,630 printings into a 94MB SQLite file with
+full-text name search. No server, no client and no lexicons yet.
 
 ## Stack
 
