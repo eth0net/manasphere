@@ -1,0 +1,30 @@
+# Advisories, licences, duplicate versions and crate sources.
+#
+#     cargo deny check
+
+[advisories]
+# Waiving one needs a reason and a link here, not silence.
+ignore = []
+
+[licenses]
+# Exactly what the tree uses, nothing on spec — an unmatched entry is an error
+# under --deny warnings. Add each licence as a dependency brings it in, and
+# treat that as a licensing decision: AGPL-3.0-only can link permissive code,
+# not the reverse.
+allow = []
+
+# Our own crates are publish = false and AGPL by definition; this check is
+# about what we pull in.
+private = { ignore = true }
+
+[bans]
+# A duplicate should be argued for, not accumulated one transitive bump at a
+# time. If two versions must coexist, add a skip saying what would remove it.
+multiple-versions = "deny"
+wildcards = "deny"
+
+[sources]
+# A git or alternate-registry dependency means no yanking and no advisory
+# coverage, so it should be deliberate rather than arrive in a lockfile.
+unknown-registry = "deny"
+unknown-git = "deny"

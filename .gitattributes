@@ -1,0 +1,3 @@
+# Windows is a CI platform, and the Scryfall sync fixtures will be compared
+# byte for byte, so the working tree is pinned rather than left to each checkout.
+* text=auto eol=lf
