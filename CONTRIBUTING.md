@@ -26,9 +26,9 @@ Spelling is American, because the vocabulary already is: `color`, `license`,
 `serialize`. `typos` enforces it, and `typos.toml` says what it skips —
 captured Scryfall fixtures, license text, and translations when they arrive.
 
-[just](https://github.com/casey/just) wraps the longer commands: `just serve`
-starts the server, `just check` does the lot in one go. `just --list` for the
-rest.
+[just](https://github.com/casey/just) holds the whole workflow — `just check`
+runs every check CI does, `just serve` starts the server, and `just --list`
+shows the rest.
 
 Tests are offline, against Scryfall responses captured under
 `crates/*/tests/fixtures`. The parts that talk to Scryfall are examples, run by
