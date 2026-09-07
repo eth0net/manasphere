@@ -14,8 +14,12 @@ only needed if you're touching `web/`.
 ```sh
 git clone https://github.com/eth0net/manasphere
 cd manasphere
+prek install    # fmt, clippy, tests and the sign-off check, on commit and push
 cargo test
 ```
+
+[prek](https://github.com/j178/prek) runs the same checks CI does, so a red
+build costs no round trip. It's optional but recommended.
 
 Tests are offline: they run against Scryfall responses captured under
 `crates/*/tests/fixtures`. The parts that talk to Scryfall are examples, run by
@@ -58,6 +62,10 @@ Signed-off-by: Your Name <you@example.com>
 It certifies you wrote the contribution, or that it came from somewhere
 compatibly licensed and you have the right to submit it. There's no CLA and no
 copyright assignment.
+
+Git has no config option for this, so `prek install` adds a `commit-msg` check
+that fails a commit with no sign-off rather than letting you find out in
+review. Merge commits are exempt.
 
 ## Attribution
 
