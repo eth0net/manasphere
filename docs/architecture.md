@@ -84,6 +84,20 @@ a card's rules say is its own table, for the reasons in
 [`scryfall.md`](scryfall.md). The sync truncates the WAL when it commits,
 which otherwise sits at roughly the size of the database again.
 
+**Phase 3's non-derivable state gets a file of its own.** Everything in the
+cache derives from Scryfall, which is what makes it disposable; two things
+arriving with Explore won't, being the known-DID list and activity only ever
+seen over the firehose. Put those in a second SQLite file rather than adding
+tables to the cache — free now, a schema split later — so any durability they
+need applies to a small file rather than an 81MB derived one.
+
+What that durability is stays open. An R2 object snapshot is the cheap answer
+and we upload the catalog there anyway. Litestream is the obvious tool and a
+bad fit for the *cache*: it wants `wal_autocheckpoint = 0` and takes a full
+snapshot whenever anything else checkpoints, which the sync does deliberately.
+Against a small file nothing bulk-rewrites it would be a fair candidate, but
+so would something else — decide it when there is data to lose.
+
 ## Server load & scaling
 
 With search, scanning and import/export client-side, almost nothing is

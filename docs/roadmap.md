@@ -100,6 +100,10 @@ damage, non-English printings — plus bulk scanning from uploaded photos.
   the first thing a local-first client genuinely can't do for itself.
   Subscribe with `wantedCollections` scoped to our own NSIDs, network-wide —
   cheap, since only Manasphere users emit matching events.
+- **The index stops being disposable here.** Activity seen only over the
+  firehose can't be re-derived from Scryfall or from anyone's PDS, so it wants
+  a SQLite file of its own and a backup story — R2 snapshots, or something
+  else. Reasoning in [`architecture.md`](architecture.md).
 - Deck records live in the owner's PDS, same single-owner model as collection
   entries.
 - A deck is a design with deck metadata and an **optional** container
