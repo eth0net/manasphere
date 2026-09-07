@@ -1,0 +1,36 @@
+[package]
+name = "manasphere-appview"
+version.workspace = true
+description = "The Manasphere AppView binary."
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+publish = false
+
+# One deployed binary, so it is named for the app rather than the crate.
+[[bin]]
+name = "manasphere"
+path = "src/main.rs"
+
+[lints]
+workspace = true
+
+[dependencies]
+manasphere-api.workspace = true
+manasphere-core.workspace = true
+manasphere-scryfall.workspace = true
+
+axum.workspace = true
+sqlx.workspace = true
+tokio = { workspace = true, features = [
+  "macros",
+  "net",
+  "rt-multi-thread",
+  "signal",
+  "time",
+] }
+tower-http.workspace = true
+tracing.workspace = true
+tracing-subscriber.workspace = true

@@ -1,0 +1,24 @@
+[package]
+name = "manasphere-api"
+version.workspace = true
+description = "HTTP handlers for the Manasphere AppView."
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+publish = false
+
+[lints]
+workspace = true
+
+[dependencies]
+manasphere-core.workspace = true
+
+axum.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+
+[dev-dependencies]
+tokio = { workspace = true, features = ["macros", "rt-multi-thread"] }
+tower = { version = "0.5.3", features = ["util"] }
