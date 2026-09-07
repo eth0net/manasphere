@@ -1,0 +1,59 @@
+//! Builds the client catalogue artifact from a synced cache and reports its
+//! size, which is the number that has to stay under the target in
+//! `docs/architecture.md`.
+//!
+//! ```sh
+//! cargo run --release -p manasphere-core --example catalog -- cards.db
+//! # or with somewhere to write the files, to look at them:
+//! cargo run --release -p manasphere-core --example catalog -- cards.db out/
+//! ```
+
+use std::error::Error;
+use std::time::Instant;
+use std::{env, fs};
+
+use manasphere_core::{catalog, open};
+
+#[tokio::main]
+async fn main() -> Result<(), Box<dyn Error>> {
+    let mut args = env::args().skip(1);
+    let db = args.next().unwrap_or_else(|| "cards.db".to_owned());
+    let out = args.next();
+    let pool = open(&db).await?;
+
+    let started = Instant::now();
+    let built = catalog::build(&pool).await?;
+    let elapsed = started.elapsed().as_secs_f64();
+
+    let mut total = 0;
+    for file in [&built.cards, &built.prints] {
+        total += file.gzip.len();
+        if let Some(dir) = &out {
+            fs::create_dir_all(dir)?;
+            // Named as served: the bytes are gzip, the path says JSON, and the
+            // response carries `Content-Encoding`.
+            fs::write(format!("{dir}/{}.gz", file.name), &file.gzip)?;
+        }
+        println!(
+            "  {:<28} {:>7} rows  {:>6.2}MB",
+            file.name,
+            file.rows,
+            megabytes(file.gzip.len()),
+        );
+    }
+    println!(
+        "{} in {elapsed:.1}s, {:.2}MB gzipped",
+        built.version,
+        megabytes(total),
+    );
+
+    Ok(())
+}
+
+#[expect(
+    clippy::cast_precision_loss,
+    reason = "a byte count of a few million is exact in f64"
+)]
+fn megabytes(bytes: usize) -> f64 {
+    bytes as f64 / 1e6
+}

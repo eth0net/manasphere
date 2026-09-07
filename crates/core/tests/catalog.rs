@@ -1,0 +1,167 @@
+//! The catalogue artifact, built from the same printings as `cache.rs`.
+
+use std::io::{Cursor, Read as _};
+
+use flate2::read::GzDecoder;
+use manasphere_core::{Error, cards, catalog, open_memory};
+use manasphere_scryfall::{BulkData, CardStream};
+use serde_json::Value;
+use sqlx::SqlitePool;
+
+const CARDS: &str = include_str!("fixtures/cards.jsonl");
+
+fn bulk(updated_at: &str) -> BulkData {
+    serde_json::from_value(serde_json::json!({
+        "id": "e2ef41e3-5778-4bc2-af3f-78eca4dd9c23",
+        "type": "default_cards",
+        "name": "Default Cards",
+        "updated_at": updated_at,
+        "jsonl_download_uri": "https://example.invalid/default-cards.jsonl.gz",
+        "compressed_size": 78_059_432_u64,
+    }))
+    .expect("bulk data fixture should parse")
+}
+
+async fn seeded_with(ndjson: &str) -> SqlitePool {
+    let pool = open_memory().await.expect("migrations should apply");
+    cards::replace(
+        &pool,
+        &bulk("2026-09-06T21:05:43.673+00:00"),
+        &mut CardStream::new(Cursor::new(ndjson.as_bytes().to_vec())),
+    )
+    .await
+    .expect("fixture should sync");
+    pool
+}
+
+fn read(gzip: &[u8]) -> Value {
+    let mut json = String::new();
+    GzDecoder::new(gzip)
+        .read_to_string(&mut json)
+        .expect("the artifact should be gzip");
+    serde_json::from_str(&json).expect("the artifact should be JSON")
+}
+
+fn rows(file: &Value, key: &str) -> Vec<Vec<Value>> {
+    file[key]
+        .as_array()
+        .expect("rows should be an array")
+        .iter()
+        .map(|row| row.as_array().expect("a row is an array").clone())
+        .collect()
+}
+
+#[tokio::test]
+async fn an_unsynced_cache_has_no_catalogue() {
+    let pool = open_memory().await.unwrap();
+    assert!(matches!(
+        catalog::build(&pool).await,
+        Err(Error::EmptyCatalog)
+    ));
+}
+
+/// Both files say what their columns are, so nothing has to read this crate to
+/// interpret one.
+#[tokio::test]
+async fn each_file_names_its_own_columns() {
+    let pool = seeded_with(CARDS).await;
+    let built = catalog::build(&pool).await.unwrap();
+
+    for (artifact, key) in [(&built.cards, "cards"), (&built.prints, "prints")] {
+        let file = read(&artifact.gzip);
+        assert_eq!(file["version"], built.version);
+
+        let fields = file["fields"].as_array().expect("fields should be listed");
+        for row in rows(&file, key) {
+            assert_eq!(
+                row.len(),
+                fields.len(),
+                "{key} row is not as wide as fields"
+            );
+        }
+    }
+}
+
+/// The client finds a card's printings by walking runs rather than by looking
+/// up an id, so the order of the two files is load-bearing.
+#[tokio::test]
+async fn printings_group_into_the_runs_the_cards_claim() {
+    let pool = seeded_with(CARDS).await;
+    let built = catalog::build(&pool).await.unwrap();
+    let cards = rows(&read(&built.cards.gzip), "cards");
+    let prints = rows(&read(&built.prints.gzip), "prints");
+
+    let mut offset = 0;
+    for card in &cards {
+        let count = card[8].as_u64().expect("printings is a count");
+        let run = &prints[offset..offset + usize::try_from(count).unwrap()];
+
+        // The representative printing is the one search shows for the card.
+        let (default_print,): (String,) =
+            sqlx::query_as("SELECT default_print FROM oracle WHERE id = ?")
+                .bind(card[0].as_str().unwrap())
+                .fetch_one(&pool)
+                .await
+                .unwrap();
+        assert_eq!(run[0][0], default_print, "{} leads with", card[1]);
+
+        offset += usize::try_from(count).unwrap();
+    }
+    assert_eq!(offset, prints.len(), "every printing belongs to a run");
+}
+
+#[tokio::test]
+async fn a_digital_printing_is_left_out() {
+    let paper = CARDS.lines().next().unwrap();
+    let mut digital: Value = serde_json::from_str(paper).unwrap();
+    digital["id"] = serde_json::json!("00000000-0000-4000-8000-000000000000");
+    digital["collector_number"] = serde_json::json!("d1");
+    digital["digital"] = serde_json::json!(true);
+
+    let pool = seeded_with(&format!("{paper}\n{digital}\n")).await;
+    let built = catalog::build(&pool).await.unwrap();
+
+    assert_eq!(cards::count(&pool).await.unwrap(), 2, "both are cached");
+    assert_eq!(built.prints.rows, 1, "only the paper one is published");
+}
+
+/// Names carry a hash of the bytes, which is what lets a response claim to be
+/// immutable.
+#[tokio::test]
+async fn a_file_is_named_after_its_contents() {
+    let same = catalog::build(&seeded_with(CARDS).await).await.unwrap();
+    let again = catalog::build(&seeded_with(CARDS).await).await.unwrap();
+    assert_eq!(same.cards.name, again.cards.name);
+
+    let fewer = catalog::build(&seeded_with(CARDS.lines().next().unwrap()).await)
+        .await
+        .unwrap();
+    assert_ne!(same.cards.name, fewer.cards.name);
+}
+
+/// Finishes are a bitmask over the file's own `finishes` list.
+#[tokio::test]
+async fn finishes_survive_as_a_bitmask() {
+    let pool = seeded_with(CARDS).await;
+    let built = catalog::build(&pool).await.unwrap();
+    let file = read(&built.prints.gzip);
+    let names: Vec<String> = serde_json::from_value(file["finishes"].clone()).unwrap();
+
+    for row in rows(&file, "prints") {
+        let mask = row[3].as_u64().expect("a mask");
+        let decoded: Vec<&String> = names
+            .iter()
+            .enumerate()
+            .filter(|(bit, _)| mask & (1 << bit) != 0)
+            .map(|(_, name)| name)
+            .collect();
+
+        let (json,): (String,) = sqlx::query_as("SELECT finishes FROM cards WHERE id = ?")
+            .bind(row[0].as_str().unwrap())
+            .fetch_one(&pool)
+            .await
+            .unwrap();
+        let expected: Vec<String> = serde_json::from_str(&json).unwrap();
+        assert_eq!(decoded, expected.iter().collect::<Vec<_>>());
+    }
+}

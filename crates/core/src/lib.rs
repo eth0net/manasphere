@@ -5,6 +5,7 @@
 //! published records.
 
 pub mod cards;
+pub mod catalog;
 mod db;
 mod error;
 
