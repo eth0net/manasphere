@@ -21,6 +21,7 @@ allow = [
   "ISC",
   "MIT",
   "Unicode-3.0",
+  "Zlib",  # foldhash, under sqlx
 ]
 
 # Our own crates are publish = false and AGPL by definition; this check is
@@ -39,6 +40,8 @@ skip = [
   # The icu chain under url is mid-migration: displaydoc is on syn 3, yoke-derive
   # still on syn 2. Gone when synstructure releases against syn 3.
   { crate = "syn@2" },
+  # sqlx's hashlink is a minor behind indexmap's. Gone when hashlink bumps.
+  { crate = "hashbrown@0.16" },
 ]
 
 [sources]
