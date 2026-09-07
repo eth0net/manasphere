@@ -320,6 +320,13 @@ Keeping whole card objects would put the bulk file's uncompressed bulk on a
 small VPS disk — and several gigabytes of it if All Cards ever lands. Shred
 what's queried, keep `card_faces` as JSON, discard the rest.
 
+Measured on 2026-09-07: 117,630 printings shred to a 94MB file including the
+FTS5 index, written in about 4 seconds. Legalities are the one column worth
+normalising — Scryfall repeats ~480 bytes on every printing and only 611
+distinct combinations exist, so inline they were 47% of the database. The sync
+truncates the WAL when it commits, which otherwise sits at roughly the size of
+the database again.
+
 ## Domains: three, not one
 
 Three concerns that don't need the same domain, and conflating them is what
@@ -425,6 +432,17 @@ predate our subscription.
 
 **Jetstream is unauthenticated.** It doesn't verify signatures. Fine for our
 own DIDs; a real trust assumption once Explore indexes arbitrary users.
+
+**Oracle properties are duplicated per printing.** `oracle_text` is 16MB across
+117,630 rows but only ~31,000 oracle ids, and `type_line`, `keywords` and `cmc`
+repeat the same way. Splitting an oracle table from the print table is both the
+right model and roughly 4x smaller, but it wants doing alongside the client
+catalogue subset rather than guessed at before it.
+
+**What manual search surfaces.** The cache holds digital-only printings, tokens
+and art series, and name search currently returns all of them — a search for
+"lightning bolt" leads with art cards. Needs a filter, and a decision about
+what belongs in the client artifact.
 
 ## Phase 0 — Collection tracking (current focus)
 

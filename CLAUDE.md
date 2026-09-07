@@ -64,6 +64,7 @@ backend:
 - The client gets a trimmed subset, not the whole cache — English gameplay data
   plus a name index for the languages that user owns.
 - Price cache: **separate table**, keyed by `scryfall_id` + source + timestamp.
+  Not built — nothing writes it before Phase 2, so the schema would be dead.
   Note there is **no prices bulk file** — prices exist only as fields inside
   card objects, so a faster price cadence has no cheap mechanism. Cadence is an
   open question for Phase 2.
@@ -148,9 +149,10 @@ manasphere/
 1. **Done** — workspace scaffold, and `crates/scryfall`: bulk-data index,
    streaming NDJSON reader, card parse. Offline fixture tests plus an example
    that streams the real file.
-2. Card cache in `crates/core` — SQLite schema and migrations fed by a
-   `CardStream`. **Next**, and still free of any atproto dependency.
-3. Design the lexicons. Now on the critical path, and the layer that's
+2. **Done** — card cache in `crates/core`: migrations, a full-replace sync
+   fed by a `CardStream`, FTS5 name search, printing lookup for CSV import.
+   94MB for 117,630 printings. `legalities` is a lookup table, not a column.
+3. Design the lexicons. **Next**, on the critical path, and the layer that's
    expensive to change later.
 4. Serve the catalog artifact + the client metadata document. Small.
 5. Web client: OAuth, reads from own PDS, local view in IndexedDB, writes back.

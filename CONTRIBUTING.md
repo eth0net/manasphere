@@ -18,12 +18,18 @@ cargo test
 ```
 
 Tests are offline: they run against Scryfall responses captured under
-`crates/*/tests/fixtures`. The one thing that talks to Scryfall is an example,
-run by hand, because it pulls ~78MB from a free service:
+`crates/*/tests/fixtures`. The parts that talk to Scryfall are examples, run by
+hand, because they pull ~78MB from a free service:
 
 ```sh
+# parse only
 cargo run --release -p manasphere-scryfall --example stream
+# and into SQLite
+cargo run --release -p manasphere-core --example sync -- cards.db
 ```
+
+Keep the bulk file after the first run and pass it as a second argument to
+`sync`, so iterating doesn't re-download it.
 
 ## Before opening a pull request
 
