@@ -1,4 +1,4 @@
-# Advisories, licences, duplicate versions and crate sources.
+# Advisories, licenses, duplicate versions and crate sources.
 #
 #     cargo deny check
 
@@ -8,7 +8,7 @@ ignore = []
 
 [licenses]
 # Exactly what the tree uses, nothing on spec — an unmatched entry is an error
-# under --deny warnings. Add each licence as a dependency brings it in, and
+# under --deny warnings. Add each license as a dependency brings it in, and
 # treat that as a licensing decision: AGPL-3.0-only can link permissive code,
 # not the reverse.
 # Each of these is the *only* option some crate offers. Dual-licensed crates
@@ -17,7 +17,7 @@ ignore = []
 allow = [
   "Apache-2.0",
   "BSD-3-Clause",
-  "CDLA-Permissive-2.0",  # webpki-root-certs — a data licence, for a data crate
+  "CDLA-Permissive-2.0",  # webpki-root-certs — a data license, for a data crate
   "ISC",
   "MIT",
   "Unicode-3.0",

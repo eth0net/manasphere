@@ -32,7 +32,7 @@ backend:
   data. OAuth is a browser-side public client (PKCE + DPoP); the `client_id` is
   the URL of a static client metadata document we serve.
 - **Our server** ("the AppView") is a single Rust process that: (1) syncs
-  Scryfall card data into our own DB as a cache, (2) serves that catalogue and
+  Scryfall card data into our own DB as a cache, (2) serves that catalog and
   the app itself, (3) from Phase 3, consumes a filtered Jetstream firehose to
   index *other people's* published records.
 - **v0 doesn't need the firehose at all.** The client reads its own records
@@ -70,7 +70,7 @@ backend:
   be `NOT NULL`, and the cache needs `layout` and `card_faces`.
 - **Scryfall taxonomies stay strings** in `crates/scryfall` — `layout`,
   `rarity`, `set_type`, `finishes`, `games`, `legalities`. New values appear
-  unannounced and must not fail an unattended sync. Colours are typed; the
+  unannounced and must not fail an unattended sync. Colors are typed; the
   rules close that set.
 - **The client artifact is two files under one version**: cards, and paper
   printings grouped by card in the cards file's order, 4.6MB gzipped.
@@ -97,7 +97,7 @@ backend:
   container**: with one it means "how much is physically in that deck box",
   without one it means "do you own enough copies anywhere". No setting needed.
 - Design entries carry `oracle_id` (required) and `scryfall_id` (optional).
-  Rules reasoning — legality, EDHREC — keys on `oracle_id`; display and flavour
+  Rules reasoning — legality, EDHREC — keys on `oracle_id`; display and flavor
   key on the print. Omitting the print means "any printing". Deck and list
   entries share one shape via a lexicon `defs` ref.
 - Collection entries are one record per stack; deck contents are an embedded
@@ -133,7 +133,7 @@ backend:
   `query()` while the schema churns; adopt `query!` once it settles.
 - **SQLite**, single file, single process. No separate DB server.
 - **Frontend**: TypeScript, built with **Bun** (not npm), lives in `web/`. PWA
-  with a service worker — client-side caching (IndexedDB) of the card catalogue
+  with a service worker — client-side caching (IndexedDB) of the card catalog
   is core to keeping server load light, especially for manual search.
 - **Deploy**: `web/dist` is embedded into the compiled `appview` binary via
   `rust-embed` (+ `axum-embed` or a manual handler) — one binary, no separate

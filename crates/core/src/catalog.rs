@@ -1,4 +1,4 @@
-//! The catalogue artifact: the slice of the cache a browser needs.
+//! The catalog artifact: the slice of the cache a browser needs.
 //!
 //! Two files of positional rows, gzipped once per sync and served from memory.
 //! Which fields, and what they cost, is in `docs/scryfall.md`.

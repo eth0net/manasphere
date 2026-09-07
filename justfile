@@ -13,7 +13,7 @@ check:
     cargo test --locked --all-targets
     cd tools/lexicon-check && bun run check
 
-# serve the catalogue and the client metadata document
+# serve the catalog and the client metadata document
 serve:
     MANASPHERE_DATABASE={{ db }} cargo run -p manasphere-appview
 

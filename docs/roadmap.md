@@ -36,7 +36,7 @@ business.
 ## Phase 1 — Scanner
 
 **Client-side inference.** Recognition runs in the browser (WASM) against a
-precomputed index shipped with the catalogue. No server in the per-scan path,
+precomputed index shipped with the catalog. No server in the per-scan path,
 works offline, nothing leaves the device.
 
 **Beat ManaBox on printing identification.** ManaBox matches art only, so the
@@ -91,7 +91,7 @@ damage, non-English printings — plus bulk scanning from uploaded photos.
   prices are "dangerously stale after 24 hours", for trends and estimates only,
   "not updated frequently enough to power a storefront".
 - If valuation is ever sold, re-source it — TCGplayer and Cardmarket run
-  affiliate programmes with commercial terms. Otherwise keep it free.
+  affiliate programs with commercial terms. Otherwise keep it free.
 - Valuation is collection entries × latest cached price. No new architecture.
 
 ## Phase 3 — Decks
@@ -106,7 +106,7 @@ damage, non-English printings — plus bulk scanning from uploaded photos.
   reference, created the first time it's physically built, so pure concepts
   don't litter the model with empty containers.
 - Three ways to add a card, one schema: bind to a print you own (default), pick
-  one deliberately for flavour, or omit it for "any printing". Legality
+  one deliberately for flavor, or omit it for "any printing". Legality
   checking and recommendations key on `oracle_id`, which every entry carries.
 - **Visibility flag on the record**, for decks, lists and collections:
   `visibility: "unlisted" | "published"`. Not access control — atproto records
@@ -126,10 +126,10 @@ derivative works, and bar using "software or automated agents or scripts to
 generate automated searches, requests, or queries to the Site". The keyless
 `json.edhrec.com` is still their infrastructure, and leaning on a gap between
 it and "the Site" would be lawyering around plain intent. Their robots.txt is
-permissive about crawling, but robots.txt isn't a licence.
+permissive about crawling, but robots.txt isn't a license.
 
 **Link out instead.** A link a human clicks is the user's own browser doing
-what their personal-use licence contemplates, so card pages and search URLs are
+what their personal-use license contemplates, so card pages and search URLs are
 equally fine. What's barred is *our code* fetching either: no prefetch, no
 server-side fetch for preview cards, no iframes. Asking them directly is also a
 real option; small MTG projects do get informal arrangements.
@@ -139,13 +139,13 @@ it's the corpus: co-occurrence data means our users' decks (empty until Explore
 has scale) or someone's scrape, and anything sourced from EDHREC taints the
 model too.
 
-- Most practical value needs no deck corpus. Type lines, mana costs, colour
+- Most practical value needs no deck corpus. Type lines, mana costs, color
   identity, oracle keywords and combo detection are computable from Scryfall
   data we already hold.
 - That buys what EDHREC structurally can't do: **recommendations constrained to
   cards you own.** "Your commander cares about artifacts, here are eleven in
   your binders" is a different product, not a worse copy — no cold start,
-  licence-clean, landing on the collection index we already have.
+  license-clean, landing on the collection index we already have.
 - Same build shape as the scanner index: precompute offline, ship the artifact,
   serve it statically.
 - Co-occurrence is a later enhancement, once Explore provides a corpus of our
@@ -166,7 +166,7 @@ model too.
 
 If it ever happens, it's a **fork, not a namespace**: pull the genuinely shared
 parts into libraries and build a separate app with its own NSID root. The
-domain models barely overlap — no colour identity in Pokémon, different
+domain models barely overlap — no color identity in Pokémon, different
 legality rules, different recognition problem — so one namespace tree
 straddling both would couple things that want to stay apart.
 

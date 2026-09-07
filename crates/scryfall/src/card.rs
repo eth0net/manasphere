@@ -101,9 +101,9 @@ pub struct Prices {
     pub tix: Option<String>,
 }
 
-/// Magic's five colours — the one Scryfall taxonomy the game's rules close.
+/// Magic's five colors — the one Scryfall taxonomy the game's rules close.
 ///
-/// Declared in WUBRG order, so sorting a slice canonicalises it and colour
+/// Declared in WUBRG order, so sorting a slice canonicalizes it and color
 /// identities compare as strings.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Deserialize)]
 pub enum Color {

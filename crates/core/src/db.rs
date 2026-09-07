@@ -16,7 +16,7 @@ pub async fn open(path: impl AsRef<Path>) -> crate::Result<SqlitePool> {
         .filename(path)
         .create_if_missing(true)
         // A weekly sync holds a long write transaction; WAL keeps readers on
-        // the previous catalogue until it commits.
+        // the previous catalog until it commits.
         .journal_mode(SqliteJournalMode::Wal)
         .synchronous(SqliteSynchronous::Normal)
         .foreign_keys(true);

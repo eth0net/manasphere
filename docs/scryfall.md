@@ -15,8 +15,8 @@ terms are in [`ip.md`](ip.md).
   file; on-demand client resolution covers them instead, and the server DB
   stays small. All Cards may return at Phase 3, when the AppView indexes other
   people's records and has to resolve arbitrary printings itself.
-- **Don't push catalogue load onto Scryfall wholesale.** Per-keystroke search
-  against their API would be externalising our load onto a free service that
+- **Don't push catalog load onto Scryfall wholesale.** Per-keystroke search
+  against their API would be externalizing our load onto a free service that
   publishes bulk files specifically so apps don't do that — and it's our API
   access that gets restricted. Serving a trimmed 4-5MB artifact ourselves is
   cheaper for everyone, and it's static, so a CDN makes it near-free.
@@ -36,7 +36,7 @@ terms are in [`ip.md`](ip.md).
 - **Taxonomies grow without notice**, so `layout`, `rarity`, `set_type`,
   `finishes`, `games` and `legalities` stay strings in the parse layer. A
   weekly unattended sync shouldn't fail on a new value, and two undocumented
-  layouts (`front_card`, `prepare`) turned up on the first real run. Colours
+  layouts (`front_card`, `prepare`) turned up on the first real run. Colors
   are the exception: the game's rules close that set.
 - Measured on 2026-09-07: 117,630 printings, streamed and parsed in 2.4s. The
   parse is not the expensive part of a refresh.
@@ -55,9 +55,9 @@ terms are in [`ip.md`](ip.md).
   Moxfield, Archidekt, Deckbox and a plain `scryfall_id`+quantity shape. Being
   easy to leave is the data-ownership pitch made concrete.
 
-## Serialised cards are a printing, not a copy
+## Serialized cards are a printing, not a copy
 
-Scryfall models the printing and stops there. A serialised card carries
+Scryfall models the printing and stops there. A serialized card carries
 `serialized` in `promo_types` — 299 printings across 20 sets, collector numbers
 ending `z`, and `is:serialized` filters them. The Lord of the Rings 1-of-1 One
 Ring is collector number `0`.
@@ -96,7 +96,7 @@ columns are the evidence for what a collection row needs.
 | MTGGoldfish | — | — | — | — | — | — | — |
 | TCGplayer | — | — | — | — | — | — | — |
 
-**No tracker records a serial number**, which settles the serialised question:
+**No tracker records a serial number**, which settles the serialized question:
 treat it as the promo printing it is. Scryfall lists `serialized` alongside
 `boosterfun` and `doublerainbow`, and a dedicated field's key invariant —
 quantity 1 — can't be expressed in a lexicon anyway, so it would be a
@@ -112,7 +112,7 @@ Two columns we would silently drop, both worth settling before import ships:
 
 ManaBox's Binder Name and Type map onto containers, and Dragon Shield's Date
 Bought onto an acquisition's `at`. `note` and `tags` between them give
-serialised numbers, misprints, alters and provenance a home without a typed
+serialized numbers, misprints, alters and provenance a home without a typed
 field each.
 
 ### What you paid is not what it was worth

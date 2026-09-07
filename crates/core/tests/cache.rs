@@ -1,7 +1,7 @@
 //! Card cache tests, against real printings captured 2026-09-07.
 //!
 //! Four cards, each carrying something the schema has to survive: a plain
-//! multicolour creature, a `reversible_card` with no top-level `oracle_id`, a
+//! multicolor creature, a `reversible_card` with no top-level `oracle_id`, a
 //! transform layout, and a Japanese printing with a `printed_name`.
 
 use std::io::Cursor;
@@ -13,7 +13,7 @@ use sqlx::SqlitePool;
 
 const CARDS: &str = include_str!("fixtures/cards.jsonl");
 
-/// Deserialised rather than constructed, so the test doesn't need `uuid`.
+/// Deserialized rather than constructed, so the test doesn't need `uuid`.
 fn bulk(updated_at: &str) -> BulkData {
     serde_json::from_value(serde_json::json!({
         "id": "e2ef41e3-5778-4bc2-af3f-78eca4dd9c23",
@@ -142,7 +142,7 @@ async fn colours_are_canonicalised_to_wubrg_order() {
     assert_eq!(admiral.colors.as_deref(), Some("UBR"));
     assert_eq!(admiral.color_identity, "UBR");
 
-    // The reversible printing carries no colours and nothing else in the
+    // The reversible printing carries no colors and nothing else in the
     // fixture shares its oracle id, so the card has none to inherit.
     assert_eq!(row(&pool, "Jinnie Fay").await.colors, None);
 }
@@ -291,7 +291,7 @@ async fn search_treats_fts_syntax_as_text() {
 }
 
 #[tokio::test]
-async fn an_empty_stream_leaves_the_previous_catalogue_alone() {
+async fn an_empty_stream_leaves_the_previous_catalog_alone() {
     let (pool, _) = seeded().await;
 
     let error = cards::replace(

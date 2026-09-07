@@ -26,7 +26,7 @@ and the optionality was speculation.
 - Changing an *existing* NSID's required shape is not. Records written under it
   are permanent, since we don't control other people's repos. Additive optional
   fields are safe; don't remove fields or add required ones.
-- Merging two collections later should be done by normalising at the AppView
+- Merging two collections later should be done by normalizing at the AppView
   ingest boundary — keep reading both NSIDs, map to one internal
   representation — rather than migrating PDS records, which needs a per-user
   opt-in flow. That's also the escape hatch if the NSID root ever has to move.
@@ -93,7 +93,7 @@ makes migration look frightening:
   (per-account PLC rotation), so it wants settling early and leaving alone.
 
 OAuth `client_id` follows app hosting, so moving domains costs users one
-re-authorisation. Unrelated to NSIDs.
+re-authorization. Unrelated to NSIDs.
 
 ## Sharing
 
@@ -111,7 +111,7 @@ need markup at fetch time rather than after hydration. One of the few things
 v0's otherwise-static server has to do.
 
 **A collection is not a decklist.** Every entry is world-readable by anyone who
-knows the DID, which makes a collection an itemised, valued inventory of
+knows the DID, which makes a collection an itemized, valued inventory of
 physical goods tied to a real identity. Different in kind from a public post,
 and most people importing ten thousand cards won't have thought it through.
 
@@ -145,7 +145,7 @@ not final. It also needs a *spaces-capable* PDS, so adoption is gated on the
 ecosystem rather than on us.
 
 It's also **access control, not confidentiality**: data in a space is
-unencrypted and readable by every authorised member and the host. Spaces gets
+unencrypted and readable by every authorized member and the host. Spaces gets
 you "my friends can see this, strangers can't", never "nobody can". Probably
 the right level for a collection, but say it accurately.
 

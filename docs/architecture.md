@@ -17,7 +17,7 @@ client metadata document we serve. Our server never proxies a write.
   containers.
 - **Read-your-own-writes falls out.** A write would otherwise travel browser →
   PDS → firehose → index before any server-backed view saw it. The client keeps
-  its own materialised view in IndexedDB, reading records from its own PDS with
+  its own materialized view in IndexedDB, reading records from its own PDS with
   `listRecords` on first load.
 - **The PDS is the device-sync mechanism.** Device B reads what device A wrote,
   with nothing of ours in between.
@@ -26,17 +26,17 @@ client metadata document we serve. Our server never proxies a write.
   checking before relying on it.
 
 **So v0 needs no firehose consumer and no query API.** The AppView serves the
-catalogue, the app and the client metadata document, and runs the weekly
+catalog, the app and the client metadata document, and runs the weekly
 Scryfall sync. Indexing earns its place at Phase 3.
 
-## Serving the catalogue
+## Serving the catalog
 
 Built into memory after each sync and served from there — 4.6MB resident, and
 no per-request compression on one vCPU.
 
 Each file's name carries a hash of its own bytes, so a response can claim
 `immutable` for a year and a client that has the file never asks again. A small
-manifest names the current pair and is the only catalogue response that
+manifest names the current pair and is the only catalog response that
 revalidates. The bytes sit gzipped and go out with `Content-Encoding: gzip`; a
 client that explicitly refuses gzip gets a 406 rather than several megabytes of
 decompression done on its behalf.
@@ -63,7 +63,7 @@ what's queried, keep `card_faces` as JSON, discard the rest.
 
 Measured on 2026-09-07: 117,630 printings of 38,633 cards shred to an 81MB
 file including the FTS5 index, written in about 5 seconds. Two columns earn
-normalising. Legalities repeat ~480 bytes on every printing for only 611
+normalizing. Legalities repeat ~480 bytes on every printing for only 611
 distinct combinations, which inline was 47% of the database; the rest of what
 a card's rules say is its own table, for the reasons in
 [`scryfall.md`](scryfall.md). The sync truncates the WAL when it commits,
@@ -83,7 +83,7 @@ for static artifacts, which a CDN fixes cheaply.
 - Scanner index: an estimate, so treat it as one — maybe under 1MB for
   perceptual hashes, ~25MB for embeddings.
 - Weekly deltas have no mechanism yet — computing them means keeping a previous
-  catalogue snapshot server-side, which sits awkwardly with a disposable DB.
+  catalog snapshot server-side, which sits awkwardly with a disposable DB.
 
 | Users | Shape |
 |---|---|
@@ -98,7 +98,7 @@ line by line, and the scanner index build must not run on the VPS at all.
 What would break flat costs, likeliest first: a server-side scanner fallback,
 Explore's network-wide indexing, then price history's unbounded storage.
 
-- PWA + service worker: cache the catalogue in IndexedDB so manual search is
+- PWA + service worker: cache the catalog in IndexedDB so manual search is
   client-side, not a round-trip per keystroke. Biggest lever for keeping the
   server light.
 

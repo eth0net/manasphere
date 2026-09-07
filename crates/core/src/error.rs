@@ -10,18 +10,18 @@ pub enum Error {
     #[error("reading the card stream failed")]
     Scryfall(#[from] manasphere_scryfall::Error),
 
-    /// A full replace that wrote nothing would empty the catalogue, so the
+    /// A full replace that wrote nothing would empty the catalog, so the
     /// transaction rolls back instead.
     #[error("the card stream yielded no usable cards, so nothing was replaced")]
     EmptySync,
 
-    #[error("serialising the catalogue failed")]
+    #[error("serializing the catalog failed")]
     Json(#[from] serde_json::Error),
 
-    #[error("writing the catalogue failed")]
+    #[error("writing the catalog failed")]
     Io(#[from] std::io::Error),
 
-    #[error("no bulk file has been synced, so there is no catalogue to serve")]
+    #[error("no bulk file has been synced, so there is no catalog to serve")]
     EmptyCatalog,
 
     /// The client walks the printings file in runs of `printings` per card, so

@@ -62,7 +62,7 @@ The model makes decks, binders and lists the same thing. The UI should hide it.
   That's why a deck references its container.
 - **Deck view** shows only designs carrying deck metadata; lists get their own
   view. Filtering on kind is the entire mechanism.
-- Containers are an **opt-in organisational layer**. Default to a single
+- Containers are an **opt-in organizational layer**. Default to a single
   "Collection" so someone who doesn't care where a card lives never has to
   answer. Location tracking for those who want it, not a tax on those who
   don't.

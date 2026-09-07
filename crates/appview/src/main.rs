@@ -1,5 +1,5 @@
 //! The Manasphere server: one process that keeps the card cache fresh and
-//! serves the catalogue and the OAuth client metadata document.
+//! serves the catalog and the OAuth client metadata document.
 //!
 //! It has no write handlers. User data lives in the user's own PDS and the
 //! browser writes there directly — see `docs/architecture.md`.
@@ -52,14 +52,14 @@ async fn run() -> Result<(), Box<dyn Error>> {
         public_url: settings.public_url.clone(),
     })?);
 
-    // A restart shouldn't wait on a sync to start serving, so the catalogue
+    // A restart shouldn't wait on a sync to start serving, so the catalog
     // comes from whatever the cache already holds.
     match catalog::build(&pool).await {
         Ok(built) => {
-            tracing::info!(version = %built.version, "serving the catalogue");
+            tracing::info!(version = %built.version, "serving the catalog");
             state.publish(built);
         }
-        Err(error) => tracing::warn!("no catalogue yet: {error}"),
+        Err(error) => tracing::warn!("no catalog yet: {error}"),
     }
 
     if settings.sync {
@@ -91,7 +91,7 @@ async fn shutdown() {
 }
 
 /// Checks the bulk index now and weekly after, syncing when the file has
-/// changed and republishing the catalogue when it has.
+/// changed and republishing the catalog when it has.
 async fn refresh_weekly(pool: SqlitePool, state: Arc<AppState>, user_agent: String) {
     let client = match Client::new(&user_agent) {
         Ok(client) => client,
@@ -106,7 +106,7 @@ async fn refresh_weekly(pool: SqlitePool, state: Arc<AppState>, user_agent: Stri
     loop {
         ticker.tick().await;
         if let Err(error) = refresh(&pool, &state, &client).await {
-            // The previous catalogue is still being served, so a failed
+            // The previous catalog is still being served, so a failed
             // refresh is a warning rather than a reason to stop.
             tracing::error!("refresh failed: {error}");
         }
@@ -139,7 +139,7 @@ async fn refresh(
         cards = built.cards.rows,
         prints = built.prints.rows,
         bytes = built.cards.gzip.len() + built.prints.gzip.len(),
-        "catalogue rebuilt"
+        "catalog rebuilt"
     );
     state.publish(built);
 

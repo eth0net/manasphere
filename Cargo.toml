@@ -25,7 +25,7 @@ manasphere-scryfall = { path = "crates/scryfall" }
 
 async-compression = { version = "0.4.44", features = ["gzip", "tokio"] }
 axum = "0.8.9"
-# The catalogue artifact is compressed once per sync, not per response, so a
+# The catalog artifact is compressed once per sync, not per response, so a
 # plain synchronous encoder fits better than async-compression's stream wrapper.
 flate2 = "1.1.10"
 futures-util = { version = "0.3.34", default-features = false }

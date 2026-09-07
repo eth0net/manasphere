@@ -37,7 +37,7 @@ fn state(published: bool) -> Arc<AppState> {
         AppState::new(&Config {
             public_url: PUBLIC_URL.to_owned(),
         })
-        .expect("client metadata should serialise"),
+        .expect("client metadata should serialize"),
     );
     if published {
         state.publish(catalog());
@@ -95,7 +95,7 @@ async fn the_manifest_names_both_files() {
 }
 
 #[tokio::test]
-async fn a_catalogue_file_is_gzip_encoded_and_immutable() {
+async fn a_catalog_file_is_gzip_encoded_and_immutable() {
     let response = get(&state(true), "/catalog/prints.2222222222222222.json").await;
 
     assert_eq!(response.status(), StatusCode::OK);
@@ -144,7 +144,7 @@ async fn refusing_gzip_is_refused_rather_than_answered_uncompressed() {
 }
 
 #[tokio::test]
-async fn a_stale_catalogue_path_is_not_found() {
+async fn a_stale_catalog_path_is_not_found() {
     let response = get(&state(true), "/catalog/cards.0000000000000000.json").await;
     assert_eq!(response.status(), StatusCode::NOT_FOUND);
 }

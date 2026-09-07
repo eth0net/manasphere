@@ -41,8 +41,8 @@ pub async fn last_synced(pool: &SqlitePool, kind: &str) -> Result<Option<String>
 
 /// Replaces the entire cache from `cards`, in one transaction.
 ///
-/// Readers stay on the previous catalogue until it commits, and a failure part
-/// way leaves that catalogue intact.
+/// Readers stay on the previous catalog until it commits, and a failure part
+/// way leaves that catalog intact.
 ///
 /// # Errors
 ///
@@ -112,7 +112,7 @@ pub async fn replace(
 
     tx.commit().await?;
 
-    // The replace writes the whole catalogue, so the WAL is about as large as
+    // The replace writes the whole catalog, so the WAL is about as large as
     // the database until it's checkpointed. Small VPS, so reclaim it now.
     sqlx::query("PRAGMA wal_checkpoint(TRUNCATE)")
         .execute(pool)
@@ -393,7 +393,7 @@ fn oracle_id(card: &Card) -> Option<String> {
     faces.into_iter().find_map(|face| face.oracle_id)
 }
 
-/// WUBRG order, so a colour identity compares as a string. `Color` is declared
+/// WUBRG order, so a color identity compares as a string. `Color` is declared
 /// in that order, so sorting is enough.
 fn canonical_colors(colors: &[Color]) -> String {
     let mut sorted = colors.to_vec();
@@ -510,7 +510,7 @@ const UNGROUPED: &str = "\
              c.booster DESC, c.released_at DESC
     LIMIT ?5";
 
-/// Name search, for a client that hasn't cached the catalogue yet.
+/// Name search, for a client that hasn't cached the catalog yet.
 ///
 /// Ranks cards above tokens above art series, and an exact name match above
 /// all three: someone typing a token's name means the token.

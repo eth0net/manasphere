@@ -1,6 +1,6 @@
 //! HTTP handlers.
 //!
-//! v0 serves three things: the catalogue artifact, the OAuth client metadata
+//! v0 serves three things: the catalog artifact, the OAuth client metadata
 //! document, and a health check. There are no write handlers, and there will
 //! not be — the browser writes to the user's own PDS. See
 //! `docs/architecture.md`.
@@ -21,7 +21,7 @@ use serde::Serialize;
 
 const JSON: &str = "application/json";
 
-/// Catalogue files are named after their own content, so a client that has one
+/// Catalog files are named after their own content, so a client that has one
 /// never needs to ask about it again.
 const IMMUTABLE: &str = "public, max-age=31536000, immutable";
 
@@ -58,7 +58,7 @@ pub struct AppState {
 impl AppState {
     /// # Errors
     ///
-    /// Fails if the client metadata document won't serialise.
+    /// Fails if the client metadata document won't serialize.
     pub fn new(config: &Config) -> serde_json::Result<Self> {
         Ok(Self {
             published: RwLock::new(None),
@@ -66,10 +66,10 @@ impl AppState {
         })
     }
 
-    /// Swaps in a freshly built catalogue.
+    /// Swaps in a freshly built catalog.
     pub fn publish(&self, catalog: Catalog) {
         // The lock guards one Arc swap, so poisoning it can't leave a
-        // half-written catalogue and recovering from it loses nothing.
+        // half-written catalog and recovering from it loses nothing.
         *self
             .published
             .write()
@@ -84,7 +84,7 @@ impl AppState {
     }
 }
 
-/// A catalogue with its manifest rendered and its bodies refcounted. All of it
+/// A catalog with its manifest rendered and its bodies refcounted. All of it
 /// changes together.
 #[derive(Debug)]
 struct Published {
@@ -209,7 +209,7 @@ pub fn router(state: Arc<AppState>) -> Router {
 
 #[derive(Debug, Serialize)]
 struct Health {
-    /// The bulk file the served catalogue was built from, absent before the
+    /// The bulk file the served catalog was built from, absent before the
     /// first sync finishes.
     catalog: Option<String>,
 }
@@ -240,7 +240,7 @@ async fn manifest(State(state): State<Arc<AppState>>, headers: HeaderMap) -> Res
         [
             (CONTENT_TYPE, JSON),
             // Small, and the paths it names change weekly, so it is the one
-            // catalogue response a client has to revalidate.
+            // catalog response a client has to revalidate.
             (CACHE_CONTROL, "no-cache"),
             (ETAG, published.etag.as_str()),
         ],
@@ -258,7 +258,7 @@ async fn catalog_file(
         return unavailable();
     };
     let Some(file) = published.files.iter().find(|file| file.name == name) else {
-        return (StatusCode::NOT_FOUND, "no such catalogue file\n").into_response();
+        return (StatusCode::NOT_FOUND, "no such catalog file\n").into_response();
     };
     if unchanged(&headers, &file.etag) {
         return not_modified(&file.etag);
@@ -268,7 +268,7 @@ async fn catalog_file(
         // a caller several megabytes of work per request.
         return (
             StatusCode::NOT_ACCEPTABLE,
-            "the catalogue is only served gzip-encoded\n",
+            "the catalog is only served gzip-encoded\n",
         )
             .into_response();
     }
@@ -293,7 +293,7 @@ fn unavailable() -> Response {
     (
         StatusCode::SERVICE_UNAVAILABLE,
         [(CACHE_CONTROL, "no-store")],
-        "the catalogue has not been built yet\n",
+        "the catalog has not been built yet\n",
     )
         .into_response()
 }

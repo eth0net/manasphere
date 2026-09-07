@@ -1,6 +1,6 @@
 # Licensing and IP
 
-What can be built and charged for, and under what licence it ships.
+What can be built and charged for, and under what license it ships.
 
 - **AGPL-3.0-only** for the AppView — server, web UI, the running service.
 - **MIT** for `lexicons/`. NSID schemas are shared vocabulary and the point is
@@ -8,7 +8,7 @@ What can be built and charged for, and under what licence it ships.
   that. Same argument, weaker, for `crates/core`.
 - Per-crate `license` fields in each `Cargo.toml` carry the split. GitHub only
   detects the root LICENSE, so the README explains it.
-- Why AGPL rather than MIT/Apache like the rest of atproto: loosening a licence
+- Why AGPL rather than MIT/Apache like the rest of atproto: loosening a license
   later is trivial, tightening one forks projects (HashiCorp → OpenTofu, Redis
   → Valkey). Permissive would permanently foreclose a hosted option.
 - Contributions take a DCO (`Signed-off-by`, via `git commit -s`), not a CLA.
@@ -37,7 +37,7 @@ Unresolved, not permission.
   anonymously or free.
 - No repackaging, republishing or proxying. Our software must add value.
 - Image rules bind the UI: don't crop or cover the copyright or artist name,
-  don't distort or recolour, no watermarks, and `art_crop` needs artist and
+  don't distort or recolor, no watermarks, and `art_crop` needs artist and
   copyright shown in the same interface.
 - Don't imply Scryfall endorsement.
 

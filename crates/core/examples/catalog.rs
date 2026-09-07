@@ -1,4 +1,4 @@
-//! Builds the client catalogue artifact from a synced cache and reports its
+//! Builds the client catalog artifact from a synced cache and reports its
 //! size, which is the number that has to stay under the target in
 //! `docs/architecture.md`.
 //!

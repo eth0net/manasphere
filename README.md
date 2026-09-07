@@ -38,7 +38,7 @@ lexicons/              NSID JSON schemas
 See [CONTRIBUTING.md](CONTRIBUTING.md). Commits need a DCO sign-off
 (`git commit -s`); there's no CLA.
 
-## Licence
+## License
 
 The AppView is licensed under [AGPL-3.0](LICENSE) — self-host it freely, but if
 you run a modified version as a network service, your users get the source.

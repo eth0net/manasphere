@@ -1,4 +1,4 @@
-//! The catalogue artifact, built from the same printings as `cache.rs`.
+//! The catalog artifact, built from the same printings as `cache.rs`.
 
 use std::io::{Cursor, Read as _};
 
@@ -52,7 +52,7 @@ fn rows(file: &Value, key: &str) -> Vec<Vec<Value>> {
 }
 
 #[tokio::test]
-async fn an_unsynced_cache_has_no_catalogue() {
+async fn an_unsynced_cache_has_no_catalog() {
     let pool = open_memory().await.unwrap();
     assert!(matches!(
         catalog::build(&pool).await,

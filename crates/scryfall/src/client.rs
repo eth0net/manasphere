@@ -20,7 +20,7 @@ impl Client {
     /// # Errors
     ///
     /// Fails if the user agent isn't a valid header value, or the TLS backend
-    /// won't initialise.
+    /// won't initialize.
     pub fn new(user_agent: &str) -> Result<Self> {
         Ok(Self {
             http: reqwest::Client::builder().user_agent(user_agent).build()?,
