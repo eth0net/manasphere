@@ -54,9 +54,13 @@ backend:
 - Don't store images or image URIs — hotlink Scryfall's CDN, deriving URLs from
   the card id. Keep `image_status`.
 - **Card objects aren't uniformly shaped.** `layout: reversible_card` has no
-  top-level `oracle_id`, `mana_cost`, `type_line`, `colors` or `image_uris` —
-  those live on `card_faces`. So `oracle_id` can't be `NOT NULL`, and the cache
-  needs `layout` and `card_faces`.
+  top-level `oracle_id`, `cmc`, `mana_cost`, `type_line`, `oracle_text`,
+  `colors` or `image_uris` — those live on `card_faces`. So `oracle_id` can't
+  be `NOT NULL`, and the cache needs `layout` and `card_faces`.
+- **Scryfall taxonomies stay strings** in `crates/scryfall` — `layout`,
+  `rarity`, `set_type`, `finishes`, `games`, `legalities`. New values appear
+  unannounced and must not fail an unattended sync. Colours are typed; the
+  rules close that set.
 - The client gets a trimmed subset, not the whole cache — English gameplay data
   plus a name index for the languages that user owns.
 - Price cache: **separate table**, keyed by `scryfall_id` + source + timestamp.
@@ -141,9 +145,11 @@ manasphere/
 
 ## Build order (where we are / what's next)
 
-1. Scaffold the Cargo workspace + crates above.
-2. `crates/scryfall` — bulk-data sync → SQLite card cache. **No atproto
-   dependency — do this first.**
+1. **Done** — workspace scaffold, and `crates/scryfall`: bulk-data index,
+   streaming NDJSON reader, card parse. Offline fixture tests plus an example
+   that streams the real file.
+2. Card cache in `crates/core` — SQLite schema and migrations fed by a
+   `CardStream`. **Next**, and still free of any atproto dependency.
 3. Design the lexicons. Now on the critical path, and the layer that's
    expensive to change later.
 4. Serve the catalog artifact + the client metadata document. Small.

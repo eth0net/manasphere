@@ -17,8 +17,13 @@ cd manasphere
 cargo test
 ```
 
-The workspace is empty until the first crate lands, so `cargo test` won't
-resolve `crates/*` yet.
+Tests are offline: they run against Scryfall responses captured under
+`crates/*/tests/fixtures`. The one thing that talks to Scryfall is an example,
+run by hand, because it pulls ~78MB from a free service:
+
+```sh
+cargo run --release -p manasphere-scryfall --example stream
+```
 
 ## Before opening a pull request
 

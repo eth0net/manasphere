@@ -447,14 +447,24 @@ own DIDs; a real trust assumption once Explore indexes arbitrary users.
 - The client gets English gameplay data plus a name index for the languages
   that user owns. Non-English printings mostly share gameplay data with
   English; what differs is name, type line, oracle text and image.
-- Bulk files are **gzipped JSONL**. Stream line by line; parsing whole will OOM
-  a 1GB box.
+- Bulk files are **gzipped JSONL**, one card per line, served as
+  `application/gzip` with an ETag and `accept-ranges`. Stream line by line;
+  parsing whole will OOM a 1GB box. The index entry gives
+  `jsonl_download_uri` and `compressed_size` — the older `download_uri` /
+  `content_encoding` pair is gone.
 - **Card objects aren't uniformly shaped, and this bites on the first sync.**
-  `layout: reversible_card` (81 printings) has no top-level `oracle_id`,
-  `mana_cost`, `type_line`, `colors` or `image_uris` — all on `card_faces`.
-  Transform layouts have null top-level `mana_cost` and face-level images. So
-  `oracle_id` cannot be `NOT NULL`, and the cache needs `layout` and
-  `card_faces`.
+  `layout: reversible_card` (81 printings) has no top-level `oracle_id`, `cmc`,
+  `mana_cost`, `type_line`, `oracle_text`, `colors` or `image_uris` — all on
+  `card_faces`. Transform layouts have null top-level `mana_cost` and
+  face-level images. So `oracle_id` cannot be `NOT NULL`, and the cache needs
+  `layout` and `card_faces`.
+- **Taxonomies grow without notice**, so `layout`, `rarity`, `set_type`,
+  `finishes`, `games` and `legalities` stay strings in the parse layer. A
+  weekly unattended sync shouldn't fail on a new value, and two undocumented
+  layouts (`front_card`, `prepare`) turned up on the first real run. Colours
+  are the exception: the game's rules close that set.
+- Measured on 2026-09-07: 117,630 printings, streamed and parsed in 2.4s. The
+  parse is not the expensive part of a refresh.
 - The bulk files include digital-only printings, tokens and art series. Decide
   what manual search surfaces before shipping the catalog, or users get Alchemy
   rebalances in their results.
