@@ -149,7 +149,7 @@ async fn insert(tx: &mut Transaction<'_, Sqlite>, card: &Card, legalities_id: i6
         )",
     )
     .bind(card.id.to_string())
-    .bind(card.oracle_id.map(|id| id.to_string()))
+    .bind(oracle_id(card))
     .bind(&card.name)
     .bind(&card.printed_name)
     .bind(&card.lang)
@@ -195,6 +195,26 @@ async fn insert(tx: &mut Transaction<'_, Sqlite>, card: &Card, legalities_id: i6
     .await?;
 
     Ok(())
+}
+
+/// Scryfall omits the top-level `oracle_id` on `reversible_card` printings, but
+/// both faces carry it and across all 81 they agree. Lift it, or a card you own
+/// can't be referenced by a deck: design entries key on `oracle_id`.
+///
+/// Still nullable in the schema — a future layout might carry neither, and that
+/// shouldn't fail a sync.
+fn oracle_id(card: &Card) -> Option<String> {
+    #[derive(serde::Deserialize)]
+    struct Face {
+        oracle_id: Option<String>,
+    }
+
+    if let Some(id) = card.oracle_id {
+        return Some(id.to_string());
+    }
+
+    let faces: Vec<Face> = serde_json::from_str(card.card_faces.as_ref()?.get()).ok()?;
+    faces.into_iter().find_map(|face| face.oracle_id)
 }
 
 /// WUBRG order, so a colour identity compares as a string. `Color` is declared

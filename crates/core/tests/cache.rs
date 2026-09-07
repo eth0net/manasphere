@@ -95,15 +95,34 @@ async fn replace_writes_every_card_and_records_the_file() {
     );
 }
 
-/// A `NOT NULL` on `oracle_id` would fail here, ~80 printings into a real sync.
+/// Scryfall gives `reversible_card` printings no top-level `oracle_id`, so the
+/// cache lifts it off the faces. Without that, a card you own can't be put in a
+/// deck, since design entries key on `oracle_id`.
 #[tokio::test]
-async fn reversible_cards_store_a_null_oracle_id_and_keep_their_faces() {
+async fn reversible_cards_get_their_oracle_id_from_the_faces() {
     let (pool, _) = seeded().await;
 
     let jinnie = row(&pool, "Jinnie Fay").await;
-    assert_eq!(jinnie.oracle_id, None);
+    assert_eq!(
+        jinnie.oracle_id.as_deref(),
+        Some("61fbaaf2-4286-4e9a-b9cb-aa31262b596a"),
+    );
+    // The rest of the gameplay data still only exists on the faces.
     assert_eq!(jinnie.mana_cost, None);
     assert!(jinnie.card_faces.is_some());
+}
+
+/// Every printing in Default Cards resolves to an oracle id one way or the
+/// other, so nothing in the fixture should be left without one.
+#[tokio::test]
+async fn every_printing_resolves_to_an_oracle_id() {
+    let (pool, _) = seeded().await;
+
+    let (missing,): (i64,) = sqlx::query_as("SELECT count(*) FROM cards WHERE oracle_id IS NULL")
+        .fetch_one(&pool)
+        .await
+        .unwrap();
+    assert_eq!(missing, 0);
 }
 
 #[tokio::test]
