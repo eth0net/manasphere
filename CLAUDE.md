@@ -12,6 +12,12 @@ what can be *built*, not only what can be charged for.
 each decision. This file is the condensed orientation for picking the project
 back up.
 
+Prose here and in `lexicons/` is read more often than it is written, so keep
+it short: the non-obvious fact and its one consequence. Lexicon descriptions
+say what a field is, never why — measured against Bluesky, WhiteWind and
+Leaflet, real ones run to a median of 48 characters and Leaflet describes no
+fields at all. Reasoning belongs in `docs/roadmap.md`.
+
 ## Core architecture
 
 This is an **AppView** in atproto terms, not a normal app-owns-its-data
