@@ -8,15 +8,16 @@ Not a business. Running costs look light enough they may never need funding.
 WotC's Fan Content Policy, Scryfall's API terms and EDHREC's terms constrain
 what can be *built*, not only what can be charged for.
 
-`docs/roadmap.md` holds the fuller phase breakdown and the reasoning behind
-each decision. This file is the condensed orientation for picking the project
-back up.
+`docs/roadmap.md` holds the phases; the reasoning sits with its subject in
+`docs/data-model.md`, `architecture.md`, `scryfall.md`, `atproto.md` and
+`ip.md`. This file is the condensed orientation for picking the project back
+up.
 
 Prose here and in `lexicons/` is read more often than it is written, so keep
 it short: the non-obvious fact and its one consequence. Lexicon descriptions
 say what a field is, never why — measured against Bluesky, WhiteWind and
 Leaflet, real ones run to a median of 48 characters and Leaflet describes no
-fields at all. Reasoning belongs in `docs/roadmap.md`.
+fields at all. Reasoning belongs in `docs/`.
 
 ## Core architecture
 
@@ -78,7 +79,7 @@ backend:
   an hour and 11,666 a day by default (`applyWrites` caps at 200 per call; a
   create costs 3 of an hourly 5,000-point budget). A large import is a
   resumable background job measured in hours, and `importRepo` can't shortcut
-  it. See `docs/roadmap.md`.
+  it. See `docs/atproto.md`.
 - Collection entries reference `scryfall_id` (exact print), not `oracle_id` —
   we track specific physical cards (set/collector number/finish), same as
   ManaBox.
@@ -153,7 +154,12 @@ manasphere/
     jetstream/           # firehose consumer (lib)
     scryfall/            # bulk-data fetch/parse (lib)
   docs/
-    roadmap.md
+    roadmap.md           # phases and scope
+    data-model.md        # owned vs referenced, keys, designs, history
+    architecture.md      # AppView shape, local-first, storage, scaling
+    scryfall.md          # bulk data, cache, migrations, import formats
+    atproto.md           # lexicons, PDS limits, OAuth, sharing
+    ip.md                # WotC/Scryfall/EDHREC constraints, licensing
   lexicons/              # NSID JSON schema files
   tools/lexicon-check/   # validates lexicons/ against atproto's own validator
   web/                   # TS frontend, own Bun toolchain, not in Cargo workspace

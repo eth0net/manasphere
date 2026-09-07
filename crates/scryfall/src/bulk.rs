@@ -36,7 +36,7 @@ pub struct BulkData {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum BulkKind {
     /// One printing per card, English or the only printed language. Manasphere's
-    /// catalogue source: see `docs/roadmap.md` for why not [`Self::AllCards`].
+    /// catalogue source: see `docs/scryfall.md` for why not [`Self::AllCards`].
     DefaultCards,
     /// Every printing in every language, several times the size.
     AllCards,

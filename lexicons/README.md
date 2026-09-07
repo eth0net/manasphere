@@ -16,7 +16,7 @@ than AGPL like the rest of the repo — schemas are shared vocabulary. See
 Deck, list and snapshot run ahead of their implementation; decks arrive in
 Phase 3. They stay freely changeable until records exist.
 
-Why the shapes are what they are: [`docs/roadmap.md`](../docs/roadmap.md).
+Why the shapes are what they are: [`docs/data-model.md`](../docs/data-model.md).
 
 ## Changing these
 

@@ -1,8 +1,8 @@
 //! Shared database models and logic.
 //!
-//! Deliberately free of atproto dependencies — see `docs/roadmap.md`. User data
-//! lives in PDSes; this is the card cache and, later, the index over published
-//! records.
+//! Deliberately free of atproto dependencies — see `docs/architecture.md`.
+//! User data lives in PDSes; this is the card cache and, later, the index over
+//! published records.
 
 pub mod cards;
 mod db;

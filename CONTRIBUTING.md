@@ -1,6 +1,6 @@
 # Contributing
 
-Manasphere is pre-v0: plenty of design in [`docs/roadmap.md`](docs/roadmap.md),
+Manasphere is pre-v0: plenty of design in [`docs/`](docs/roadmap.md),
 little code yet. The most useful contribution is a second opinion on the
 lexicon shapes, before records exist in other people's PDSes — that's the part
 expensive to change later.
@@ -60,4 +60,4 @@ Developed with [Claude Code](https://claude.com/claude-code).
 Contributions to the AppView are AGPL-3.0, and contributions to `lexicons/` are
 MIT, each matching the code around them. Submitting a pull request agrees to
 that. The split is deliberate — NSID schemas are shared vocabulary — and the
-roadmap's Licensing section has the reasoning.
+reasoning is in [`docs/ip.md`](docs/ip.md).

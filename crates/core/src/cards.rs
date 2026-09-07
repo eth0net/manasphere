@@ -279,7 +279,7 @@ pub struct CardBrief {
 /// Name search, for a client that hasn't cached the catalogue yet.
 ///
 /// Unfiltered: digital-only printings, tokens and art series all match. What
-/// manual search should surface is still open — see `docs/roadmap.md`.
+/// manual search should surface is still open — see `docs/scryfall.md`.
 ///
 /// # Errors
 ///

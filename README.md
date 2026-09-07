@@ -28,7 +28,7 @@ crates/api             axum route handlers
 crates/appview         the binary that wires them together
 crates/jetstream       firehose consumer
 crates/scryfall        bulk-data fetch/parse
-docs/roadmap.md        phases, decisions and why
+docs/                  roadmap, and the reasoning behind each decision
 lexicons/              NSID JSON schemas
 web/                   frontend
 ```
