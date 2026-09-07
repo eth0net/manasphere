@@ -31,15 +31,30 @@ Scryfall sync. Indexing earns its place at Phase 3.
 
 ## Serving the catalog
 
-Built into memory after each sync and served from there — 4.6MB resident, and
-no per-request compression on one vCPU.
+**Everything a browser fetches is static**, so a CDN serves it and the binary
+serves none of it in production: the app, the two catalog files, the manifest
+naming them, and the OAuth client metadata document. What's left on the box is
+the weekly sync that generates them, and from Phase 3 the firehose consumer and
+query API.
 
-Each file's name carries a hash of its own bytes, so a response can claim
-`immutable` for a year and a client that has the file never asks again. A small
-manifest names the current pair and is the only catalog response that
-revalidates. The bytes sit gzipped and go out with `Content-Encoding: gzip`; a
-client that explicitly refuses gzip gets a 406 rather than several megabytes of
-decompression done on its behalf.
+Bandwidth isn't the main reason. The client metadata document has to be
+reachable at the `client_id` it declares or login fails outright, and that is
+the worst thing to have depend on one small VPS staying up.
+
+Filenames carry a hash of their contents, so a response can claim `immutable`
+for a year. The manifest is the only part a client re-fetches, and it sits
+outside the directory holding them: Cloudflare Pages gives a request the
+headers of *every* matching rule and comma-joins same-named ones, so
+overlapping patterns would tell a client `immutable, no-cache`.
+
+Getting them there is a separate upload — `wrangler pages deploy` over the
+site directory — so the sync job needs a Cloudflare token while the serving
+path needs nothing of ours. Untried so far.
+
+Files ship uncompressed and the CDN compresses them. Brotli gets the pair to
+**3.67MB against 4.60MB** for the gzip we were shipping ourselves — 20% better
+for no work, and more than the largest saving left in the format itself. The
+dev server sends them as they are, which localhost doesn't mind.
 
 ## Storage: why SQL
 
@@ -77,9 +92,9 @@ the firehose. Per-user cost is a few index rows and a trickle of events —
 nobody edits a collection thousands of times a day. What scales is bandwidth
 for static artifacts, which a CDN fixes cheaply.
 
-- Client artifact: **4.6MB gzipped**, 11.3MB before compression, for 37,563
-  cards and 108,275 paper printings. Measured; the shape is in
-  [`scryfall.md`](scryfall.md).
+- Client artifact: **3.67MB brotli**, 11.3MB before compression, for 37,563
+  cards and 108,275 paper printings. Measured, and served by a CDN rather than
+  by us; the shape is in [`scryfall.md`](scryfall.md).
 - Scanner index: an estimate, so treat it as one — maybe under 1MB for
   perceptual hashes, ~25MB for embeddings.
 - Weekly deltas have no mechanism yet — computing them means keeping a previous

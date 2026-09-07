@@ -35,9 +35,14 @@ backend:
   data. OAuth is a browser-side public client (PKCE + DPoP); the `client_id` is
   the URL of a static client metadata document we serve.
 - **Our server** ("the AppView") is a single Rust process that: (1) syncs
-  Scryfall card data into our own DB as a cache, (2) serves that catalog and
-  the app itself, (3) from Phase 3, consumes a filtered Jetstream firehose to
-  index *other people's* published records.
+  Scryfall card data into our own DB as a cache, (2) generates the static site
+  from that cache for a CDN to serve, (3) from Phase 3, consumes a filtered
+  Jetstream firehose to index *other people's* published records.
+- **Everything a browser fetches is static and lives on a CDN** — the app, the
+  catalog artifact and the OAuth client metadata document. The binary serves
+  the site directory too, but only so the client has something local to
+  develop against. Login failing because a small VPS is down was the deciding
+  argument.
 - **v0 doesn't need the firehose at all.** The client reads its own records
   straight from its own PDS (`listRecords`) and keeps a local view in
   IndexedDB, so the PDS is the sync mechanism between a user's devices.
@@ -76,9 +81,10 @@ backend:
   unannounced and must not fail an unattended sync. Colors are typed; the
   rules close that set.
 - **The client artifact is two files under one version**: cards, and paper
-  printings grouped by card in the cards file's order, 4.6MB gzipped.
-  Positional rows with integer codes for low-cardinality columns, and no
-  oracle text or legality — collection tracking needs neither.
+  printings grouped by card in the cards file's order. Written uncompressed
+  for the CDN to compress, which brotli does to 3.67MB. Positional rows with
+  integer codes for low-cardinality columns, and no oracle text or legality —
+  collection tracking needs neither.
 - Price cache: **separate table**, keyed by `scryfall_id` + source + timestamp.
   Not built — nothing writes it before Phase 2, so the schema would be dead.
   Note there is **no prices bulk file** — prices exist only as fields inside
@@ -138,14 +144,14 @@ backend:
 - **Frontend**: TypeScript, built with **Bun** (not npm), lives in `web/`. PWA
   with a service worker — client-side caching (IndexedDB) of the card catalog
   is core to keeping server load light, especially for manual search.
-- **Deploy**: `web/dist` is embedded into the compiled `appview` binary via
-  `rust-embed` (+ `axum-embed` or a manual handler) — one binary, no separate
-  static file sync. Build orchestrated with a `justfile`, **not** `build.rs`
-  (build.rs would run on every `cargo check`, dragging Bun into routine Rust
-  iteration and making Bun a hard dependency for Rust-only builds/tests).
+- **Deploy**: static parts to Cloudflare Pages, which **reverses the earlier
+  `rust-embed` decision** — there is nothing to embed, and Bun never enters a
+  Rust build at all. The binary writes a site directory (`MANASPHERE_SITE`);
+  uploading it is a separate step. Still a `justfile` rather than `build.rs`,
+  for the same reason as before.
 - **Local dev**: frontend runs its own dev server (`bun run dev`, hot reload)
-  proxying to the Rust API port. Only run the full embed-and-build path when
-  preparing an actual deploy.
+  fetching the catalog from the binary's site directory. Nothing has to be
+  built into anything.
 - **Hosting**: existing Vultr VPS, 1 vCPU / 1GB RAM. Sufficient for
   single-user/small-friend-group scale given the filtered-firehose approach —
   the Scryfall bulk-data refresh is the bigger periodic resource event to
@@ -188,10 +194,10 @@ manasphere/
    Deck, list and snapshot precede their implementation deliberately: the
    design entry and collection entry interlock, so the join wants settling
    together.
-4. **Done** — the `manasphere` binary. Builds the client artifact from the
-   cache, serves it content-addressed behind a manifest, serves the OAuth
-   client metadata document, and refreshes the cache weekly. Configured from
-   the environment; `just serve`.
+4. **Done** — the `manasphere` binary. Generates the static site from the
+   cache (content-addressed artifact, manifest, client metadata document,
+   Pages `_headers`), serves it for local development, and refreshes the cache
+   weekly. Configured from the environment; `just serve`.
 5. Web client: OAuth, reads from own PDS, local view in IndexedDB, writes back.
    Where the data model actually gets exercised, so no longer "last".
 6. A dev CLI writing records with an app password, to seed fixtures without the

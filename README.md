@@ -11,16 +11,17 @@ game toolkit later.
 
 Pre-v0, and it runs. `crates/scryfall` streams Scryfall's bulk data,
 `crates/core` shreds 117,630 printings of 38,633 cards into an 81MB SQLite
-file, and the `manasphere` binary serves the 4.6MB client artifact built from
-it alongside the OAuth client metadata document. The lexicons are validated
-against atproto's own implementation in CI. No client yet.
+file, and the `manasphere` binary turns that into the static site a browser
+needs — a 3.67MB client artifact and the OAuth client metadata document. The
+lexicons are validated against atproto's own implementation in CI. No client
+yet.
 
 ## Stack
 
 - Rust workspace — `axum` API, SQLite, a Jetstream firehose consumer and a
   Scryfall bulk-data sync, all in one binary.
-- TypeScript PWA in `web/`, built with Bun and embedded into the binary at
-  release time.
+- TypeScript PWA in `web/`, built with Bun and deployed to a CDN alongside the
+  catalog artifact. Nothing a browser fetches comes from the binary.
 
 ## Layout
 
