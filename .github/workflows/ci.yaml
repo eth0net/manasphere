@@ -55,7 +55,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
-      # Keep in step with rust-version in Cargo.toml.
-      - uses: dtolnay/rust-toolchain@1.98
+      # Read from Cargo.toml so rust-version is the only place the floor lives.
+      - id: msrv
+        run: >-
+          sed -n 's/^rust-version = "\(.*\)"/version=\1/p' Cargo.toml
+          >> "$GITHUB_OUTPUT"
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: ${{ steps.msrv.outputs.version }}
       - uses: Swatinem/rust-cache@v2
       - run: cargo check --locked
