@@ -11,10 +11,9 @@ game toolkit later.
 
 Pre-v0, and it runs. `crates/scryfall` streams Scryfall's bulk data,
 `crates/core` shreds 117,630 printings of 38,633 cards into an 81MB SQLite
-file, and the `manasphere` binary turns that into the static site a browser
-needs — a 3.67MB client artifact and the OAuth client metadata document. The
-lexicons are validated against atproto's own implementation in CI. No client
-yet.
+file, and the `manasphere` binary exports the 3.67MB catalog a browser needs.
+The lexicons are validated against atproto's own implementation in CI, along
+with the OAuth client metadata document. No client yet.
 
 ## Stack
 
@@ -27,11 +26,12 @@ yet.
 
 ```
 crates/scryfall        bulk-data fetch/parse
-crates/core            card cache, and the artifact the client caches
+crates/core            card cache, and the catalog the client caches
 crates/api             axum route handlers
 crates/appview         the `manasphere` binary
 docs/                  roadmap, and the reasoning behind each decision
 lexicons/              NSID JSON schemas
+web/public/oauth/      the OAuth client metadata document
 ```
 
 ## Contributing

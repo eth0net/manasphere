@@ -57,16 +57,40 @@ the reference provider defaults it on (`atprotoLoopbackClientMetadata`), so it
 works unless a PDS explicitly disables it.
 
 `client_id` must be exactly `http://localhost` — no port, no path, and
-`127.0.0.1` is rejected. Redirect URIs go in query parameters on the
+`127.0.0.1` is rejected there. Redirect URIs go in query parameters on the
 `client_id`, defaulting to `http://127.0.0.1/` and `http://[::1]/`, and ports
-aren't matched, so a shifting dev-server port is fine. Refresh tokens are
-granted.
+aren't matched, so a shifting dev-server port is fine.
+
+**The dev server has to be reached at `http://127.0.0.1:<port>`, not
+`http://localhost:<port>`.** The rule inverts between the two fields: the
+client id must say `localhost`, and the redirect must not, because the provider
+refuses `localhost` as a redirect host. `@atproto/oauth-client-browser` hides
+this behind a hard redirect and then throws if the ports disagree.
+
+Sessions have a ceiling worth knowing before designing around them. Any public
+client — `token_endpoint_auth_method: none`, not first-party — gets access
+tokens of 60 minutes and a session and refresh lifetime of **two weeks**, in
+production as much as in dev. A resumable multi-hour import fits inside that; a
+job meant to run unattended for weeks does not.
 
 ## The client metadata document
 
-Served at its own `client_id`, and generated from the configured public URL so
-the two can't drift apart. A public client: PKCE, DPoP-bound tokens, and no
-authentication at the token endpoint, since a browser keeps no secret.
+`web/public/oauth/client-metadata.json`, committed and deployed with the app. A
+public client: PKCE, DPoP-bound tokens, and no authentication at the token
+endpoint, since a browser keeps no secret.
+
+**Committed rather than generated**, because the client imports the same bytes
+to decide what to request and a subset is all it may ask for. Generating it
+per environment would also invent the problem it appears to solve: the
+`client_id` is whatever string the bundle sends, so one production URL serves
+every deployment, and only a client deriving it from `window.location` breaks.
+
+`client_id` must equal the URL it is fetched from exactly, and the reference
+provider additionally requires `client_uri` to be a parent path of it. The
+response has to be a plain 200 with `application/json` — not a redirect, not
+another 2xx — which a single-page fallback quietly violates by answering 200
+with HTML for a missing path. Worth a post-deploy fetch rather than trusting a
+local check.
 
 Scopes are granular — `repo:app.manasphere.card` and one per other record type
 we write, which is all a client that writes only its own records needs. Reads
@@ -74,6 +98,24 @@ need no scope, records being publicly fetchable. `transition:generic` is listed
 too, because a PDS without permissions support rejects the granular ones
 outright; it grants app-password-level access to the whole repo, so the client
 asks for it last and the entry comes out once granular scopes can be assumed.
+
+**`repo:` takes `*` or an exact NSID, and nothing in between.** There is no
+`repo:app.manasphere.*`, so the enumeration is the only granular form, and
+adding a record type later means adding a scope — which costs every existing
+user a fresh consent. All five are declared now though v0 writes two, because
+an unused scope costs a longer consent screen and the alternative costs a
+migration. `tools/lexicon-check` holds the document and the schemas to each
+other for exactly this reason.
+
+Which to request is decided by reading, not by retrying: the authorization
+server's metadata carries `scopes_supported`, so a client can see whether the
+granular ones exist before asking. And **a scope the server doesn't support
+fails silently** — RFC 6749 lets it ignore part of a request, so consent
+succeeds, the session looks fine, and the first write 403s. Treat the `scope`
+in the token response as authoritative and gate writes on that rather than on
+having a session. Asking for something the *document* doesn't declare fails
+loudly instead, as `invalid_scope` at the pushed-authorization endpoint before
+the user sees anything.
 
 ## The query API is XRPC, everything else is plain HTTP
 

@@ -29,32 +29,77 @@ client metadata document we serve. Our server never proxies a write.
 catalog, the app and the client metadata document, and runs the weekly
 Scryfall sync. Indexing earns its place at Phase 3.
 
-## Serving the catalog
+## Two origins, because there are two cadences
 
-**Everything a browser fetches is static**, so a CDN serves it and the binary
-serves none of it in production: the app, the two catalog files, the manifest
-naming them, and the OAuth client metadata document. What's left on the box is
-the weekly sync that generates them, and from Phase 3 the firehose consumer and
-query API.
+**Everything a browser fetches is static, and none of it comes from the
+binary.** But it does not all come from one place either, because the app and
+the catalog change for different reasons:
 
-Bandwidth isn't the main reason. The client metadata document has to be
+| | origin | built from | changes on |
+|---|---|---|---|
+| app, client metadata | `manasphere.app`, Pages | the repo | a commit |
+| catalog, manifest | `catalog.manasphere.app`, R2 | the cache | a set |
+
+Keeping them apart is not tidiness. **A Pages deployment is a snapshot of one
+directory**, so a commit-triggered deploy that carried the catalog would have
+to rebuild an 11MB artifact it has no input for, and a deploy that didn't would
+delete it. R2 is object storage instead: uploading a new pair leaves the old
+one in place, which is what lets a client mid-load finish against the pair its
+manifest named.
+
+Bandwidth isn't the reason for either. The client metadata document has to be
 reachable at the `client_id` it declares or login fails outright, and that is
 the worst thing to have depend on one small VPS staying up.
 
-Filenames carry a hash of their contents, so a response can claim `immutable`
-for a year. The manifest is the only part a client re-fetches, and it sits
-outside the directory holding them: Cloudflare Pages gives a request the
-headers of *every* matching rule and comma-joins same-named ones, so
-overlapping patterns would tell a client `immutable, no-cache`.
+Filenames carry a hash of their contents, so each object is uploaded with
+`Cache-Control: immutable` and a client that has one never asks again; the
+manifest gets `no-cache` and is the only part re-fetched. Per-object metadata
+is why R2 suits this better than a second Pages project would: Pages declares
+caching in a `_headers` file that gives a request the headers of *every*
+matching rule and comma-joins same-named ones, so overlapping patterns would
+tell a client `immutable, no-cache`.
 
-Getting them there is a separate upload — `wrangler pages deploy` over the
-site directory — so the sync job needs a Cloudflare token while the serving
-path needs nothing of ours. Untried so far.
+Uploading is per object — `wrangler r2 object put --cache-control` — so the
+export job needs an R2 token while the serving path needs nothing of ours.
+Untried so far.
 
-Files ship uncompressed and the CDN compresses them. Brotli gets the pair to
+One R2 wrinkle to set up rather than discover: on a custom domain only certain
+file types are cached by default, and JSON is not among them, so it needs a
+cache rule. Without one it still works, just against R2 each time rather than
+the edge.
+
+Files upload uncompressed and the CDN compresses them. Brotli gets the pair to
 **3.67MB against 4.60MB** for the gzip we were shipping ourselves — 20% better
 for no work, and more than the largest saving left in the format itself. The
 dev server sends them as they are, which localhost doesn't mind.
+
+## Preview deployments
+
+Pages gives every deployment a URL, and a login needs the callback to land back
+on the origin holding the PKCE verifier and DPoP key. Two facts make that
+tractable without generating a document per environment:
+
+- A custom domain can be attached to a **branch**, so `dev.manasphere.app` can
+  serve the `dev` branch and the callback sits on a host we control by DNS.
+- Pages **does not build previews for pull requests from forks**, so on a
+  public repo only someone with push access can produce a preview host — the
+  same trust boundary as production.
+
+So the committed document declares two callbacks, production and `dev`, and
+that is the whole mechanism. Redirect URIs are allowed to differ in origin from
+the `client_id` for web clients; only native schemes are constrained. Reach the
+preview by its custom domain, since the client matches a redirect entry against
+the current origin and would find none for `<branch>.<project>.pages.dev`.
+
+Per-commit URLs can't log in, having unpredictable hostnames that can't be
+enumerated in advance. That is the right trade: they exist to look at a change,
+not to exercise a session.
+
+**Previews read and write production data**, because the alternative is worse.
+A parallel NSID namespace would be permanent once records existed, would have
+to be declared in the scopes every user consents to, and would leave junk in
+their repo. Isolation, when it's wanted, is a second account — which atproto
+makes free in a way an app owning its own database would not.
 
 ## Storage: why SQL
 

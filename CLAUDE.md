@@ -38,11 +38,11 @@ backend:
   Scryfall card data into our own DB as a cache, (2) generates the static site
   from that cache for a CDN to serve, (3) from Phase 3, consumes a filtered
   Jetstream firehose to index *other people's* published records.
-- **Everything a browser fetches is static and lives on a CDN** — the app, the
-  catalog artifact and the OAuth client metadata document. The binary serves
-  the site directory too, but only so the client has something local to
-  develop against. Login failing because a small VPS is down was the deciding
-  argument.
+- **Everything a browser fetches is static, on two origins.** The app and the
+  OAuth client metadata document deploy from the repo to Pages on commit; the
+  catalog uploads to R2 on its own subdomain when Scryfall moves. Separate
+  because a Pages deployment is a snapshot of one directory, so one deploy
+  would delete what the other produced.
 - **v0 doesn't need the firehose at all.** The client reads its own records
   straight from its own PDS (`listRecords`) and keeps a local view in
   IndexedDB, so the PDS is the sync mechanism between a user's devices.
@@ -144,11 +144,11 @@ backend:
 - **Frontend**: TypeScript, built with **Bun** (not npm), lives in `web/`. PWA
   with a service worker — client-side caching (IndexedDB) of the card catalog
   is core to keeping server load light, especially for manual search.
-- **Deploy**: static parts to Cloudflare Pages, which **reverses the earlier
-  `rust-embed` decision** — there is nothing to embed, and Bun never enters a
-  Rust build at all. The binary writes a site directory (`MANASPHERE_SITE`);
-  uploading it is a separate step. Still a `justfile` rather than `build.rs`,
-  for the same reason as before.
+- **Deploy**: Pages for the app, R2 for the catalog, which **reverses the
+  earlier `rust-embed` decision** — there is nothing to embed, and Bun never
+  enters a Rust build at all. The binary writes a catalog directory
+  (`MANASPHERE_CATALOG`); uploading it is a separate step. Still a `justfile`
+  rather than `build.rs`, for the same reason as before.
 - **Local dev**: frontend runs its own dev server (`bun run dev`, hot reload)
   fetching the catalog from the binary's site directory. Nothing has to be
   built into anything.
@@ -194,10 +194,11 @@ manasphere/
    Deck, list and snapshot precede their implementation deliberately: the
    design entry and collection entry interlock, so the join wants settling
    together.
-4. **Done** — the `manasphere` binary. Generates the static site from the
-   cache (content-addressed artifact, manifest, client metadata document,
-   Pages `_headers`), serves it for local development, and refreshes the cache
-   weekly. Configured from the environment; `just serve`.
+4. **Done** — the `manasphere` binary. Exports the content-addressed catalog
+   and its manifest from the cache, serves them for local development, and
+   refreshes the cache weekly. Configured from the environment; `just serve`.
+   The OAuth client metadata document is committed at
+   `web/public/oauth/client-metadata.json`, not generated.
 5. Web client: OAuth, reads from own PDS, local view in IndexedDB, writes back.
    Where the data model actually gets exercised, so no longer "last".
 6. A dev CLI writing records with an app password, to seed fixtures without the
