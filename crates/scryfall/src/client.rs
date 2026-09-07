@@ -1,4 +1,5 @@
 use futures_util::TryStreamExt as _;
+use reqwest::header::ACCEPT;
 use tokio_util::io::StreamReader;
 
 use crate::{BulkData, BulkIndex, BulkKind, CardStream, Error, Result};
@@ -41,6 +42,10 @@ impl Client {
         Ok(self
             .http
             .get(format!("{}/bulk-data", self.api))
+            // Scryfall documents Accept as required and rejects requests
+            // without it. Sent explicitly rather than relying on reqwest's
+            // `*/*` default happening to satisfy the check.
+            .header(ACCEPT, "application/json")
             .send()
             .await?
             .error_for_status()?
