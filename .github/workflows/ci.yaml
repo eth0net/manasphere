@@ -50,6 +50,14 @@ jobs:
           # unchanged tree. That's the point.
           command-arguments: --deny warnings
 
+  typos:
+    name: spelling
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      # Reads `typos.toml`, so `locale = "en-us"` applies here too.
+      - uses: crate-ci/typos@v1.50.1
+
   lexicons:
     name: lexicons
     runs-on: ubuntu-latest

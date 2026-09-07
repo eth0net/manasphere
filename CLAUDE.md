@@ -19,6 +19,9 @@ say what a field is, never why — measured against Bluesky, WhiteWind and
 Leaflet, real ones run to a median of 48 characters and Leaflet describes no
 fields at all. Reasoning belongs in `docs/`.
 
+Spelling is American, matching the vocabulary the code already uses. `typos`
+enforces it; `typos.toml` says what it skips.
+
 ## Core architecture
 
 This is an **AppView** in atproto terms, not a normal app-owns-its-data

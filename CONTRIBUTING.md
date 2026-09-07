@@ -18,9 +18,13 @@ cargo test
 ```
 
 [prek](https://github.com/j178/prek) runs what CI runs — `cargo fmt`, a
-warning-free `cargo clippy --all-targets --all-features`, `cargo test` and the
-sign-off check — on commit and push, so a red build costs no round trip. CI
-itself also runs on macOS and Windows.
+warning-free `cargo clippy --all-targets --all-features`, `cargo test`,
+`typos` and the sign-off check — on commit and push, so a red build costs no
+round trip. CI itself also runs on macOS and Windows.
+
+Spelling is American, because the vocabulary already is: `color`, `license`,
+`serialize`. `typos` enforces it, and `typos.toml` says what it skips —
+captured Scryfall fixtures, license text, and translations when they arrive.
 
 [just](https://github.com/casey/just) wraps the longer commands: `just serve`
 starts the server, `just check` does the lot in one go. `just --list` for the

@@ -11,6 +11,7 @@ check:
     cargo fmt --all --check
     cargo clippy --locked --all-targets --all-features
     cargo test --locked --all-targets
+    prek run --all-files typos
     cd tools/lexicon-check && bun run check
 
 # serve the catalog and the client metadata document

@@ -1,0 +1,24 @@
+# Spelling, with British variants treated as errors.
+#
+#     typos
+#
+# The technical vocabulary is American — `color`, `license`, `serialize` — so
+# the prose follows it rather than splitting the repo between the two.
+
+[default]
+locale = "en-us"
+
+[files]
+extend-exclude = [
+  # Captured Scryfall responses, compared byte for byte. "Aether Syphon" is a
+  # real card, and one flavor text has a hyphenated "be-lieve".
+  "**/tests/fixtures/**",
+  # Verbatim license text. Not ours to correct.
+  "LICENSE",
+  "lexicons/LICENSE",
+  # Translations, once the client has any. An en-GB catalog is meant to say
+  # colour, and no other language survives an English dictionary at all — so
+  # they live under one of these.
+  "web/**/locales/**",
+  "**/i18n/**",
+]
