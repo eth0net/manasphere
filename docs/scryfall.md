@@ -274,6 +274,27 @@ Being an EDH signal, it misjudges cards that format never sees: the Power Nine
 rank nowhere, so "mox" leads with Chrome Mox and Mox Amber rather than Mox
 Emerald. Acceptable for now — the honest fix is our own signal, below.
 
+### Browsing, sorting and filtering
+
+Not built. Worth recording that **the artifact already carries everything they
+need**, so none of it is a format change: type line, colors, color identity,
+mana cost, cmc, rarity, set and layout are all there.
+
+- **Filtering** on type, color and color identity, where color takes three
+  modes rather than one — exactly these colors, contains them, or is contained
+  by them. The third is the Commander question, and the one a match-only
+  filter can't ask.
+- **Sorting** by name, cmc, rarity, printing count or popularity, which is a
+  different comparator over the same scan.
+- **A grid view** with the cell size or column count settable, since a wall of
+  card images is how everyone else presents a collection and the image URLs
+  derive from the print id.
+
+**Our own popularity signal replaces EDHREC's** once Explore exists (Phase 3):
+how many copies the network holds, and how many decks play a card, are both
+things we would then know first-hand — computed from indexed records rather
+than borrowed, covering the formats EDHREC doesn't, and the same input the
+recommendations in [`roadmap.md`](roadmap.md) want.
 Tokens and art series each have a toggle, and so does grouping, all on by
 default. Shipping the extras costs about 18% more client artifact (~1.6MB of
 ~8.9MB of index), so the toggles work offline rather than needing a round trip.

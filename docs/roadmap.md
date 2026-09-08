@@ -153,7 +153,10 @@ model too.
 - Same build shape as the scanner index: precompute offline, ship the artifact,
   serve it statically.
 - Co-occurrence is a later enhancement, once Explore provides a corpus of our
-  own.
+  own. Two counts fall out of the same index long before any model does: how
+  many copies the network holds, and how many decks play a card. Those also
+  replace the borrowed EDHREC rank that search leans on today, and cover the
+  formats EDHREC never sees — see [`scryfall.md`](scryfall.md).
 
 ## Phase 5 — Game toolkit (life totals, dice, game history)
 
