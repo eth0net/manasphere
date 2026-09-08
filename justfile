@@ -45,10 +45,10 @@ deny:
 lexicons:
     cd tools/lexicon-check && bun install && bun run check
 
-# lint, typecheck and build the client
+# lint, typecheck, test and build the client
 [group('checks')]
 web:
-    cd web && bun install && bun run lint && bun run types && bun run build
+    cd web && bun install && bun run check
 
 # export the catalog and serve it for local development
 [group('dev')]

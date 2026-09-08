@@ -1,35 +1,20 @@
-import { useEffect, useState } from "react";
-import { type Manifest, manifest } from "./catalog";
+import type { Loaded } from "./catalog/load";
 import { CATALOG } from "./config";
-
-type State =
-  | { status: "loading" }
-  | { status: "ready"; manifest: Manifest }
-  | { status: "failed"; error: string };
+import { Search } from "./Search";
+import { useCatalog } from "./useCatalog";
 
 export function App() {
-  const [state, setState] = useState<State>({ status: "loading" });
-
-  useEffect(() => {
-    let live = true;
-    manifest()
-      .then((found) => {
-        if (live) setState({ status: "ready", manifest: found });
-      })
-      .catch((error: unknown) => {
-        const message = error instanceof Error ? error.message : String(error);
-        if (live) setState({ status: "failed", error: message });
-      });
-    return () => {
-      live = false;
-    };
-  }, []);
+  const state = useCatalog();
 
   return (
     <main>
-      <h1>Manasphere</h1>
-      {state.status === "loading" && <p>Reading the catalog…</p>}
-      {state.status === "ready" && <Summary manifest={state.manifest} />}
+      <header>
+        <h1>Manasphere</h1>
+        {state.status === "ready" && <Status loaded={state.loaded} />}
+      </header>
+
+      {state.status === "loading" && <p>{state.step}…</p>}
+      {state.status === "ready" && <Search catalog={state.loaded.catalog} />}
       {state.status === "failed" && (
         <p>
           No catalog at <code>{CATALOG}</code>: {state.error}
@@ -39,22 +24,16 @@ export function App() {
   );
 }
 
-function Summary({ manifest }: { manifest: Manifest }) {
-  const { version, cards, prints } = manifest;
+function Status({ loaded }: { loaded: Loaded }) {
+  const { catalog, cached } = loaded;
   return (
-    <dl>
-      <dt>Scryfall</dt>
-      <dd>{version}</dd>
-      <dt>Cards</dt>
-      <dd>{cards.rows.toLocaleString()}</dd>
-      <dt>Printings</dt>
-      <dd>{prints.rows.toLocaleString()}</dd>
-      <dt>Uncompressed</dt>
-      <dd>{megabytes(cards.bytes + prints.bytes)}</dd>
-    </dl>
+    <p className="status">
+      {catalog.cards.toLocaleString()} cards ·{" "}
+      {catalog.printings.toLocaleString()} printings ·{" "}
+      {/* The version is the bulk file's own timestamp, and the day is the part
+          that means anything. */}
+      {catalog.version.slice(0, 10)}
+      {cached && " · cached"}
+    </p>
   );
-}
-
-function megabytes(bytes: number) {
-  return `${(bytes / 1_000_000).toFixed(1)} MB`;
 }

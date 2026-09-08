@@ -251,6 +251,18 @@ Art series carry their own `oracle_id`, so grouping alone would leave them
 competing with the card they depict — hence the tier. An exact name match
 still beats the tier, because someone typing a token's name means the token.
 
+### Ranking in the client
+
+Searching the artifact is a scan of 37,000 names costing a few milliseconds,
+so the client builds no index. It ranks on exact match, then names where the
+query starts a word, then anywhere at all; within a tier, the printing tiers
+above, then printing count descending.
+
+Printing count is the only popularity signal the artifact carries, and a good
+enough one: it is what puts Lightning Bolt above Bolt Bend for "bolt". A
+whole-name prefix is deliberately *not* its own tier, or that search would
+fill on Bolt Bend and Bolt Hound and never reach the card anyone meant.
+
 Tokens and art series each have a toggle, and so does grouping, all on by
 default. Shipping the extras costs about 18% more client artifact (~1.6MB of
 ~8.9MB of index), so the toggles work offline rather than needing a round trip.

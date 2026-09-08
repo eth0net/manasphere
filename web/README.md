@@ -4,12 +4,17 @@ The client: TypeScript and React, bundled by Vite, run with Bun. Deployed to
 Cloudflare Pages from the repo on commit.
 
     just client   # the dev server, hot reloading
-    just web      # what CI runs: biome, tsc, vite build
+    just web      # what CI runs: biome, tsc, bun test, vite build
 
 The catalog comes from the other origin, so `just serve` has to be running
 too: it exports the artifact from the cache and sends the
 `Access-Control-Allow-Origin` the bucket has to send in production.
 `src/config.ts` holds the two origins.
+
+`src/catalog/` reads it — `load.ts` fetches, `store.ts` keeps the bytes in
+IndexedDB under their content-addressed names, `index.ts` holds the positional
+rows, `search.ts` scans them. Only `load.ts` touches the network or IndexedDB,
+which is what leaves the format and the ranking testable under `bun test`.
 
 `public/oauth/client-metadata.json` is the OAuth client metadata document.
 Vite copies `public/` into `dist/` verbatim, which is what serves it at
