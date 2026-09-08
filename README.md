@@ -25,10 +25,10 @@ with the OAuth client metadata document. No client yet.
 ## Layout
 
 ```
-crates/scryfall        bulk-data fetch/parse
-crates/core            card cache, and the catalog the client caches
 crates/api             the API the AppView answers
 crates/appview         the `manasphere` binary
+crates/core            card cache, and the catalog the client caches
+crates/scryfall        bulk-data fetch/parse
 docs/                  roadmap, and the reasoning behind each decision
 lexicons/              NSID JSON schemas
 web/                   the client, and its OAuth client metadata document

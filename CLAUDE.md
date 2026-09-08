@@ -161,23 +161,23 @@ backend:
 
 ```
 manasphere/
-  Cargo.toml             # workspace root, members = ["crates/*"]
   crates/
     api/                 # the API the AppView answers (lib)
     appview/             # bin crate — the `manasphere` binary
-    core/                # lexicon record structs, shared DB models/logic
+    core/                # card cache, catalog export, shared DB models (lib)
     jetstream/           # firehose consumer (lib)
     scryfall/            # bulk-data fetch/parse (lib)
   docs/
-    roadmap.md           # phases and scope
-    data-model.md        # owned vs referenced, keys, designs, history
     architecture.md      # AppView shape, local-first, storage, scaling
-    scryfall.md          # bulk data, cache, migrations, import formats
     atproto.md           # lexicons, PDS limits, OAuth, sharing
+    data-model.md        # owned vs referenced, keys, designs, history
     ip.md                # WotC/Scryfall/EDHREC constraints, licensing
+    roadmap.md           # phases and scope
+    scryfall.md          # bulk data, cache, artifact, import formats
   lexicons/              # NSID JSON schema files
-  tools/lexicon-check/   # validates lexicons/ against atproto's own validator
-  web/                   # TS frontend, own Bun toolchain, not in Cargo workspace
+  tools/lexicon-check/   # validates lexicons/ and the client metadata document
+  web/                   # TS + React, Vite, own Bun toolchain; the client
+  Cargo.toml             # workspace root, members = ["crates/*"]
   justfile
 ```
 
