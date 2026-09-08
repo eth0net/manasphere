@@ -171,6 +171,9 @@ came from. One row per card with a source selector, kept cheap:
   problems shows three things.
 - The selector picks a **stack**, not a container — the same print in two
   conditions is two stacks, so options read "Binder A — NM, nonfoil".
+- **Language is chosen with the printing, not beside it.** A print id pins it,
+  so the printing picker is where it lives — defaulting to the card language
+  setting, and read off the card itself when scanning.
 - Scanning more copies than you own is normal with playsets. Scan four, own
   one, default to one-from-collection plus three-new and say so.
 

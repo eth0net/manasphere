@@ -49,8 +49,15 @@ worth switching for.
 - Collector number is the strongest signal. On modern frames the bottom line
   carries number, set code and rarity in a known font with a tiny alphabet, so
   a small purpose-trained model beats general OCR at a few hundred KB rather
-  than Tesseract's ten-plus MB. Set code plus collector number identifies a
-  printing outright.
+  than Tesseract's ten-plus MB.
+- **Set code, collector number and language identify a printing outright** —
+  all three, which is what `cards::printing_id` takes and what the cache's
+  unique index is on. The pair alone is unique only while the cache holds one
+  language per printing; m10 #146 has nine ids. The language code sits beside
+  the foil marker on the line the model already reads, so it costs nothing,
+  but WotC's codes are their own rather than ISO 639 and need mapping to
+  Scryfall's `lang`. Pre-M15 cards carry no code, leaving the printed name's
+  own script as the signal.
 - Foil is glyph classification, not computer vision. The premium indicator sits
   between set code and language on that same line: `BLB • EN` nonfoil,
   `BLB ★ EN` foil. Traditional foils share collector numbers with nonfoils, so
