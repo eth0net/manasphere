@@ -82,9 +82,9 @@ backend:
   rules close that set.
 - **The client artifact is two files under one version**: cards, and paper
   printings grouped by card in the cards file's order. Written uncompressed
-  for the CDN to compress, which brotli does to 3.67MB. Positional rows with
-  integer codes for low-cardinality columns, and no oracle text or legality —
-  collection tracking needs neither.
+  for the CDN to compress. Positional rows with integer codes for
+  low-cardinality columns, and no oracle text or legality — collection
+  tracking needs neither.
 - Price cache: **separate table**, keyed by `scryfall_id` + source + timestamp.
   Not built — nothing writes it before Phase 2, so the schema would be dead.
   Note there is **no prices bulk file** — prices exist only as fields inside
@@ -200,7 +200,7 @@ manasphere/
    The OAuth client metadata document is committed at
    `web/public/oauth/client-metadata.json`, not generated.
 5. Web client: OAuth, reads from own PDS, local view in IndexedDB, writes back.
-   Where the data model actually gets exercised, so no longer "last".
+   Where the data model actually gets exercised.
 6. A dev CLI writing records with an app password, to seed fixtures without the
    UI. Cheap, and useful forever.
 

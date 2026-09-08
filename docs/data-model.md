@@ -72,7 +72,7 @@ The model makes decks, binders and lists the same thing. The UI should hide it.
 Three states, because reading needs no account and only writing needs
 somewhere to write. The catalog is client-side and public, so signed out
 already gets card search, printing comparison and a legality check against a
-pasted list — the half worth demonstrating, and it costs no OAuth flow to try.
+pasted list, with no OAuth flow to get through first.
 
 - **Signed out** is the front page plus that search, and a scratch pad.
   Nothing persists, and the interface says so rather than quietly
@@ -82,19 +82,16 @@ pasted list — the half worth demonstrating, and it costs no OAuth flow to try.
   [`atproto.md`](atproto.md) — no PDS, no sync, an export nag, and the honest
   answer for someone who doesn't want a world-readable inventory.
 
-**The failure to design against is the first quietly becoming the third.**
-Someone imports ten thousand cards without signing in, clears site data, and
-loses all of it having never chosen to. That is worse than making them sign in
-first: the privacy-motivated user at least took the trade knowingly.
+**The failure to design against is the first quietly becoming the third**:
+someone imports ten thousand cards without signing in, clears site data, and
+loses all of it having never chosen to.
 
-Which hands us the gate, and it is the one the sharing warning already wants:
-**import is where you ask.** Search and scratch freely, then the moment data
-arrives in volume, ask where it lives. One flow, two conversations that want
-the same moment.
+So **import is where you ask**, which is where the sharing warning has to go
+anyway. Search and scratch freely; the moment data arrives in volume, ask
+where it lives.
 
 Public activity while signed out — Tangled's front page — needs Explore, so
-that slot stays empty until Phase 3 rather than shaping the page around
-content we don't have.
+that slot stays empty until Phase 3.
 
 ### Deck state
 

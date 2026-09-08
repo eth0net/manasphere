@@ -32,81 +32,52 @@ Scryfall sync. Indexing earns its place at Phase 3.
 ## Two origins, because there are two cadences
 
 **Everything a browser fetches is static, and none of it comes from the
-binary.** But it does not all come from one place either, because the app and
-the catalog change for different reasons:
+binary.** It doesn't all come from one place either, because the app and the
+catalog change for different reasons:
 
 | | origin | built from | changes on |
 |---|---|---|---|
 | app, client metadata | `manasphere.app`, Pages | the repo | a commit |
 | catalog, manifest | `static.manasphere.app`, R2 | the cache | a set |
 
-`static` rather than `catalog`, because the catalog is the first artifact of
-that shape and not the last: a scanner index and precomputed recommendations
-are both built offline and served the same way. Not `data`, which in an app
-whose point is that collections live in PDSes would suggest exactly the wrong
-thing. The Phase 3 query API wants a third name, `api`, and reads as the
-dynamic half against this one.
+`static` rather than `catalog` because more artifacts of that shape are coming
+— a scanner index, precomputed recommendations — and the Phase 3 query API
+wants `api` alongside.
 
-Keeping them apart is not tidiness. **A Pages deployment is a snapshot of one
-directory**, so a commit-triggered deploy that carried the catalog would have
-to rebuild an 11MB artifact it has no input for, and a deploy that didn't would
-delete it. R2 is object storage instead: uploading a new pair leaves the old
-one in place, which is what lets a client mid-load finish against the pair its
-manifest named.
+**A Pages deployment is a snapshot of one directory**, so a commit-triggered
+deploy carrying the catalog would have to rebuild an 11MB artifact it has no
+input for, and one that didn't would delete it. R2 is object storage: a new
+pair uploads without removing the old, which is what lets a client mid-load
+finish against the pair its manifest named.
 
-Bandwidth isn't the reason for either. The client metadata document has to be
-reachable at the `client_id` it declares or login fails outright, and that is
-the worst thing to have depend on one small VPS staying up.
+Objects carry their own cache metadata, set per object at upload — `immutable`
+for the content-addressed files, `no-cache` for the manifest, which is the
+only part re-fetched. Pages declares caching in a `_headers` file instead, and
+gives a request the headers of *every* matching rule with same-named ones
+comma-joined, so overlapping patterns there would say `immutable, no-cache`.
 
-Filenames carry a hash of their contents, so each object is uploaded with
-`Cache-Control: immutable` and a client that has one never asks again; the
-manifest gets `no-cache` and is the only part re-fetched. Per-object metadata
-is why R2 suits this better than a second Pages project would: Pages declares
-caching in a `_headers` file that gives a request the headers of *every*
-matching rule and comma-joins same-named ones, so overlapping patterns would
-tell a client `immutable, no-cache`.
-
-Uploading is per object — `wrangler r2 object put --cache-control` — so the
-export job needs an R2 token while the serving path needs nothing of ours.
-Untried so far.
-
-One R2 wrinkle to set up rather than discover: on a custom domain only certain
-file types are cached by default, and JSON is not among them, so it needs a
-cache rule. Without one it still works, just against R2 each time rather than
-the edge.
-
-Files upload uncompressed and the CDN compresses them. Brotli gets the pair to
-**3.67MB against 4.60MB** for the gzip we were shipping ourselves — 20% better
-for no work, and more than the largest saving left in the format itself. The
-dev server sends them as they are, which localhost doesn't mind.
+An R2 custom domain caches only certain file types by default and JSON isn't
+among them, so it needs a cache rule. Files upload uncompressed for the CDN to
+compress.
 
 ## Preview deployments
 
-Pages gives every deployment a URL, and a login needs the callback to land back
-on the origin holding the PKCE verifier and DPoP key. Two facts make that
-tractable without generating a document per environment:
+Two Pages behaviors decide what a preview can do:
 
-- A custom domain can be attached to a **branch**, so `dev.manasphere.app` can
-  serve the `dev` branch and the callback sits on a host we control by DNS.
-- Pages **does not build previews for pull requests from forks**, so on a
-  public repo only someone with push access can produce a preview host — the
-  same trust boundary as production.
+- A custom domain attaches to a **branch**, so `dev.manasphere.app` serves the
+  `dev` branch and a login callback sits on a host we control.
+- Pages **does not build previews for pull requests from forks**, so only
+  someone with push access can produce a preview host.
 
-So the committed document declares two callbacks, production and `dev`, and
-that is the whole mechanism. Redirect URIs are allowed to differ in origin from
-the `client_id` for web clients; only native schemes are constrained. Reach the
-preview by its custom domain, since the client matches a redirect entry against
-the current origin and would find none for `<branch>.<project>.pages.dev`.
+Per-commit URLs can't take a login: their hostnames aren't predictable, so no
+callback can be declared for them in advance. Reach the `dev` preview by its
+custom domain, which is the one that has one. The OAuth side is in
+[`atproto.md`](atproto.md).
 
-Per-commit URLs can't log in, having unpredictable hostnames that can't be
-enumerated in advance. That is the right trade: they exist to look at a change,
-not to exercise a session.
-
-**Previews read and write production data**, because the alternative is worse.
-A parallel NSID namespace would be permanent once records existed, would have
-to be declared in the scopes every user consents to, and would leave junk in
-their repo. Isolation, when it's wanted, is a second account — which atproto
-makes free in a way an app owning its own database would not.
+**Previews read and write production data.** A parallel NSID namespace would
+be permanent once records existed, would be declared in the scopes every user
+consents to, and would leave junk in people's repos. Isolation, when wanted,
+is a second account.
 
 ## Storage: why SQL
 

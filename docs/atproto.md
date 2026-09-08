@@ -67,11 +67,11 @@ client id must say `localhost`, and the redirect must not, because the provider
 refuses `localhost` as a redirect host. `@atproto/oauth-client-browser` hides
 this behind a hard redirect and then throws if the ports disagree.
 
-Sessions have a ceiling worth knowing before designing around them. Any public
-client — `token_endpoint_auth_method: none`, not first-party — gets access
-tokens of 60 minutes and a session and refresh lifetime of **two weeks**, in
-production as much as in dev. A resumable multi-hour import fits inside that; a
-job meant to run unattended for weeks does not.
+Sessions have a ceiling. Any public client — `token_endpoint_auth_method:
+none`, not first-party — gets access tokens of 60 minutes and a session and
+refresh lifetime of **two weeks**, in production as much as in dev. A
+resumable multi-hour import fits inside that; a job running unattended for
+weeks does not.
 
 ## The client metadata document
 
@@ -80,32 +80,26 @@ A public client: PKCE, DPoP-bound tokens, and no authentication at the token
 endpoint, since a browser keeps no secret.
 
 **It identifies the client, not the AppView.** Every field describes the
-frontend — its callback, its name on the consent screen, the fact that a
-browser keeps no secret — and our AppView isn't in the flow at all, since the
-browser talks to the PDS directly. So a second frontend against the same
-AppView publishes its own document at its own `client_id`, and users see it as
-a separate app they can revoke separately. That's the intended behavior, not
-a limitation.
+frontend, and our AppView isn't in the flow at all since the browser talks to
+the PDS directly. A second frontend against the same AppView publishes its own
+document at its own `client_id`, and users see it as a separate app to revoke
+separately.
 
 Nothing registers it anywhere: the authorization server fetches it from the
-`client_id` URL when a user authorizes, which is why it has to be on the app's
-own origin and can't be hosted beside the catalog. Vite copies `public/` into
-`dist/` verbatim, which is what puts it there; the client imports the same
-file for the scopes it requests, so the two can't drift. `just oauth` checks a
-deployed copy, since no static check can tell whether it arrived.
+`client_id` URL when a user authorizes, so it has to be on the app's own
+origin. `client_id` must equal that URL exactly, and the reference provider
+also wants `client_uri` to be a parent path of it. The response has to be a
+plain 200 with `application/json`, which a single-page fallback quietly
+violates by answering 200 with HTML for a missing path — so `just oauth`
+fetches a deployed copy, no local check being able to tell whether it arrived.
 
-**Committed rather than generated**, because the client imports the same bytes
-to decide what to request and a subset is all it may ask for. Generating it
-per environment would also invent the problem it appears to solve: the
-`client_id` is whatever string the bundle sends, so one production URL serves
-every deployment, and only a client deriving it from `window.location` breaks.
-
-`client_id` must equal the URL it is fetched from exactly, and the reference
-provider additionally requires `client_uri` to be a parent path of it. The
-response has to be a plain 200 with `application/json` — not a redirect, not
-another 2xx — which a single-page fallback quietly violates by answering 200
-with HTML for a missing path. Worth a post-deploy fetch rather than trusting a
-local check.
+**Committed rather than generated.** The client imports the same bytes to
+decide what to request, and a subset is all it may ask for. Generating per
+environment would also invent the problem it appears to solve: `client_id` is
+whatever string the bundle sends, so one production URL serves every
+deployment and only a client deriving it from `window.location` breaks. Two
+callbacks are declared, production and `dev` —
+[`architecture.md`](architecture.md) covers why that's enough for previews.
 
 Scopes are granular — `repo:app.manasphere.card` and one per other record type
 we write, which is all a client that writes only its own records needs. Reads
@@ -114,23 +108,19 @@ too, because a PDS without permissions support rejects the granular ones
 outright; it grants app-password-level access to the whole repo, so the client
 asks for it last and the entry comes out once granular scopes can be assumed.
 
-**`repo:` takes `*` or an exact NSID, and nothing in between.** There is no
-`repo:app.manasphere.*`, so the enumeration is the only granular form, and
-adding a record type later means adding a scope — which costs every existing
-user a fresh consent. All five are declared now though v0 writes two, because
-an unused scope costs a longer consent screen and the alternative costs a
-migration. `tools/lexicon-check` holds the document and the schemas to each
-other for exactly this reason.
+**`repo:` takes `*` or an exact NSID, and nothing in between.** So the
+enumeration is the only granular form, and adding a record type later means
+adding a scope, which costs every existing user a fresh consent. All five are
+declared now though v0 writes two; `tools/lexicon-check` holds the document
+and the schemas to each other for that reason.
 
-Which to request is decided by reading, not by retrying: the authorization
-server's metadata carries `scopes_supported`, so a client can see whether the
-granular ones exist before asking. And **a scope the server doesn't support
-fails silently** — RFC 6749 lets it ignore part of a request, so consent
-succeeds, the session looks fine, and the first write 403s. Treat the `scope`
-in the token response as authoritative and gate writes on that rather than on
-having a session. Asking for something the *document* doesn't declare fails
-loudly instead, as `invalid_scope` at the pushed-authorization endpoint before
-the user sees anything.
+Which to request is read, not retried: the authorization server's metadata
+carries `scopes_supported`. And **a scope the server doesn't support fails
+silently** — RFC 6749 lets it ignore part of a request, so consent succeeds
+and the first write 403s. Gate writes on the `scope` in the token response
+rather than on having a session. Asking for something the *document* doesn't
+declare fails loudly instead, as `invalid_scope` before the user sees
+anything.
 
 ## The query API is XRPC, everything else is plain HTTP
 
@@ -143,8 +133,7 @@ anyway, not a transport.
 - **The `rpc:` scope is defined in terms of XRPC methods**, so a call carrying
   the user's identity is expressible as a permission. A hand-rolled path isn't,
   and our client metadata already declares scopes.
-- Any atproto client can call it. Bobbin's opening complaint is that Tangled's
-  AppView had no API to build on.
+- Any atproto client can call it without bespoke code.
 - Methods are lexicon files, so `tools/lexicon-check` covers them alongside the
   record schemas.
 
@@ -156,8 +145,7 @@ in sync, and an XRPC query is already a REST call.
 
 Errors are stringly-typed, query inputs are flat so nested input needs a
 procedure with a body, and streaming is a separate `subscription` type over
-websocket — which is how the firehose itself is defined. None of that bites
-anything planned.
+websocket — which is how the firehose itself is defined.
 
 ## Domains: three, not one
 

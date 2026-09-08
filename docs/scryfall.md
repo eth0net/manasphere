@@ -209,10 +209,9 @@ index read against the wrong ordering is wrong quietly.
 carry one, 32KB in total, so a Japanese card is found by the name on its own
 printing and no per-language index is needed.
 
-**Ids stay 36-character hex.** Base64 of the UUID bytes saved 0.5MB when we
-compressed the artifact ourselves, and costs every consumer a decode before it
-can write a `scryfallId` or build an image URL. Brotli took more than that for
-free, so this stays in reserve.
+**Ids stay 36-character hex.** Base64 of the UUID bytes is smaller but costs
+every consumer a decode before it can write a `scryfallId` or build an image
+URL. In reserve for when the artifact needs shrinking.
 
 **Rows are fixed width.** Trimming trailing nulls and zeros saved 1.8%, which
 doesn't pay for a format where a row's length means something.
