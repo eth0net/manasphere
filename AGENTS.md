@@ -8,10 +8,12 @@ Not a business. Running costs look light enough they may never need funding.
 WotC's Fan Content Policy, Scryfall's API terms and EDHREC's terms constrain
 what can be *built*, not only what can be charged for.
 
-`docs/roadmap.md` holds the phases; the reasoning sits with its subject in
-`docs/data-model.md`, `architecture.md`, `scryfall.md`, `atproto.md` and
-`ip.md`. This file is the condensed orientation for picking the project back
-up.
+`docs/` carries the reasoning, one file per subject: `roadmap.md` for phases,
+`data-model.md` for owned versus referenced and history, `architecture.md` for
+the AppView shape and storage, `scryfall.md` for the cache and the client
+artifact, `atproto.md` for lexicons and the PDS and OAuth limits, `ip.md` for
+the WotC and Scryfall constraints. This file is the condensed orientation for
+picking the project back up; each crate describes itself in its `Cargo.toml`.
 
 Prose here and in `lexicons/` is read more often than it is written, so keep
 it short: the non-obvious fact and its one consequence. Lexicon descriptions
@@ -157,30 +159,6 @@ backend:
   single-user/small-friend-group scale given the filtered-firehose approach —
   the Scryfall bulk-data refresh is the bigger periodic resource event to
   watch, not the firehose.
-
-## Repo layout
-
-```
-manasphere/
-  crates/
-    api/                 # routes and handlers (lib)
-    appview/             # bin crate — the `manasphere` binary
-    core/                # card cache, catalog export, shared DB models (lib)
-    jetstream/           # firehose consumer (lib)
-    scryfall/            # bulk-data fetch/parse (lib)
-  docs/
-    architecture.md      # AppView shape, local-first, storage, scaling
-    atproto.md           # lexicons, PDS limits, OAuth, sharing
-    data-model.md        # owned vs referenced, keys, designs, history
-    ip.md                # WotC/Scryfall/EDHREC constraints, licensing
-    roadmap.md           # phases and scope
-    scryfall.md          # bulk data, cache, artifact, import formats
-  lexicons/              # NSID JSON schema files
-  tools/lexicon-check/   # validates lexicons/ and the client metadata document
-  web/                   # TS + React, Vite, own Bun toolchain; the client
-  Cargo.toml             # workspace root, members = ["crates/*"]
-  justfile
-```
 
 ## Build order (where we are / what's next)
 

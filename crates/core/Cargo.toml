@@ -1,7 +1,7 @@
 [package]
 name = "manasphere-core"
 version.workspace = true
-description = "Shared record types and database models for Manasphere."
+description = "The Manasphere card cache, and the catalog exported from it."
 edition.workspace = true
 rust-version.workspace = true
 license.workspace = true
