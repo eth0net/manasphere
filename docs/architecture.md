@@ -38,7 +38,14 @@ the catalog change for different reasons:
 | | origin | built from | changes on |
 |---|---|---|---|
 | app, client metadata | `manasphere.app`, Pages | the repo | a commit |
-| catalog, manifest | `catalog.manasphere.app`, R2 | the cache | a set |
+| catalog, manifest | `static.manasphere.app`, R2 | the cache | a set |
+
+`static` rather than `catalog`, because the catalog is the first artifact of
+that shape and not the last: a scanner index and precomputed recommendations
+are both built offline and served the same way. Not `data`, which in an app
+whose point is that collections live in PDSes would suggest exactly the wrong
+thing. The Phase 3 query API wants a third name, `api`, and reads as the
+dynamic half against this one.
 
 Keeping them apart is not tidiness. **A Pages deployment is a snapshot of one
 directory**, so a commit-triggered deploy that carried the catalog would have

@@ -1,10 +1,10 @@
-//! HTTP handlers.
+//! The public API. HTTP today because XRPC is, though the transport is
+//! incidental: a `subscription` lexicon would be a websocket in here too.
 //!
-//! Production serves the app from Cloudflare Pages and the catalog from object
-//! storage, so this process serves neither. What is left is a health check and
-//! a server for the catalog directory, so the client can be developed against
-//! it. There are no write handlers and there will not be — the browser writes
-//! to the user's own PDS. See `docs/architecture.md`.
+//! A health check, and the exported catalog served for local development —
+//! in production the app and the catalog are deployed elsewhere. No write
+//! handlers, ever: the browser writes to the user's own PDS. See
+//! `docs/architecture.md`.
 
 use std::path::PathBuf;
 

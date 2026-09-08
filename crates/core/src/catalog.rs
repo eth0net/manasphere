@@ -1,9 +1,8 @@
 //! The catalog artifact: the slice of the cache a browser needs.
 //!
-//! Two files of positional rows, written uncompressed and left to a CDN to
-//! compress — brotli beats what we would ship by a fifth. They are uploaded to
-//! object storage on their own origin, so nothing here knows a URL. Which
-//! fields, and what they cost, is in `docs/scryfall.md`.
+//! Two files of positional rows, written uncompressed for a CDN to compress
+//! and uploaded to object storage on their own origin, so nothing here knows a
+//! URL. Which fields, and what they cost, is in `docs/scryfall.md`.
 
 use std::collections::HashMap;
 use std::hash::{DefaultHasher, Hash as _, Hasher as _};

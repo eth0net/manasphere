@@ -1,5 +1,4 @@
-//! The two things left in the server: the health check, and serving the
-//! exported catalog so the client can be developed against it.
+//! The health check, and the exported catalog served for local development.
 
 use std::path::PathBuf;
 use std::{env, fs};

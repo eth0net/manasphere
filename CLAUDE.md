@@ -163,7 +163,7 @@ backend:
 manasphere/
   Cargo.toml             # workspace root, members = ["crates/*"]
   crates/
-    api/                 # axum route handlers (lib)
+    api/                 # the API the AppView answers (lib)
     appview/             # bin crate — the `manasphere` binary
     core/                # lexicon record structs, shared DB models/logic
     jetstream/           # firehose consumer (lib)

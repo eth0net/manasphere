@@ -27,7 +27,7 @@ with the OAuth client metadata document. No client yet.
 ```
 crates/scryfall        bulk-data fetch/parse
 crates/core            card cache, and the catalog the client caches
-crates/api             axum route handlers
+crates/api             the API the AppView answers
 crates/appview         the `manasphere` binary
 docs/                  roadmap, and the reasoning behind each decision
 lexicons/              NSID JSON schemas

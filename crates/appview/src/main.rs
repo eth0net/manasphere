@@ -1,10 +1,9 @@
 //! The Manasphere server: it keeps the card cache fresh and exports the
 //! catalog built from it.
 //!
-//! That catalog is uploaded to object storage on its own origin, and the app
-//! is deployed separately from the repo, so in production this process serves
-//! neither. It serves the export directory anyway, because developing the
-//! client wants something local to fetch from. There are no write handlers:
+//! Nothing here is browser-facing in production: the catalog is uploaded to
+//! object storage on its own origin and the app deploys from the repo. The
+//! export directory is served for local development. No write handlers, ever:
 //! user data lives in the user's own PDS and the browser writes there
 //! directly. See `docs/architecture.md`.
 //!
