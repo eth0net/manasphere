@@ -138,8 +138,8 @@ the firehose. Per-user cost is a few index rows and a trickle of events —
 nobody edits a collection thousands of times a day. What scales is bandwidth
 for static artifacts, which a CDN fixes cheaply.
 
-- Client artifact: **3.67MB brotli**, 11.3MB before compression, for 37,563
-  cards and 108,275 paper printings. Measured, and served by a CDN rather than
+- Client artifact: **3.99MB brotli**, 12.5MB before compression, for 37,564
+  cards and 108,273 paper printings. Measured, and served by a CDN rather than
   by us; the shape is in [`scryfall.md`](scryfall.md).
 - Scanner index: an estimate, so treat it as one — maybe under 1MB for
   perceptual hashes, ~25MB for embeddings.

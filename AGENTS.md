@@ -11,8 +11,8 @@ what can be *built*, not only what can be charged for.
 `docs/` carries the reasoning, one file per subject: `roadmap.md` for phases,
 `data-model.md` for owned versus referenced and history, `architecture.md` for
 the AppView shape and storage, `scryfall.md` for the cache and the client
-artifact, `atproto.md` for lexicons and the PDS and OAuth limits, `ip.md` for
-the WotC and Scryfall constraints. This file is the condensed orientation for
+artifact, `search.md` for querying it, `atproto.md` for lexicons and the PDS
+and OAuth limits, `ip.md` for the WotC and Scryfall constraints. This file is the condensed orientation for
 picking the project back up; each crate describes itself in its `Cargo.toml`.
 
 Prose here and in `lexicons/` is read more often than it is written, so keep
@@ -65,10 +65,11 @@ backend:
 - Card print cache from Scryfall's **Default Cards** bulk file (~78MB
   compressed, gzipped JSONL — stream it, never parse whole). Refresh weekly,
   per Scryfall's own guidance.
-- Default Cards omits most non-English printings; the **client resolves those
-  on demand** from Scryfall's API (CORS is `*`, 48h cache-control) and caches
-  them in IndexedDB. So All Cards (~392MB) isn't needed server-side until Phase
-  3.
+- Default Cards omits most non-English printings — 652 Japanese, 9 German — so
+  **a CSV import of a non-English collection can't resolve its print ids** and
+  All Cards (392MB) is a v0 need, not a Phase 3 one. Display can wait: the
+  client resolves a printing on demand from Scryfall's API (CORS is `*`, 48h
+  cache-control) into IndexedDB. See `docs/search.md`.
 - Don't store images or image URIs — hotlink Scryfall's CDN, deriving URLs from
   the card id. Keep `image_status`.
 - **The cache is two tables.** `oracle` holds what the rules see, one row per

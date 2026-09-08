@@ -8,6 +8,10 @@
 [default]
 locale = "en-us"
 
+# Scryfall's search operators, which are abbreviations rather than words:
+# `tou` is toughness, `pow` is power. Only the ones a dictionary objects to.
+extend-words = { tou = "tou" }
+
 [files]
 extend-exclude = [
   # Captured Scryfall responses, compared byte for byte. "Aether Syphon" is a

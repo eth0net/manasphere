@@ -1,7 +1,8 @@
 # Scryfall
 
 Card data comes from Scryfall, and its shape drives most of the cache. Their
-terms are in [`ip.md`](ip.md).
+terms are in [`ip.md`](ip.md); what the client does with the artifact is in
+[`search.md`](search.md).
 
 ## Bulk data and the cache
 
@@ -279,80 +280,6 @@ entry.
 **The manifest generalizes when the second part exists**, not before — from a
 fixed pair to a set of named parts. It is rebuilt on every export, so the shape
 costs nothing to change later and would be dead weight now.
-
-## What manual search surfaces
-
-Filtering was the wrong first instinct: almost everything is a real card
-someone can own. Only digital printings can't be, which makes them a category
-error rather than a preference, so they are excluded outright and no toggle
-reaches them. Un-sets, special editions and oversized cards stay searchable —
-Unfinity acorn cards are Legacy-legal, and someone with a 30th Anniversary Mox
-searching and finding nothing is a worse failure than a noisy result.
-
-The noise was mostly a grouping problem. Paper alone is 108,275 printings
-across 37,563 cards, so "Forest" returned 865 rows. One row per card, with a
-count, and a representative printing chosen by preferring booster printings
-from expansions and core sets, then nonfoil over a foil-only twin sharing its
-collector number. The order is total, ending in the printing id — the files
-are named after their own bytes, so a tie left to SQLite would rename them for
-nothing.
-
-| | printings | rank |
-|---|---|---|
-| cards | 96,657 | first |
-| tokens, emblems | 3,245 | second |
-| art series | 2,650 | third |
-
-Art series carry their own `oracle_id`, so grouping alone would leave them
-competing with the card they depict — hence the tier. An exact name match
-still beats the tier, because someone typing a token's name means the token.
-
-### Ranking in the client
-
-Searching the artifact is a scan of 37,000 names costing a few milliseconds,
-so the client builds no index. It ranks on exact match, then names where the
-query starts a word, then anywhere at all; within a tier, the printing tiers
-above, then popularity.
-
-A whole-name prefix is deliberately *not* its own tier, or "bolt" fills on
-Bolt Bend and Bolt Hound and never reaches the card anyone meant.
-
-**Popularity is EDHREC rank, and reprint count where there is no rank.** 15%
-of cards carry no rank — every token and art series, and the basic lands — so
-an unranked card is scored as if its rank were `worst / printings`. Both
-halves were needed: ranking the unranked last puts Karplusan Forest (#222)
-above Forest, and dropping the rank puts Aladdin's Ring (#24,725) above The One
-Ring (#91).
-
-Being an EDH signal, it misjudges cards that format never sees: the Power Nine
-rank nowhere, so "mox" leads with Chrome Mox and Mox Amber rather than Mox
-Emerald. Acceptable for now — the honest fix is our own signal, below.
-
-### Browsing, sorting and filtering
-
-Not built. Worth recording that **the artifact already carries everything they
-need**, so none of it is a format change: type line, colors, color identity,
-mana cost, cmc, power and toughness, rarity, set, artist and layout are all
-there.
-
-- **Filtering** on type, color and color identity, where color takes three
-  modes rather than one — exactly these colors, contains them, or is contained
-  by them. The third is the Commander question, and the one a match-only
-  filter can't ask.
-- **Sorting** by name, cmc, rarity, printing count or popularity, which is a
-  different comparator over the same scan.
-- **A grid view** with the cell size or column count settable, since a wall of
-  card images is how everyone else presents a collection and the image URLs
-  derive from the print id.
-
-**Our own popularity signal replaces EDHREC's** once Explore exists (Phase 3):
-how many copies the network holds, and how many decks play a card, are both
-things we would then know first-hand — computed from indexed records rather
-than borrowed, covering the formats EDHREC doesn't, and the same input the
-recommendations in [`roadmap.md`](roadmap.md) want.
-Tokens and art series each have a toggle, and so does grouping, all on by
-default. Shipping the extras costs about 18% more client artifact (~1.6MB of
-~8.9MB of index), so the toggles work offline rather than needing a round trip.
 
 ## Open questions
 

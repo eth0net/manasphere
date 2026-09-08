@@ -93,8 +93,10 @@ where it lives.
 **Onboarding asks two more things**: which language to show cards in, and how
 much of the catalog to keep on this device. Both are display choices that
 reach no record — a print id already pins its language — so either can change
-later without migrating anything. What the parts are, and what they cost, is
-in [`scryfall.md`](scryfall.md).
+later without migrating anything. A settings page owns them afterward. What
+the parts cost is in [`scryfall.md`](scryfall.md); the three senses of
+"language", and why import needs them before display does, are in
+[`search.md`](search.md).
 
 Public activity while signed out — Tangled's front page — needs Explore, so
 that slot stays empty until Phase 3.
