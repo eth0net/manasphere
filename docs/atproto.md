@@ -168,8 +168,10 @@ makes migration look frightening:
   permanent, embedded in every record ever written, and it needs DNS control
   rather than hosting. Registered, so this is settled: after the first record
   exists it can't change without a per-user migration.
-- **App hosting** — `manasphere.app`. Freely changeable, unlike the NSID root
-  that shares its name.
+- **App hosting** — `manasphere.app`, and the app is the only thing on it. The
+  signed-out root is the front page rather than a separate marketing site,
+  because moving the app to a subdomain would move the `client_id` with it.
+  Changeable, unlike the NSID root that shares its name, but not free.
 - **PDS** — a separate domain, deliberately. atproto's production guide wants
   the PDS and the app on different registrable domains, since blobs served from
   the PDS would otherwise share an origin with the app's OAuth and session
