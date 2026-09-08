@@ -35,9 +35,10 @@ backend:
   data. OAuth is a browser-side public client (PKCE + DPoP); the `client_id` is
   the URL of a static client metadata document we serve.
 - **Our server** ("the AppView") is a single Rust process that: (1) syncs
-  Scryfall card data into our own DB as a cache, (2) generates the static site
-  from that cache for a CDN to serve, (3) from Phase 3, consumes a filtered
-  Jetstream firehose to index *other people's* published records.
+  Scryfall card data into our own DB as a cache, (2) exports the catalog from
+  that cache for a CDN to serve, (3) from Phase 3, consumes a filtered
+  Jetstream firehose to index *other people's* published records. It never
+  touches the app itself, which Vite builds from the repo.
 - **Everything a browser fetches is static, on two origins.** The app and the
   OAuth client metadata document deploy from the repo to Pages on commit; the
   catalog uploads to R2 on its own subdomain when Scryfall moves. Separate
