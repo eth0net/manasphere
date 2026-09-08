@@ -162,7 +162,7 @@ backend:
 ```
 manasphere/
   crates/
-    api/                 # the API the AppView answers (lib)
+    api/                 # routes and handlers (lib)
     appview/             # bin crate — the `manasphere` binary
     core/                # card cache, catalog export, shared DB models (lib)
     jetstream/           # firehose consumer (lib)

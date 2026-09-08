@@ -27,7 +27,7 @@ with the OAuth client metadata document. No client yet.
 ```
 manasphere/
   crates/
-    api/                 the API the AppView answers
+    api/                 routes and handlers
     appview/             the `manasphere` binary
     core/                card cache, and the catalog it exports
     scryfall/            bulk-data fetch/parse

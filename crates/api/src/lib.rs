@@ -1,5 +1,6 @@
-//! The public API. HTTP today because XRPC is, though the transport is
-//! incidental: a `subscription` lexicon would be a websocket in here too.
+//! API routes and their handlers. HTTP today because XRPC is, though the
+//! transport is incidental: a `subscription` lexicon would be a websocket in
+//! here too.
 //!
 //! A health check, and the exported catalog served for local development —
 //! in production the app and the catalog are deployed elsewhere. No write
