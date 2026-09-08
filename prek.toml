@@ -45,6 +45,16 @@ hooks = [
   { id = "cargo-test", name = "cargo test", entry = "cargo test --all-targets", language = "system", files = '\.rs$|(^|/)Cargo\.(toml|lock)$', pass_filenames = false, require_serial = true, stages = ["pre-push"] },
 ]
 
+# Scoped to `web/`, and `system` for the same reason the cargo hooks are: bun
+# is needed to work on the client at all. `tsc` waits for pre-push, being the
+# slow one.
+[[repos]]
+repo = "local"
+hooks = [
+  { id = "biome", name = "biome check", entry = "cd web && bun run lint", language = "system", files = '^web/', pass_filenames = false, require_serial = true },
+  { id = "tsc", name = "tsc", entry = "cd web && bun run types", language = "system", files = '^web/', pass_filenames = false, require_serial = true, stages = ["pre-push"] },
+]
+
 # The sign-off CONTRIBUTING asks for. Git has no `commit.signOff`, so an
 # unenforced convention is the only alternative. Merge commits are exempt, as
 # DCO checks conventionally are — they carry no new work to certify.

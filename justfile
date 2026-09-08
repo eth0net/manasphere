@@ -9,7 +9,7 @@ default:
 
 # every check CI runs that can run on one machine
 [group('checks')]
-check: fmt-check lint test spell deny lexicons
+check: fmt-check lint test spell deny lexicons web
 
 # format in place
 [group('checks')]
@@ -45,10 +45,20 @@ deny:
 lexicons:
     cd tools/lexicon-check && bun install && bun run check
 
+# lint, typecheck and build the client
+[group('checks')]
+web:
+    cd web && bun install && bun run lint && bun run types && bun run build
+
 # export the catalog and serve it for local development
 [group('dev')]
 serve:
     MANASPHERE_DATABASE={{ db }} cargo run -p manasphere-appview
+
+# the client's dev server, fetching the catalog from `just serve`
+[group('dev')]
+client:
+    cd web && bun install && bun run dev
 
 # sync the card cache from Scryfall (~78MB), or from a file already on disk
 [group('dev')]

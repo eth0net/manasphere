@@ -69,6 +69,21 @@ jobs:
       - run: bun run check
         working-directory: tools/lexicon-check
 
+  web:
+    name: web
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: oven-sh/setup-bun@v2
+      - run: bun install --frozen-lockfile
+        working-directory: web
+      - run: bun run lint
+        working-directory: web
+      - run: bun run types
+        working-directory: web
+      - run: bun run build
+        working-directory: web
+
   msrv:
     name: minimum supported rust version
     runs-on: ubuntu-latest
