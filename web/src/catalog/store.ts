@@ -60,6 +60,15 @@ export async function write(name: string, bytes: ArrayBuffer): Promise<void> {
   }
 }
 
+// Throws away everything cached, so the next load starts from the network.
+export async function clear(): Promise<void> {
+  try {
+    await settle(indexedDB.deleteDatabase(DATABASE));
+  } catch {
+    // Nothing cached, or nothing that can be.
+  }
+}
+
 // Deletes every cached file except `keep`, which is the current pair.
 export async function prune(keep: string[]): Promise<void> {
   const db = await open();

@@ -9,7 +9,33 @@
 export interface Index {
   names: string[];
   kinds: number[];
-  printings: number[];
+  // Lower is better, from `scores` below.
+  scores: Float64Array;
+}
+
+// One popularity number per card, lower being better, from the two signals the
+// artifact carries.
+//
+// EDHREC's rank is the real one, and 15% of cards have none: every token and
+// art series, and — the case that matters — the basic lands. So an unranked
+// card gets a rank estimated from how often it was reprinted, which is what
+// keeps Forest (865 printings, no rank) above Karplusan Forest (#222). Ranking
+// the unranked last instead puts Karplusan first, and ignoring the rank
+// entirely puts Aladdin's Ring (#24,725) above The One Ring (#91).
+export function scores(
+  ranks: (number | null)[],
+  printings: number[],
+): Float64Array {
+  let worst = 0;
+  for (const rank of ranks) {
+    if (rank !== null && rank > worst) worst = rank;
+  }
+
+  const scores = new Float64Array(ranks.length);
+  for (let card = 0; card < ranks.length; card++) {
+    scores[card] = ranks[card] ?? worst / (printings[card] as number);
+  }
+  return scores;
 }
 
 // Lowercased, diacritics stripped so "jotun" finds "Jötun Grunt", apostrophes
@@ -39,7 +65,7 @@ export function search(index: Index, query: string, limit: number): number[] {
   const wanted = normalize(query);
   if (!wanted) return [];
 
-  const { names, kinds, printings } = index;
+  const { names, kinds, scores } = index;
   const buckets: number[][] = Array.from({ length: TIERS * KINDS }, () => []);
 
   for (let card = 0; card < names.length; card++) {
@@ -52,11 +78,9 @@ export function search(index: Index, query: string, limit: number): number[] {
   const found: number[] = [];
   for (const bucket of buckets) {
     if (found.length >= limit) break;
-    // Printings stand in for how well known a card is — Lightning Bolt has 67
-    // and Bolt Bend has 4 — which is the only popularity signal the artifact
-    // carries. Rows arrive sorted by name, and the sort is stable, so a tie
-    // stays alphabetical.
-    bucket.sort((a, b) => (printings[b] as number) - (printings[a] as number));
+    // Rows arrive sorted by name, and the sort is stable, so cards of equal
+    // standing stay alphabetical.
+    bucket.sort((a, b) => (scores[a] as number) - (scores[b] as number));
     found.push(...bucket.slice(0, limit - found.length));
   }
   return found;

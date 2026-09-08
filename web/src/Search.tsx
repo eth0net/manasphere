@@ -54,6 +54,8 @@ function Result({ card, catalog }: { card: Card; catalog: Catalog }) {
             {print.setName} · {print.set.toUpperCase()} #
             {print.collectorNumber} · {print.rarity}
             {card.printings > 1 && ` · ${card.printings} printings`}
+            {card.edhrecRank &&
+              ` · EDHREC #${card.edhrecRank.toLocaleString()}`}
           </p>
         )}
       </div>

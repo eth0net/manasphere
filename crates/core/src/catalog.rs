@@ -22,7 +22,7 @@ const FINISHES: [&str; 3] = ["nonfoil", "foil", "etched"];
 /// `kind` on a card row indexes this. Search ranks in the same order.
 const KINDS: [&str; 3] = ["card", "token", "artSeries"];
 
-const CARD_FIELDS: [&str; 9] = [
+const CARD_FIELDS: [&str; 10] = [
     "oracleId",
     "name",
     "typeLine",
@@ -32,6 +32,7 @@ const CARD_FIELDS: [&str; 9] = [
     "colorIdentity",
     "kind",
     "printings",
+    "edhrecRank",
 ];
 
 const PRINT_FIELDS: [&str; 9] = [
@@ -50,7 +51,7 @@ const PRINT_FIELDS: [&str; 9] = [
 #[derive(Debug, Serialize)]
 struct CardHeader<'a> {
     version: &'a str,
-    fields: [&'static str; 9],
+    fields: [&'static str; 10],
     kinds: [&'static str; 3],
 }
 
@@ -212,6 +213,7 @@ type CardRow = (
     String,
     i64,
     i64,
+    Option<i64>,
 );
 
 async fn build_cards(pool: &SqlitePool, version: &str) -> Result<Artifact> {
@@ -226,7 +228,7 @@ async fn build_cards(pool: &SqlitePool, version: &str) -> Result<Artifact> {
 
     let mut rows = sqlx::query_as::<_, CardRow>(
         "SELECT id, name, type_line, mana_cost, cmc, colors, color_identity,
-                kind, printings
+                kind, printings, edhrec_rank
          FROM oracle WHERE paper ORDER BY name, id",
     )
     .fetch(pool);

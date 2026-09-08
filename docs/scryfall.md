@@ -193,10 +193,10 @@ header, written uncompressed for a CDN to compress.
 
 | | rows | uncompressed | brotli |
 |---|---|---|---|
-| cards | 37,563 | 4.1MB | 1.1MB |
-| prints | 108,275 | 7.2MB | 2.5MB |
+| cards | 37,564 | 4.3MB | 1.2MB |
+| prints | 108,273 | 7.2MB | 2.5MB |
 
-Measured 2026-09-07: 3.67MB over the wire, inside the 4-5MB target in
+Measured 2026-09-08: 3.77MB over the wire, inside the 4-5MB target in
 [`architecture.md`](architecture.md).
 
 **Printings are grouped by card, in the cards file's order**, so a card's
@@ -220,9 +220,11 @@ Low-cardinality columns are integers indexing tables in the header — sets,
 rarity, layout, image status, language, and finishes as a bitmask. Each list
 runs commonest first, so the value that repeats most is one digit.
 
-Left out: oracle text, keywords, power and toughness, legality, the reserved
-list and EDHREC rank. Collection tracking needs none of them and they are
-another 2.3MB, so they become a third file when decks arrive.
+**EDHREC rank is in, at 100KB compressed**, because search has no other
+popularity signal and a name search without one is bad enough to notice. Left
+out: oracle text, keywords, power and toughness, legality and the reserved
+list. Collection tracking needs none of them and they are another 2.1MB, so
+they become a third file when decks arrive.
 
 ## What manual search surfaces
 
@@ -256,12 +258,21 @@ still beats the tier, because someone typing a token's name means the token.
 Searching the artifact is a scan of 37,000 names costing a few milliseconds,
 so the client builds no index. It ranks on exact match, then names where the
 query starts a word, then anywhere at all; within a tier, the printing tiers
-above, then printing count descending.
+above, then popularity.
 
-Printing count is the only popularity signal the artifact carries, and a good
-enough one: it is what puts Lightning Bolt above Bolt Bend for "bolt". A
-whole-name prefix is deliberately *not* its own tier, or that search would
-fill on Bolt Bend and Bolt Hound and never reach the card anyone meant.
+A whole-name prefix is deliberately *not* its own tier, or "bolt" fills on
+Bolt Bend and Bolt Hound and never reaches the card anyone meant.
+
+**Popularity is EDHREC rank, and reprint count where there is no rank.** 15%
+of cards carry no rank — every token and art series, and the basic lands — so
+an unranked card is scored as if its rank were `worst / printings`. Both
+halves were needed: ranking the unranked last puts Karplusan Forest (#222)
+above Forest, and dropping the rank puts Aladdin's Ring (#24,725) above The One
+Ring (#91).
+
+Being an EDH signal, it misjudges cards that format never sees: the Power Nine
+rank nowhere, so "mox" leads with Chrome Mox and Mox Amber rather than Mox
+Emerald. Acceptable for now — the honest fix is our own signal, below.
 
 Tokens and art series each have a toggle, and so does grouping, all on by
 default. Shipping the extras costs about 18% more client artifact (~1.6MB of

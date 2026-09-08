@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { type Index, normalize, search } from "./search";
+import { type Index, normalize, scores, search } from "./search";
 
 describe("normalize", () => {
   test("strips diacritics", () => {
@@ -18,28 +18,31 @@ describe("normalize", () => {
   });
 });
 
+type Row = [
+  name: string,
+  kind: number,
+  printings: number,
+  edhrecRank?: number | null,
+];
+
 // Names have to arrive sorted, as the catalog's do, for ties to come out
 // alphabetically.
-function index(cards: [name: string, kind: number, printings: number][]): {
-  index: Index;
-  names: string[];
-} {
+function index(cards: Row[]): { index: Index; names: string[] } {
   const sorted = [...cards].sort((a, b) => a[0].localeCompare(b[0]));
   return {
     index: {
       names: sorted.map(([name]) => normalize(name)),
       kinds: sorted.map(([, kind]) => kind),
-      printings: sorted.map(([, , printings]) => printings),
+      scores: scores(
+        sorted.map(([, , , rank]) => rank ?? null),
+        sorted.map(([, , printings]) => printings),
+      ),
     },
     names: sorted.map(([name]) => name),
   };
 }
 
-function find(
-  cards: [string, number, number][],
-  query: string,
-  limit = 10,
-): string[] {
+function find(cards: Row[], query: string, limit = 10): string[] {
   const built = index(cards);
   return search(built.index, query, limit).map(
     (at) => built.names[at] as string,
@@ -50,26 +53,49 @@ describe("search", () => {
   test("an exact name leads, however obscure", () => {
     const found = find(
       [
-        ["Fire", 0, 1],
-        ["Fireball", 0, 40],
+        ["Fire", 0, 1, 9000],
+        ["Fireball", 0, 40, 300],
       ],
       "fire",
     );
     expect(found).toEqual(["Fire", "Fireball"]);
   });
 
-  test("a word prefix ranks with a name prefix, on printings", () => {
+  test("a word prefix ranks with a name prefix, on standing", () => {
     const found = find(
       [
-        ["Bolt Bend", 0, 4],
-        ["Lightning Bolt", 0, 67],
-        ["Thunderbolt", 0, 90],
+        ["Bolt Bend", 0, 4, 537],
+        ["Lightning Bolt", 0, 67, 158],
+        ["Thunderbolt", 0, 90, 1],
       ],
       "bolt",
     );
     // Lightning Bolt starts a word, Bolt Bend starts the name, and both beat
-    // Thunderbolt, where "bolt" starts nothing.
+    // Thunderbolt however well ranked, because "bolt" starts nothing there.
     expect(found).toEqual(["Lightning Bolt", "Bolt Bend", "Thunderbolt"]);
+  });
+
+  test("a rank beats reprints", () => {
+    const found = find(
+      [
+        ["Aladdin's Ring", 0, 6, 24725],
+        ["The One Ring", 0, 3, 91],
+      ],
+      "ring",
+    );
+    expect(found).toEqual(["The One Ring", "Aladdin's Ring"]);
+  });
+
+  test("reprints stand in for a rank nothing has", () => {
+    // A basic land carries no EDHREC rank, and has to lead anyway.
+    const found = find(
+      [
+        ["Forest", 0, 865, null],
+        ["Karplusan Forest", 0, 29, 222],
+      ],
+      "fores",
+    );
+    expect(found).toEqual(["Forest", "Karplusan Forest"]);
   });
 
   test("a token ranks below the card it copies", () => {
@@ -84,16 +110,16 @@ describe("search", () => {
   });
 
   test("a blank query matches nothing", () => {
-    const cards: [string, number, number][] = [["Forest", 0, 865]];
+    const cards: Row[] = [["Forest", 0, 865]];
     expect(find(cards, "")).toEqual([]);
     expect(find(cards, "   ")).toEqual([]);
   });
 
   test("the limit holds across tiers", () => {
-    const cards: [string, number, number][] = [
-      ["Bolt Bend", 0, 4],
-      ["Lightning Bolt", 0, 67],
-      ["Thunderbolt", 0, 90],
+    const cards: Row[] = [
+      ["Bolt Bend", 0, 4, 537],
+      ["Lightning Bolt", 0, 67, 158],
+      ["Thunderbolt", 0, 90, 1],
     ];
     expect(find(cards, "bolt", 2)).toEqual(["Lightning Bolt", "Bolt Bend"]);
   });

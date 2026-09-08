@@ -1,4 +1,4 @@
-import { type Index, normalize, search } from "./search";
+import { type Index, normalize, scores, search } from "./search";
 
 // One file of the pair. `name` resolves against the manifest's own URL, so the
 // catalog can move origin without the format changing.
@@ -29,6 +29,7 @@ type CardRow = [
   colorIdentity: string,
   kind: number,
   printings: number,
+  edhrecRank: number | null,
 ];
 
 type PrintRow = [
@@ -73,6 +74,9 @@ export interface Card {
   colorIdentity: string;
   kind: string;
   printings: number;
+  // EDHREC's Commander popularity, lower being more played. Absent for every
+  // token and art series, and for the basic lands.
+  edhrecRank: number | null;
 }
 
 export interface Print {
@@ -134,7 +138,10 @@ export class Catalog {
     this.#index = {
       names: cards.cards.map((row) => normalize(row[1])),
       kinds: cards.cards.map((row) => row[7]),
-      printings: cards.cards.map((row) => row[8]),
+      scores: scores(
+        cards.cards.map((row) => row[9]),
+        cards.cards.map((row) => row[8]),
+      ),
     };
   }
 
@@ -164,6 +171,7 @@ export class Catalog {
       colorIdentity: row[6],
       kind: this.#cards.kinds[row[7]] as string,
       printings: row[8],
+      edhrecRank: row[9],
     };
   }
 
