@@ -1,17 +1,22 @@
 import { useMemo, useState } from "react";
 import {
+  appLanguage,
   type Card,
   type Catalog,
+  cardName,
   image,
   language,
   type Print,
-  readable,
   words,
 } from "./catalog";
 import { Mana } from "./Mana";
 
 // Nothing renders behind these, so a thumbnail would be a broken image.
 const NO_IMAGE = new Set(["missing", "placeholder"]);
+
+// Card names are read in the app's language, not the printing's. A setting of
+// its own once there is somewhere to put it — see `docs/search.md`.
+const APP = appLanguage();
 
 export function Search({ catalog }: { catalog: Catalog }) {
   const [query, setQuery] = useState("");
@@ -77,6 +82,7 @@ function Result({
   // is the one to lead with.
   const print = catalog.prints(card.index, lang)[0];
   const tags = card.kind === "card" ? card.flags : [card.kind, ...card.flags];
+  const name = cardName(card.name, print, APP);
 
   return (
     <li>
@@ -85,7 +91,10 @@ function Result({
       )}
       <div>
         <h2>
-          {readable(print?.printedName ?? null) ?? card.name}
+          {name.text}
+          {/* Only when the printing isn't in the language it is read in, so
+              an English name over an English printing says nothing. */}
+          {print && print.lang !== name.lang && <Language code={print.lang} />}
           {tags.map((tag) => (
             <span className="tag" key={tag}>
               {words(tag)}
@@ -113,7 +122,10 @@ function Result({
         {open && (
           <ul className="printings">
             {catalog.prints(card.index).map((one) => (
-              <li key={one.id}>{describe(one)}</li>
+              <li key={one.id}>
+                {one.lang !== "en" && <Language code={one.lang} />}
+                {describe(one)}
+              </li>
             ))}
           </ul>
         )}
@@ -122,11 +134,18 @@ function Result({
   );
 }
 
-// One printing, as much of it as it has.
+function Language({ code }: { code: string }) {
+  return (
+    <span className="tag" title={language(code)}>
+      {code}
+    </span>
+  );
+}
+
+// One printing, as much of it as it has. Language is a tag of its own.
 function describe(print: Print) {
   return [
     `${print.setName} · ${print.set.toUpperCase()} #${print.collectorNumber}`,
-    print.lang === "en" ? null : language(print.lang),
     print.rarity,
     print.finishes.join("/"),
     print.artist,

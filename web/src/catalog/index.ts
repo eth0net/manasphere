@@ -148,6 +148,34 @@ export function readable(name: string | null): string | null {
   return name && !PRIVATE_USE.test(name) ? name : null;
 }
 
+// Browser tags aren't Scryfall's codes, and only Chinese splits in two.
+export function appLanguage(tag = navigator.language): string {
+  const parts = tag.toLowerCase().split("-");
+  const base = parts[0] as string;
+  if (base !== "zh") return base;
+  const rest = parts.slice(1);
+  return rest.includes("hant") || rest.includes("tw") || rest.includes("hk")
+    ? "zht"
+    : "zhs";
+}
+
+// A card's name as read, and the language that name is in — the printing's
+// only when its own printed name is what's shown.
+export function cardName(
+  oracle: string,
+  print: Pick<Print, "lang" | "printedName"> | undefined,
+  app: string,
+): { text: string; lang: string } {
+  if (print?.lang === app) {
+    const printed = readable(print.printedName);
+    if (printed) return { text: printed, lang: print.lang };
+  }
+  // Scryfall keeps the oracle name in English whatever the printing is, so
+  // this is the readable answer for a Phyrexian card as much as a Japanese
+  // one someone would rather read in English.
+  return { text: oracle, lang: "en" };
+}
+
 // Codes with no standard name, checked against the printings using them.
 const LANGUAGES: Record<string, string> = {
   ph: "Phyrexian",

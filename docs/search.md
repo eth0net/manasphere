@@ -73,6 +73,22 @@ there.
   card images is how everyone else presents a collection and the image URLs
   derive from the print id.
 
+### Grouping, and a card page
+
+Search groups by card. Two other modes are wanted and only one of them is
+free:
+
+- **Ungrouped**, a row per printing, is a walk of the runs already built.
+- **By card** is what it does now.
+- **By art** needs `illustration_id`, which Scryfall carries and the cache
+  doesn't parse. It shouldn't ship as an id either: 108,273 UUIDs is 3.9MB raw
+  where a dense group number per printing is ~540KB, and nothing needs to
+  *name* an illustration — only to know which printings share one.
+
+A card page wants the larger art, every printing, and the full details. All of
+that is in the artifact except oracle text, which is the opt-in part above:
+images derive from the print id and the printings are the run.
+
 **Our own popularity signal replaces EDHREC's** once Explore exists (Phase 3):
 how many copies the network holds, and how many decks play a card, are both
 things we would then know first-hand — computed from indexed records rather
@@ -179,6 +195,27 @@ What it takes, in order:
    matches both, so choosing French doesn't stop someone typing an English
    name.
 5. **`lang:` and `in:` then answer**, which is the operator table above.
+
+### Which language a name is read in
+
+The language a printing is *in* and the language someone *reads* are different
+questions. Someone collecting Japanese cards may still want to read English,
+and nobody reads Phyrexian — Quenya's printed names are nine Private Use Area
+codepoints no font on the device has, so they render as nothing at all.
+
+So a name is read in the **app's** language, falling back to the oracle name,
+which Scryfall keeps in English whatever the printing is. The fallback is
+always there: every card in the paper artifact has an English printing.
+
+**The indicator compares the printing to the name shown, not to the
+preference.** Reading English over a Japanese printing shows `ja`, because
+they differ. Reading Japanese over an English printing shows nothing, because
+the name displayed is the English one either way — comparing against the
+preference instead would tag almost every row for anyone not reading English.
+
+That makes two settings once there is a page for them: the app's language, and
+a card language defaulting to it. Separable on purpose, because the app in
+English with cards in Japanese is a real preference and so is the reverse.
 
 ## Where the choices live
 

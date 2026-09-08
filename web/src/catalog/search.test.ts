@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { readable } from ".";
+import { appLanguage, cardName, readable } from ".";
 import { type Index, normalize, scores, search } from "./search";
 
 describe("normalize", () => {
@@ -151,5 +151,51 @@ describe("readable", () => {
     // Nine Tengwar codepoints, which is how Quenya printings carry a name.
     expect(readable("\u{E025}\u{E04A}\u{E022} \u{E020}\u{E04A}")).toBe(null);
     expect(readable(null)).toBe(null);
+  });
+});
+
+describe("appLanguage", () => {
+  test("takes the base tag", () => {
+    expect(appLanguage("en-GB")).toBe("en");
+    expect(appLanguage("ja")).toBe("ja");
+    expect(appLanguage("pt-BR")).toBe("pt");
+  });
+
+  test("splits Chinese the way the catalog does", () => {
+    expect(appLanguage("zh-CN")).toBe("zhs");
+    expect(appLanguage("zh-Hans")).toBe("zhs");
+    expect(appLanguage("zh-TW")).toBe("zht");
+    expect(appLanguage("zh-Hant-HK")).toBe("zht");
+  });
+});
+
+describe("cardName", () => {
+  const japanese = { lang: "ja", printedName: "対抗呪文" };
+
+  test("reads a printing in its own language when that is the app's", () => {
+    expect(cardName("Counterspell", japanese, "ja")).toEqual({
+      text: "対抗呪文",
+      lang: "ja",
+    });
+  });
+
+  test("reads the oracle name otherwise", () => {
+    // Collecting Japanese cards doesn't mean wanting to read Japanese.
+    expect(cardName("Counterspell", japanese, "en")).toEqual({
+      text: "Counterspell",
+      lang: "en",
+    });
+  });
+
+  test("reads the oracle name when no font could show the printed one", () => {
+    const quenya = { lang: "qya", printedName: "\u{E025}\u{E04A}\u{E022}" };
+    expect(cardName("Sol Ring", quenya, "qya")).toEqual({
+      text: "Sol Ring",
+      lang: "en",
+    });
+  });
+
+  test("reads the oracle name with no printing at all", () => {
+    expect(cardName("Sol Ring", undefined, "en").text).toBe("Sol Ring");
   });
 });
