@@ -13,6 +13,10 @@ const CARDS: &str = include_str!("fixtures/cards.jsonl");
 /// release date, foil-only first as the file has it.
 const FOIL_TWIN: &str = include_str!("fixtures/foil-twin.jsonl");
 
+/// The fields most cards don't carry: Jace Beleren has loyalty and no power,
+/// and Gaea's Cradle is on the reserved list and a game changer.
+const SPARSE: &str = include_str!("fixtures/sparse.jsonl");
+
 fn bulk(updated_at: &str) -> BulkData {
     serde_json::from_value(serde_json::json!({
         "id": "e2ef41e3-5778-4bc2-af3f-78eca4dd9c23",
@@ -154,6 +158,52 @@ async fn an_ordinary_printing_outranks_its_foil_only_twin() {
 
     assert_eq!(numbers, ["329", "329\u{2605}"]);
     assert_eq!(rows(&read(&built.cards.json), "cards").len(), 1);
+}
+
+/// Power and toughness, loyalty and defense print in the same corner and never
+/// co-occur, so they share one column rather than spending three `null`s a row.
+#[tokio::test]
+async fn one_column_carries_power_loyalty_or_defense() {
+    let pool = seeded_with(SPARSE).await;
+    let built = catalog::build(&pool).await.unwrap();
+    let file = read(&built.cards.json);
+
+    for row in rows(&file, "cards") {
+        let (power, toughness, loyalty): (Option<String>, Option<String>, Option<String>) =
+            sqlx::query_as("SELECT power, toughness, loyalty FROM oracle WHERE id = ?")
+                .bind(row[0].as_str().unwrap())
+                .fetch_one(&pool)
+                .await
+                .unwrap();
+
+        let expected = match (power, toughness, loyalty) {
+            (Some(power), Some(toughness), _) => Some(format!("{power}/{toughness}")),
+            (_, _, loyalty) => loyalty,
+        };
+        assert_eq!(row[10].as_str().map(str::to_owned), expected, "{}", row[1]);
+    }
+}
+
+/// Flags are a bitmask over the file's own `flags` list, on both files.
+#[tokio::test]
+async fn flags_survive_as_a_bitmask() {
+    let built = catalog::build(&seeded_with(SPARSE).await).await.unwrap();
+    let file = read(&built.cards.json);
+    let names: Vec<String> = serde_json::from_value(file["flags"].clone()).unwrap();
+    assert_eq!(names, ["reserved", "gameChanger"]);
+
+    let cradle = rows(&file, "cards")
+        .into_iter()
+        .find(|row| row[1] == "Gaea's Cradle")
+        .expect("the fixture holds it");
+    assert_eq!(cradle[11].as_u64(), Some(0b11));
+
+    let prints = read(&built.prints.json);
+    let flags: Vec<String> = serde_json::from_value(prints["flags"].clone()).unwrap();
+    assert_eq!(
+        flags,
+        ["promo", "variation", "fullArt", "textless", "oversized"]
+    );
 }
 
 /// Finishes are a bitmask over the file's own `finishes` list.

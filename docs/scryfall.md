@@ -193,10 +193,10 @@ header, written uncompressed for a CDN to compress.
 
 | | rows | uncompressed | brotli |
 |---|---|---|---|
-| cards | 37,564 | 4.3MB | 1.2MB |
-| prints | 108,273 | 7.2MB | 2.5MB |
+| cards | 37,564 | 4.6MB | 1.28MB |
+| prints | 108,273 | 7.9MB | 2.71MB |
 
-Measured 2026-09-08: 3.77MB over the wire, inside the 4-5MB target in
+Measured 2026-09-08: 3.99MB over the wire, at the top of the 4-5MB target in
 [`architecture.md`](architecture.md).
 
 **Printings are grouped by card, in the cards file's order**, so a card's
@@ -220,11 +220,25 @@ Low-cardinality columns are integers indexing tables in the header — sets,
 rarity, layout, image status, language, and finishes as a bitmask. Each list
 runs commonest first, so the value that repeats most is one digit.
 
-**EDHREC rank is in, at 100KB compressed**, because search has no other
-popularity signal and a name search without one is bad enough to notice. Left
-out: oracle text, keywords, power and toughness, legality and the reserved
-list. Collection tracking needs none of them and they are another 2.1MB, so
-they become a third file when decks arrive.
+**What a search result has to show chose the remaining columns**: EDHREC rank
+at 100KB compressed, since a name search with no popularity signal is bad
+enough to notice; power and toughness; the reserved list; and the printing's
+artist, the dearest at 175KB and the one to drop first.
+
+**A rare field can't be its own column.** Loyalty is on 316 cards and would
+spend a `null` on the other 37,248 — 186KB to say nothing. So power and
+toughness, loyalty and defense share one column: they never co-occur and print
+in the same corner, and the type line says which it is. Flags that are almost
+always false — reserved and game changer per card, promo, variation, full art,
+textless and oversized per printing — are bits in one integer, named by the
+header the way finishes are, so a flag added later needs no change in a client.
+
+**Battles keep their defense on `card_faces`**, so only two cards carry one at
+the top level. Inside the fold it costs nothing, so it stays.
+
+Left out: oracle text, keywords, legality, frame and border color, and a
+printing's own release date — the set carries one. Oracle text alone is 5.4MB
+uncompressed, which is the third file when decks arrive.
 
 ## What manual search surfaces
 
@@ -278,7 +292,8 @@ Emerald. Acceptable for now — the honest fix is our own signal, below.
 
 Not built. Worth recording that **the artifact already carries everything they
 need**, so none of it is a format change: type line, colors, color identity,
-mana cost, cmc, rarity, set and layout are all there.
+mana cost, cmc, power and toughness, rarity, set, artist and layout are all
+there.
 
 - **Filtering** on type, color and color identity, where color takes three
   modes rather than one — exactly these colors, contains them, or is contained

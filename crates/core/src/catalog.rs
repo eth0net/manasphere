@@ -22,7 +22,14 @@ const FINISHES: [&str; 3] = ["nonfoil", "foil", "etched"];
 /// `kind` on a card row indexes this. Search ranks in the same order.
 const KINDS: [&str; 3] = ["card", "token", "artSeries"];
 
-const CARD_FIELDS: [&str; 10] = [
+/// Bit `i` of a card's `flags`. Rare enough to be worthless as columns, where
+/// each would spend a `null` on all 37,000 rows to say something about 500.
+const CARD_FLAGS: [&str; 2] = ["reserved", "gameChanger"];
+
+/// The same for a printing: what makes this copy of a card not the plain one.
+const PRINT_FLAGS: [&str; 5] = ["promo", "variation", "fullArt", "textless", "oversized"];
+
+const CARD_FIELDS: [&str; 12] = [
     "oracleId",
     "name",
     "typeLine",
@@ -33,9 +40,11 @@ const CARD_FIELDS: [&str; 10] = [
     "kind",
     "printings",
     "edhrecRank",
+    "stats",
+    "flags",
 ];
 
-const PRINT_FIELDS: [&str; 9] = [
+const PRINT_FIELDS: [&str; 11] = [
     "id",
     "set",
     "collectorNumber",
@@ -45,14 +54,17 @@ const PRINT_FIELDS: [&str; 9] = [
     "imageStatus",
     "lang",
     "printedName",
+    "artist",
+    "flags",
 ];
 
 /// What the cards file says about itself before its rows.
 #[derive(Debug, Serialize)]
 struct CardHeader<'a> {
     version: &'a str,
-    fields: [&'static str; 10],
+    fields: [&'static str; 12],
     kinds: [&'static str; 3],
+    flags: [&'static str; 2],
 }
 
 /// The same for printings, plus the tables its integer columns index into.
@@ -60,12 +72,14 @@ struct CardHeader<'a> {
 #[serde(rename_all = "camelCase")]
 struct PrintHeader<'a> {
     version: &'a str,
-    fields: [&'static str; 9],
+    fields: [&'static str; 11],
     finishes: [&'static str; 3],
+    flags: [&'static str; 5],
     rarities: &'a [String],
     layouts: &'a [String],
     image_statuses: &'a [String],
     langs: &'a [String],
+    artists: &'a [String],
     sets: &'a [Set],
 }
 
@@ -214,6 +228,8 @@ type CardRow = (
     i64,
     i64,
     Option<i64>,
+    Option<String>,
+    i64,
 );
 
 async fn build_cards(pool: &SqlitePool, version: &str) -> Result<Artifact> {
@@ -222,13 +238,24 @@ async fn build_cards(pool: &SqlitePool, version: &str) -> Result<Artifact> {
             version,
             fields: CARD_FIELDS,
             kinds: KINDS,
+            flags: CARD_FLAGS,
         },
         "cards",
     )?;
 
     let mut rows = sqlx::query_as::<_, CardRow>(
+        // Power and toughness, loyalty and defense are mutually exclusive and
+        // print in the same corner, so they share one column; the type line
+        // says which it is.
         "SELECT id, name, type_line, mana_cost, cmc, colors, color_identity,
-                kind, printings, edhrec_rank
+                kind, printings, edhrec_rank,
+                CASE
+                    WHEN power IS NOT NULL
+                        THEN power || '/' || coalesce(toughness, '')
+                    WHEN loyalty IS NOT NULL THEN loyalty
+                    ELSE defense
+                END,
+                reserved | (coalesce(game_changer, 0) << 1)
          FROM oracle WHERE paper ORDER BY name, id",
     )
     .fetch(pool);
@@ -252,6 +279,8 @@ type PrintRow = (
     String,
     String,
     Option<String>,
+    Option<String>,
+    i64,
 );
 
 async fn build_prints(pool: &SqlitePool, version: &str) -> Result<Artifact> {
@@ -262,6 +291,11 @@ async fn build_prints(pool: &SqlitePool, version: &str) -> Result<Artifact> {
     .fetch_all(pool)
     .await?;
     let set_index = index(sets.iter().map(|set| set.0.clone()));
+
+    // 2,537 artists over 108,273 printings, so a table beats repeating them.
+    // Scryfall sends an empty artist on 794 printings, which is no artist.
+    let artists = common_first(pool, ARTISTS).await?;
+    let artist_index = index(artists.iter().cloned());
 
     let rarities = common_first(pool, RARITIES).await?;
     let layouts = common_first(pool, LAYOUTS).await?;
@@ -281,8 +315,10 @@ async fn build_prints(pool: &SqlitePool, version: &str) -> Result<Artifact> {
             finishes: FINISHES,
             rarities: &rarities,
             layouts: &layouts,
+            flags: PRINT_FLAGS,
             image_statuses: &statuses,
             langs: &langs,
+            artists: &artists,
             sets: &sets,
         },
         "prints",
@@ -295,7 +331,10 @@ async fn build_prints(pool: &SqlitePool, version: &str) -> Result<Artifact> {
     // finish clause is what keeps 9ed #329 ahead of the foil-only #329★.
     let mut rows = sqlx::query_as::<_, PrintRow>(
         "SELECT c.id, c.set_code, c.collector_number, c.finishes, c.rarity,
-                c.layout, c.image_status, c.lang, c.printed_name
+                c.layout, c.image_status, c.lang, c.printed_name,
+                nullif(c.artist, ''),
+                c.promo | (c.variation << 1) | (c.full_art << 2)
+                        | (c.textless << 3) | (c.oversized << 4)
          FROM cards c JOIN oracle o ON o.id = c.oracle_id
          WHERE NOT c.digital
          ORDER BY o.name, o.id,
@@ -308,7 +347,7 @@ async fn build_prints(pool: &SqlitePool, version: &str) -> Result<Artifact> {
 
     let mut count = 0;
     while let Some(row) = rows.try_next().await? {
-        let (id, set, number, finishes, rarity, layout, status, lang, printed) = row;
+        let (id, set, number, finishes, rarity, layout, status, lang, printed, artist, flags) = row;
         out.row(&(
             id,
             set_index[&set],
@@ -319,6 +358,8 @@ async fn build_prints(pool: &SqlitePool, version: &str) -> Result<Artifact> {
             status_index[&status],
             lang_index[&lang],
             printed,
+            artist.and_then(|name| artist_index.get(&name).copied()),
+            flags,
         ))?;
         count += 1;
     }
@@ -326,6 +367,8 @@ async fn build_prints(pool: &SqlitePool, version: &str) -> Result<Artifact> {
     Ok(Artifact::new("prints", count, out.finish()?))
 }
 
+const ARTISTS: &str = "SELECT artist FROM cards WHERE NOT digital
+     AND coalesce(artist, '') <> '' GROUP BY artist ORDER BY count(*) DESC";
 const RARITIES: &str =
     "SELECT rarity FROM cards WHERE NOT digital GROUP BY rarity ORDER BY count(*) DESC";
 const LAYOUTS: &str =
