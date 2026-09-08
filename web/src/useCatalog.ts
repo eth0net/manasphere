@@ -61,8 +61,10 @@ export function useCatalog(): Status {
     const mine = pending;
     mine
       .then((done) => {
+        // A load `apply` orphaned must not land on top of the one that
+        // replaced it.
+        if (pending !== mine || !alive.current) return;
         loaded.current = done.manifest;
-        if (!alive.current) return;
         setState({ status: "ready", ...done });
         setAvailable(null);
         setError(null);
