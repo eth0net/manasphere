@@ -62,6 +62,11 @@ The model makes decks, binders and lists the same thing. The UI should hide it.
   That's why a deck references its container.
 - **Deck view** shows only designs carrying deck metadata; lists get their own
   view. Filtering on kind is the entire mechanism.
+- **Filters survive navigation.** Opening a set or a card and coming back
+  keeps what was typed, so view state lives above the view using it rather
+  than inside it.
+- **One app for phone and desktop**, not two designs and not a desktop layout
+  that shrinks. Every layout decision is made for both at once.
 - Containers are an **opt-in organizational layer**. Default to a single
   "Collection" so someone who doesn't care where a card lives never has to
   answer. Location tracking for those who want it, not a tax on those who

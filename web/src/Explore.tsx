@@ -7,22 +7,33 @@ import type { Catalog } from "./catalog";
 export function Explore({ catalog }: { catalog: Catalog }) {
   const [code, setCode] = useState("");
 
+  // Above the view that uses it, so opening a set and coming back doesn't
+  // throw it away. Anything else navigated into wants the same.
+  const [filter, setFilter] = useState("");
+
   return code ? (
     <Printings catalog={catalog} code={code} onBack={() => setCode("")} />
   ) : (
-    <Sets catalog={catalog} onSet={setCode} />
+    <Sets
+      catalog={catalog}
+      filter={filter}
+      onFilter={setFilter}
+      onSet={setCode}
+    />
   );
 }
 
 function Sets({
   catalog,
+  filter,
+  onFilter,
   onSet,
 }: {
   catalog: Catalog;
+  filter: string;
+  onFilter: (filter: string) => void;
   onSet: (code: string) => void;
 }) {
-  const [filter, setFilter] = useState("");
-
   const sets = useMemo(() => {
     const wanted = filter.trim().toLowerCase();
     return (
@@ -43,10 +54,11 @@ function Sets({
   return (
     <>
       <input
+        className="filter"
         type="search"
         value={filter}
         placeholder={`Filter ${sets.length.toLocaleString()} sets`}
-        onChange={(event) => setFilter(event.target.value)}
+        onChange={(event) => onFilter(event.target.value)}
       />
       <ul className="sets">
         {sets.map(({ set, printings }) => (
@@ -60,7 +72,7 @@ function Sets({
             </button>
             <span>
               {set[0].toUpperCase()} · {set[3].slice(0, 4)} ·{" "}
-              {printings.toLocaleString()} printings
+              {printings.toLocaleString()} printing{printings === 1 ? "" : "s"}
             </span>
           </li>
         ))}
@@ -88,7 +100,8 @@ function Printings({
           All sets
         </button>
         <span>
-          {name} · {printings.length.toLocaleString()} printings
+          {name} · {printings.length.toLocaleString()} printing
+          {printings.length === 1 ? "" : "s"}
         </span>
       </p>
       <ol className="results">

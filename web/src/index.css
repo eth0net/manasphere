@@ -71,6 +71,11 @@ footer a {
   flex: 1;
 }
 
+/* Sits under the search row, so it needs the gap that row's children get. */
+.filter {
+  margin-top: 0.5rem;
+}
+
 select {
   background: var(--paper);
   border: 1px solid var(--edge);

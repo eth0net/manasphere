@@ -62,9 +62,7 @@ export function CardRow({
             className="link"
             onClick={() => setOpen(!open)}
           >
-            {card.printings === 1
-              ? "one printing"
-              : `${card.printings} printings`}
+            {card.printings} printing{card.printings === 1 ? "" : "s"}
           </button>
           {card.edhrecRank && ` · EDHREC #${card.edhrecRank.toLocaleString()}`}
         </p>
