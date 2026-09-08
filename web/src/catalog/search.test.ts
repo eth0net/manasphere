@@ -1,4 +1,5 @@
 import { describe, expect, test } from "bun:test";
+import { readable } from ".";
 import { type Index, normalize, scores, search } from "./search";
 
 describe("normalize", () => {
@@ -122,5 +123,18 @@ describe("search", () => {
       ["Thunderbolt", 0, 90, 1],
     ];
     expect(find(cards, "bolt", 2)).toEqual(["Lightning Bolt", "Bolt Bend"]);
+  });
+});
+
+describe("readable", () => {
+  test("keeps a name a font can show", () => {
+    expect(readable("対抗呪文")).toBe("対抗呪文");
+    expect(readable("Crecimiento gigante")).toBe("Crecimiento gigante");
+  });
+
+  test("drops one printed in the Private Use Area", () => {
+    // Nine Tengwar codepoints, which is how Quenya printings carry a name.
+    expect(readable("\u{E025}\u{E04A}\u{E022} \u{E020}\u{E04A}")).toBe(null);
+    expect(readable(null)).toBe(null);
   });
 });

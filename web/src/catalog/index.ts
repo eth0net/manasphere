@@ -1,24 +1,21 @@
 import { type Index, normalize, scores, search } from "./search";
 
-// One file of the pair. `name` resolves against the manifest's own URL, so the
-// catalog can move origin without the format changing.
+// `name` resolves against the manifest's own URL, so the catalog can move.
 export interface Entry {
   name: string;
   rows: number;
   bytes: number;
 }
 
-// What a client fetches first, and the only part it re-fetches: the artifact
-// files are content-addressed and immutable.
+// Fetched first, and the only part re-fetched: the files are immutable.
 export interface Manifest {
   version: string;
   cards: Entry;
   prints: Entry;
 }
 
-// Positional rows, in the order each file's own `fields` names. Kept raw:
-// 145,000 rows as objects would cost far more than the strings they hold, and
-// only what's on screen is ever materialized.
+// Positional rows, in the order each file's own `fields` names them. Kept
+// raw: only what reaches the screen is materialized.
 type CardRow = [
   oracleId: string,
   name: string,
@@ -55,8 +52,7 @@ interface CardFile {
   cards: CardRow[];
 }
 
-// Every integer column on a print row indexes one of these tables, ordered
-// commonest first so the value that repeats most is the shortest to write.
+// Every integer column on a print row indexes one of these, commonest first.
 interface PrintFile {
   version: string;
   finishes: string[];
@@ -75,23 +71,19 @@ export interface Card {
   oracleId: string;
   name: string;
   typeLine: string | null;
-  // Empty and absent differ on both of these: a land's cost is empty and a
-  // colorless card's colors are, where a reversible card has neither at the
-  // top level because they sit on its faces.
+  // Empty and absent differ: a land's cost is empty and a colorless card's
+  // colors are, where a reversible card has neither, they being on its faces.
   manaCost: string | null;
   cmc: number | null;
   colors: string | null;
   colorIdentity: string;
   kind: string;
   printings: number;
-  // EDHREC's Commander popularity, lower being more played. Absent for every
-  // token and art series, and for the basic lands.
+  // Lower is more played. Absent for tokens, art series and basic lands.
   edhrecRank: number | null;
-  // Power and toughness as `3/3`, or a planeswalker's loyalty or a battle's
-  // defense on its own. The type line says which.
+  // `3/3`, or a loyalty or defense alone. The type line says which.
   stats: string | null;
-  // `reserved`, `gameChanger`. Named by the file, so a flag added to the
-  // artifact needs nothing here to show up.
+  // Named by the file, so a flag the artifact gains needs nothing here.
   flags: string[];
 }
 
@@ -107,16 +99,44 @@ export interface Print {
   lang: string;
   printedName: string | null;
   artist: string | null;
-  // `promo`, `variation`, `fullArt`, `textless`, `oversized` — what makes this
-  // copy not the plain one.
+  // What makes this copy not the plain one.
   flags: string[];
 }
 
-// Scryfall's image CDN, hotlinked: the path derives from the id, so no URL is
-// stored. Nothing is behind it for a print whose `imageStatus` is `missing` or
-// `placeholder`.
+// Hotlinked from the id, so no URL is stored. Nothing is behind it when
+// `imageStatus` is `missing` or `placeholder`.
 export function image(id: string, size = "normal"): string {
   return `https://cards.scryfall.io/${size}/front/${id[0]}/${id[1]}/${id}.jpg`;
+}
+
+// Tengwar sits in the Private Use Area, so no font on the device has it.
+const PRIVATE_USE = /[\u{E000}-\u{F8FF}]/u;
+
+export function readable(name: string | null): string | null {
+  return name && !PRIVATE_USE.test(name) ? name : null;
+}
+
+// Codes with no standard name, checked against the printings using them.
+const LANGUAGES: Record<string, string> = {
+  ph: "Phyrexian",
+  qya: "Quenya",
+  zhs: "Chinese (Simplified)",
+  zht: "Chinese (Traditional)",
+};
+
+// Falls back to the code: the artifact carries whatever Scryfall does.
+export function language(code: string): string {
+  const known = LANGUAGES[code];
+  if (known) return known;
+  try {
+    const names = new Intl.DisplayNames(undefined, {
+      type: "language",
+      fallback: "none",
+    });
+    return names.of(code) ?? code;
+  } catch {
+    return code;
+  }
 }
 
 // A camelCase name from the artifact as something to put on screen.
@@ -124,8 +144,7 @@ export function words(name: string): string {
   return name.replace(/([a-z])([A-Z])/g, "$1 $2").toLowerCase();
 }
 
-// A bitmask against the list the file names it with, so a value the artifact
-// gains appears without a change here.
+// A bitmask against the list the file names it with.
 function decode(mask: number, names: string[]): string[] {
   return names.filter((_, bit) => mask & (1 << bit));
 }
@@ -134,10 +153,11 @@ export class Catalog {
   readonly version: string;
   #cards: CardFile;
   #prints: PrintFile;
-  // Where each card's run of printings starts, with the total on the end, so
-  // a card's printings are `prints[offsets[i]]` up to `offsets[i + 1]`.
+  // Where each card's run of printings starts, with the total on the end.
   #offsets: Int32Array;
   #index: Index;
+  // A bit per entry of the prints file's `langs`, all 19 in one integer.
+  #languages: Int32Array;
 
   constructor(cards: CardFile, prints: PrintFile) {
     if (cards.version !== prints.version) {
@@ -158,12 +178,21 @@ export class Catalog {
     }
     this.#offsets[cards.cards.length] = offset;
 
-    // The runs are how a card finds its printings, so a total that disagrees
-    // would shift every card past the first bad one.
+    // A total that disagrees would shift every card past the first bad one.
     if (offset !== prints.prints.length) {
       throw new Error(
         `catalog claims ${offset} printings and holds ${prints.prints.length}`,
       );
+    }
+
+    this.#languages = new Int32Array(cards.cards.length);
+    for (let card = 0; card < cards.cards.length; card++) {
+      let langs = 0;
+      const end = this.#offsets[card + 1] as number;
+      for (let at = this.#offsets[card] as number; at < end; at++) {
+        langs |= 1 << (prints.prints[at] as PrintRow)[7];
+      }
+      this.#languages[card] = langs;
     }
 
     this.#index = {
@@ -184,8 +213,24 @@ export class Catalog {
     return this.#prints.prints.length;
   }
 
-  search(query: string, limit = 50): Card[] {
-    return search(this.#index, query, limit).map((index) => this.card(index));
+  // Every language some printing is in, commonest first.
+  get languages(): string[] {
+    return this.#prints.langs;
+  }
+
+  // A language narrows to cards printed in it, which is not searching by a
+  // name in that language: "Counterspell" with `ja` finds 対抗呪文.
+  search(query: string, { limit = 50, lang = "" } = {}): Card[] {
+    const bit = lang ? this.#prints.langs.indexOf(lang) : -1;
+    const keep =
+      bit < 0
+        ? undefined
+        : (card: number) =>
+            ((this.#languages[card] as number) >> bit) % 2 === 1;
+
+    return search(this.#index, query, limit, keep).map((index) =>
+      this.card(index),
+    );
   }
 
   card(index: number): Card {
@@ -208,9 +253,8 @@ export class Catalog {
     };
   }
 
-  // Every paper printing of a card, in the order search shows them: the
-  // first is the one to display.
-  prints(index: number): Print[] {
+  // Every paper printing, in the order search shows them.
+  prints(index: number, lang = ""): Print[] {
     const start = this.#offsets[index];
     const end = this.#offsets[index + 1];
     if (start === undefined || end === undefined) {
@@ -219,7 +263,8 @@ export class Catalog {
 
     const prints: Print[] = [];
     for (let i = start; i < end; i++) {
-      prints.push(this.#print(this.#prints.prints[i] as PrintRow));
+      const print = this.#print(this.#prints.prints[i] as PrintRow);
+      if (!lang || print.lang === lang) prints.push(print);
     }
     return prints;
   }

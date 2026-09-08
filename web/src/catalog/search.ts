@@ -1,27 +1,15 @@
-// Name search over the whole catalog, in the browser.
-//
-// 37,000 names is small enough that a scan per keystroke costs a few
-// milliseconds, so there is no index to build or keep in step. Names are
-// normalized once at load.
+// Name search over the whole catalog. A scan of 37,000 names costs a few
+// milliseconds, so there is no index. Ranking is in `docs/search.md`.
 
-// What a scan reads, held as parallel arrays because that is how the catalog
-// arrives.
 export interface Index {
   names: string[];
   kinds: number[];
-  // Lower is better, from `scores` below.
+  // Lower is better, from `scores`.
   scores: Float64Array;
 }
 
-// One popularity number per card, lower being better, from the two signals the
-// artifact carries.
-//
-// EDHREC's rank is the real one, and 15% of cards have none: every token and
-// art series, and — the case that matters — the basic lands. So an unranked
-// card gets a rank estimated from how often it was reprinted, which is what
-// keeps Forest (865 printings, no rank) above Karplusan Forest (#222). Ranking
-// the unranked last instead puts Karplusan first, and ignoring the rank
-// entirely puts Aladdin's Ring (#24,725) above The One Ring (#91).
+// One popularity number per card, lower being better. An unranked card — every
+// token, art series and basic land — is scored from its reprints instead.
 export function scores(
   ranks: (number | null)[],
   printings: number[],
@@ -38,10 +26,8 @@ export function scores(
   return scores;
 }
 
-// Lowercased, diacritics stripped so "jotun" finds "Jötun Grunt", apostrophes
-// dropped so "urzas" finds "Urza's Tower", and everything else that isn't a
-// letter or a digit collapsed to a single space — which is what makes `//` on
-// a split card a word boundary.
+// So "jotun" finds "Jötun Grunt", "urzas" finds "Urza's Tower", and `//` on a
+// split card is a word boundary.
 export function normalize(text: string): string {
   return text
     .normalize("NFD")
@@ -52,16 +38,19 @@ export function normalize(text: string): string {
     .trim();
 }
 
-// Exact, then starting a word, then anywhere. A whole-name prefix is not a
-// tier of its own: "bolt" has to lead with Lightning Bolt rather than filling
-// on Bolt Bend and Bolt Hound.
+// Exact, then starting a word, then anywhere.
 const TIERS = 3;
 
-// Tokens and art series rank below cards, which is the order `kind` already
-// carries, so "forest" leads with the land and not its token.
+// Cards, then tokens, then art series, as `kind` already orders them.
 const KINDS = 3;
 
-export function search(index: Index, query: string, limit: number): number[] {
+// `keep` narrows what is searched, not what survives being searched.
+export function search(
+  index: Index,
+  query: string,
+  limit: number,
+  keep?: (card: number) => boolean,
+): number[] {
   const wanted = normalize(query);
   if (!wanted) return [];
 
@@ -70,7 +59,7 @@ export function search(index: Index, query: string, limit: number): number[] {
 
   for (let card = 0; card < names.length; card++) {
     const tier = rank(names[card] as string, wanted);
-    if (tier !== null) {
+    if (tier !== null && (!keep || keep(card))) {
       (buckets[tier * KINDS + (kinds[card] as number)] as number[]).push(card);
     }
   }
@@ -78,8 +67,7 @@ export function search(index: Index, query: string, limit: number): number[] {
   const found: number[] = [];
   for (const bucket of buckets) {
     if (found.length >= limit) break;
-    // Rows arrive sorted by name, and the sort is stable, so cards of equal
-    // standing stay alphabetical.
+    // Rows arrive by name and the sort is stable, so equals stay alphabetical.
     bucket.sort((a, b) => (scores[a] as number) - (scores[b] as number));
     found.push(...bucket.slice(0, limit - found.length));
   }
