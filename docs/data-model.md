@@ -90,6 +90,12 @@ So **import is where you ask**, which is where the sharing warning has to go
 anyway. Search and scratch freely; the moment data arrives in volume, ask
 where it lives.
 
+**Onboarding asks two more things**: which language to show cards in, and how
+much of the catalog to keep on this device. Both are display choices that
+reach no record — a print id already pins its language — so either can change
+later without migrating anything. What the parts are, and what they cost, is
+in [`scryfall.md`](scryfall.md).
+
 Public activity while signed out — Tangled's front page — needs Explore, so
 that slot stays empty until Phase 3.
 
