@@ -24,10 +24,17 @@ body {
   margin: 0;
 }
 
+/* An app shell: the page itself doesn't scroll, the list inside it does. Two
+   scrolls put the footer below the fold, which is why it looked half gone.
+   `dvh` rather than `vh` so mobile browser chrome doesn't cut it off. */
 main {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  height: 100dvh;
   margin: 0 auto;
   max-width: 42rem;
-  padding: 2rem 1rem 4rem;
+  padding: 1.5rem 1rem 1rem;
 }
 
 header {
@@ -49,13 +56,20 @@ h1 {
 footer {
   border-top: 1px solid var(--edge);
   color: var(--quiet);
+  flex: none;
   font-size: 0.75rem;
-  margin-top: 3rem;
-  padding-top: 1rem;
+  /* Stays at the bottom when nothing above it grows, and collapses to nothing
+     when the list does. */
+  margin-top: auto;
+  padding-top: 0.75rem;
 }
 
 footer p {
-  margin: 0 0 0.5rem;
+  margin: 0;
+}
+
+footer p + p {
+  margin-top: 0.25rem;
 }
 
 footer a {
@@ -102,9 +116,10 @@ input[type="search"] {
    size keeps the scrollbar honest meanwhile. */
 .results,
 .sets {
+  flex: 1;
   list-style: none;
-  margin: 1.5rem 0 0;
-  max-height: 70vh;
+  margin: 1rem 0;
+  min-height: 0;
   overflow-y: auto;
   padding: 0;
 }

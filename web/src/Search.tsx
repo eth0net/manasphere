@@ -36,25 +36,27 @@ export function Search({ catalog }: { catalog: Catalog }) {
         </select>
       </div>
 
-      {!query && <Explore catalog={catalog} />}
-      {query && found.length === 0 && (
+      {/* One growing list at a time, or two would split the height. */}
+      {!query ? (
+        <Explore catalog={catalog} />
+      ) : found.length === 0 ? (
         <p>
           Nothing matches “{query}”
           {lang && ` with a ${language(lang)} printing`}.
         </p>
+      ) : (
+        <ol className="results">
+          {found.map((card) => (
+            <CardRow
+              key={card.oracleId}
+              card={card}
+              catalog={catalog}
+              // Filtered, so the printing shown is one that answers the search.
+              print={catalog.prints(card.index, lang)[0]}
+            />
+          ))}
+        </ol>
       )}
-
-      <ol className="results">
-        {found.map((card) => (
-          <CardRow
-            key={card.oracleId}
-            card={card}
-            catalog={catalog}
-            // Filtered, so the printing shown is one that answers the search.
-            print={catalog.prints(card.index, lang)[0]}
-          />
-        ))}
-      </ol>
     </>
   );
 }
