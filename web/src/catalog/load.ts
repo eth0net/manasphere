@@ -5,13 +5,11 @@ import { MANIFEST, prune, read, write } from "./store";
 export interface Loaded {
   catalog: Catalog;
   manifest: Manifest;
-  // Whether the artifact came off disk rather than the network, which is what
-  // makes a second visit instant and an offline one work at all.
+  // Off disk rather than the network.
   cached: boolean;
 }
 
-// Reads the catalog, from the cache where it can and the network where it
-// can't, reporting each step because the first load is megabytes.
+// Reports each step, the first load being megabytes.
 export async function load(step: (of: string) => void): Promise<Loaded> {
   step("Reading the manifest");
   const current = await readManifest();
@@ -34,15 +32,13 @@ export async function load(step: (of: string) => void): Promise<Loaded> {
   return { catalog, manifest, cached: cards.cached && prints.cached };
 }
 
-// The published manifest, from the network only: a cached one can't be news.
-// Deliberately does not cache what it finds — see `load`.
+// From the network only, and deliberately not cached — see `load`.
 export async function latest(): Promise<Manifest> {
   return parse<Manifest>(await fetchFile(MANIFEST, true));
 }
 
-// Two manifests name the same catalog, which the version alone doesn't answer:
-// a rebuild of the same Scryfall file can order printings differently and so
-// produce different bytes, which is exactly what the filenames are for.
+// By filename, not version: a rebuild of one Scryfall file can order printings
+// differently and so produce different bytes.
 export function same(a: Manifest, b: Manifest): boolean {
   return a.cards.name === b.cards.name && a.prints.name === b.prints.name;
 }
@@ -63,8 +59,7 @@ async function fetchFile(
   return await response.arrayBuffer();
 }
 
-// The manifest is the one file that changes under its own name, so it comes
-// from the network when there is one and from the cache when there isn't.
+// The one file that changes under its own name: network first, then cache.
 async function readManifest(): Promise<{
   manifest: Manifest;
   bytes: ArrayBuffer;
@@ -80,8 +75,7 @@ async function readManifest(): Promise<{
   }
 }
 
-// Content-addressed, so a cached file under this name is the right one and
-// needs no revalidating.
+// Content-addressed, so a cached file under this name needs no revalidating.
 async function file(
   name: string,
 ): Promise<{ bytes: ArrayBuffer; cached: boolean }> {

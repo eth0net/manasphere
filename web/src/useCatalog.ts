@@ -3,13 +3,11 @@ import type { Manifest } from "./catalog";
 import { type Loaded, latest, load, same } from "./catalog/load";
 import { clear } from "./catalog/store";
 
-// Scryfall publishes gameplay data about weekly and our sync follows, so a
-// check is cheap and rare. A tab left open across a publish is the only reason
-// this exists: a page load reads the manifest anyway.
+// A page load reads the manifest anyway, so this is for a tab left open across
+// a publish.
 const EVERY = 6 * 60 * 60 * 1000;
 
-// A tab coming back from the background checks if it has been this long, which
-// is the case a timer alone misses — a sleeping machine doesn't fire timers.
+// A sleeping machine fires no timers, so a returning tab checks for itself.
 const STALE = 60 * 60 * 1000;
 
 export type Load =
@@ -32,8 +30,7 @@ export interface Status {
   reset: () => void;
 }
 
-// The catalog is a singleton and the load is megabytes, so it happens once per
-// page however many components ask for it — including twice under StrictMode.
+// Once per page however many components ask, including twice under StrictMode.
 let pending: Promise<Loaded> | null = null;
 let step = "Starting";
 
@@ -52,8 +49,7 @@ export function useCatalog(): Status {
     };
   }, []);
 
-  // What a check compares against, in a ref so checking doesn't have to be
-  // rebuilt every time the catalog changes.
+  // What a check compares against.
   const loaded = useRef<Manifest | null>(null);
 
   const start = useCallback(() => {
@@ -112,8 +108,7 @@ export function useCatalog(): Status {
     apply();
   }, [apply]);
 
-  // Rescheduled by `checkedAt` changing, so the wait is always measured from
-  // the last check rather than from mount.
+  // Rescheduled by `checkedAt`, so the wait runs from the last check.
   useEffect(() => {
     if (state.status !== "ready") return;
 

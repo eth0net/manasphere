@@ -3,12 +3,7 @@ import type { Loaded } from "./catalog/load";
 import { CATALOG } from "./config";
 import type { Status } from "./useCatalog";
 
-// The catalog's own state. Not a dev panel: the artifact is refreshed on
-// Scryfall's cadence, so "which one am I on, and is there a newer one" is a
-// question with an answer worth showing.
-//
-// A modal rather than a disclosure in the header, which reflowed the header
-// every time it opened.
+// The catalog's own state, in a modal so opening it can't reflow the header.
 export function CatalogStatus({
   status,
   loaded,
@@ -19,9 +14,8 @@ export function CatalogStatus({
   const dialog = useRef<HTMLDialogElement>(null);
   const { catalog, manifest, cached } = loaded;
 
-  // Closing on a backdrop click, natively. Set here because React's types
-  // don't carry the attribute yet, and a click handler on the backdrop would
-  // be a way to close that a keyboard can't reach.
+  // Set here because React's types don't carry it yet. A click handler on the
+  // backdrop would be a way to close that a keyboard can't reach.
   useEffect(() => {
     dialog.current?.setAttribute("closedby", "any");
   }, []);
@@ -79,7 +73,7 @@ export function CatalogStatus({
   );
 }
 
-// Shown whether or not the panel is open, because it needs an answer.
+// Shown whether or not the panel is open.
 export function CatalogUpdate({ status }: { status: Status }) {
   if (!status.available) return null;
   return (
@@ -96,8 +90,7 @@ function rows(count: number, bytes: number) {
   return `${count.toLocaleString()} rows · ${(bytes / 1e6).toFixed(1)} MB`;
 }
 
-// The version is the bulk file's own timestamp, so its age says whether the
-// weekly sync is still running.
+// The bulk file's own timestamp, so its age shows whether the sync still runs.
 function published(version: string) {
   const at = new Date(version);
   const days = Math.floor((Date.now() - at.getTime()) / 86_400_000);

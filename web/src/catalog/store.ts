@@ -1,18 +1,13 @@
-// The catalog cached as the bytes that came off the wire.
+// The catalog cached as the bytes that came off the wire, keyed by the
+// content-addressed filename, so no name ever needs invalidating.
 //
-// Filenames are content-addressed, so a name is a cache key that never needs
-// invalidating: a new artifact has a new name. Pruning is deleting whatever
-// the current manifest doesn't name.
-//
-// Every call resolves rather than throwing: a browser in private mode, or one
-// with site data blocked, refuses to open a database at all, and the catalog
-// is re-fetchable.
+// Every call resolves rather than throwing: a browser with site data blocked
+// opens no database at all, and the catalog is re-fetchable.
 
 const DATABASE = "manasphere";
 const STORE = "catalog";
 
-// The manifest is cached under its own key, so a load with no network still
-// knows which pair to look for.
+// Cached too, so a load with no network knows which pair to look for.
 export const MANIFEST = "manifest.json";
 
 function settle<T>(request: IDBRequest<T>): Promise<T> {
@@ -60,7 +55,6 @@ export async function write(name: string, bytes: ArrayBuffer): Promise<void> {
   }
 }
 
-// Throws away everything cached, so the next load starts from the network.
 export async function clear(): Promise<void> {
   try {
     await settle(indexedDB.deleteDatabase(DATABASE));
@@ -69,7 +63,6 @@ export async function clear(): Promise<void> {
   }
 }
 
-// Deletes every cached file except `keep`, which is the current pair.
 export async function prune(keep: string[]): Promise<void> {
   const db = await open();
   if (!db) return;
