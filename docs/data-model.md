@@ -67,6 +67,35 @@ The model makes decks, binders and lists the same thing. The UI should hide it.
   answer. Location tracking for those who want it, not a tax on those who
   don't.
 
+### Signed out, signed in, and on this device only
+
+Three states, because reading needs no account and only writing needs
+somewhere to write. The catalog is client-side and public, so signed out
+already gets card search, printing comparison and a legality check against a
+pasted list — the half worth demonstrating, and it costs no OAuth flow to try.
+
+- **Signed out** is the front page plus that search, and a scratch pad.
+  Nothing persists, and the interface says so rather than quietly
+  accumulating.
+- **Signed in** is the dashboard: your collection, your decks.
+- **On this device only** is the deliberate third choice in
+  [`atproto.md`](atproto.md) — no PDS, no sync, an export nag, and the honest
+  answer for someone who doesn't want a world-readable inventory.
+
+**The failure to design against is the first quietly becoming the third.**
+Someone imports ten thousand cards without signing in, clears site data, and
+loses all of it having never chosen to. That is worse than making them sign in
+first: the privacy-motivated user at least took the trade knowingly.
+
+Which hands us the gate, and it is the one the sharing warning already wants:
+**import is where you ask.** Search and scratch freely, then the moment data
+arrives in volume, ask where it lives. One flow, two conversations that want
+the same moment.
+
+Public activity while signed out — Tangled's front page — needs Explore, so
+that slot stays empty until Phase 3 rather than shaping the page around
+content we don't have.
+
 ### Deck state
 
 `archived` is the only stored state — GitHub-style, drops a deck out of the
