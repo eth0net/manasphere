@@ -52,7 +52,11 @@ finish against the pair its manifest named.
 
 Objects carry their own cache metadata, set per object at upload — `immutable`
 for the content-addressed files, `no-cache` for the manifest, which is the
-only part re-fetched. Pages declares caching in a `_headers` file instead, and
+only part re-fetched. The client re-reads it on load, every six hours, and
+when a backgrounded tab comes back after an hour — a machine that was asleep
+fires no timers. It compares filenames rather than the version, because a
+rebuild of the same Scryfall file can order printings differently and so
+produce different bytes. Pages declares caching in a `_headers` file instead, and
 gives a request the headers of *every* matching rule with same-named ones
 comma-joined, so overlapping patterns there would say `immutable, no-cache`.
 

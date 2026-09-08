@@ -1,39 +1,30 @@
-import type { Loaded } from "./catalog/load";
+import { CatalogStatus, CatalogUpdate } from "./CatalogStatus";
 import { CATALOG } from "./config";
 import { Search } from "./Search";
 import { useCatalog } from "./useCatalog";
 
 export function App() {
-  const state = useCatalog();
+  const status = useCatalog();
+  const { load } = status;
 
   return (
     <main>
       <header>
         <h1>Manasphere</h1>
-        {state.status === "ready" && <Status loaded={state.loaded} />}
+        {load.status === "ready" && (
+          <CatalogStatus status={status} loaded={load} />
+        )}
       </header>
 
-      {state.status === "loading" && <p>{state.step}…</p>}
-      {state.status === "ready" && <Search catalog={state.loaded.catalog} />}
-      {state.status === "failed" && (
+      <CatalogUpdate status={status} />
+
+      {load.status === "loading" && <p>{load.step}…</p>}
+      {load.status === "ready" && <Search catalog={load.catalog} />}
+      {load.status === "failed" && (
         <p>
-          No catalog at <code>{CATALOG}</code>: {state.error}
+          No catalog at <code>{CATALOG}</code>: {load.error}
         </p>
       )}
     </main>
-  );
-}
-
-function Status({ loaded }: { loaded: Loaded }) {
-  const { catalog, cached } = loaded;
-  return (
-    <p className="status">
-      {catalog.cards.toLocaleString()} cards ·{" "}
-      {catalog.printings.toLocaleString()} printings ·{" "}
-      {/* The version is the bulk file's own timestamp, and the day is the part
-          that means anything. */}
-      {catalog.version.slice(0, 10)}
-      {cached && " · cached"}
-    </p>
   );
 }
