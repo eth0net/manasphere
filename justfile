@@ -34,11 +34,50 @@ spell:
 deny:
     cargo deny check
 
+[doc('hold a deployed client metadata document to its own URL')]
+[script('python3')]
+oauth url="https://manasphere.app/oauth/client-metadata.json":
+    import json, sys, urllib.error, urllib.request
+
+    url = "{{ url }}"
+    try:
+        response = urllib.request.urlopen(url)
+    except urllib.error.HTTPError as error:
+        response = error  # an HTTPError is the response, and 404 is a finding
+    except urllib.error.URLError as error:
+        sys.exit(f"  FAIL  {url} unreachable: {error.reason}")
+
+    with response:
+        status = response.status
+        kind = response.headers.get_content_type()
+        body = response.read()
+
+    # A single-page fallback answers 200 with HTML for a path it doesn't have,
+    # so "did it deploy" and "is it JSON" are one question.
+    problems = []
+    if status != 200:
+        problems.append(f"status {status}, must be exactly 200")
+    if kind != "application/json":
+        problems.append(f"content-type {kind}, must be application/json")
+
+    try:
+        client_id = json.loads(body).get("client_id")
+    except ValueError as error:
+        problems.append(f"not JSON: {error}")
+    else:
+        if client_id != url:
+            problems.append(f"client_id is {client_id}, must equal the URL fetched")
+
+    for problem in problems:
+        print(f"  FAIL  {problem}")
+    print("\nFAILED" if problems else "  ok    served as its own client_id")
+    sys.exit(1 if problems else 0)
+
 # validate the lexicons against atproto's own implementation
 lexicons:
     cd tools/lexicon-check && bun install && bun run check
 
-# serve the catalog and the client metadata document
+# export the catalog and serve it for local development
 serve:
     MANASPHERE_DATABASE={{ db }} cargo run -p manasphere-appview
 

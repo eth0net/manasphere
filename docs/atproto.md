@@ -75,9 +75,24 @@ job meant to run unattended for weeks does not.
 
 ## The client metadata document
 
-`web/public/oauth/client-metadata.json`, committed and deployed with the app. A
-public client: PKCE, DPoP-bound tokens, and no authentication at the token
+`web/public/oauth/client-metadata.json`, committed and deployed with the app.
+A public client: PKCE, DPoP-bound tokens, and no authentication at the token
 endpoint, since a browser keeps no secret.
+
+**It identifies the client, not the AppView.** Every field describes the
+frontend — its callback, its name on the consent screen, the fact that a
+browser keeps no secret — and our AppView isn't in the flow at all, since the
+browser talks to the PDS directly. So a second frontend against the same
+AppView publishes its own document at its own `client_id`, and users see it as
+a separate app they can revoke separately. That's the intended behavior, not
+a limitation.
+
+Nothing registers it anywhere: the authorization server fetches it from the
+`client_id` URL when a user authorizes, which is why it has to be on the app's
+own origin and can't be hosted beside the catalog. Vite copies `public/` into
+`dist/` verbatim, which is what puts it there; the client imports the same
+file for the scopes it requests, so the two can't drift. `just oauth` checks a
+deployed copy, since no static check can tell whether it arrived.
 
 **Committed rather than generated**, because the client imports the same bytes
 to decide what to request and a subset is all it may ask for. Generating it

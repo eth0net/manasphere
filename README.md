@@ -31,7 +31,7 @@ crates/api             axum route handlers
 crates/appview         the `manasphere` binary
 docs/                  roadmap, and the reasoning behind each decision
 lexicons/              NSID JSON schemas
-web/public/oauth/      the OAuth client metadata document
+web/                   the client, and its OAuth client metadata document
 ```
 
 ## Contributing
