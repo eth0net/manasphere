@@ -1,23 +1,7 @@
 import { useMemo, useState } from "react";
-import {
-  appLanguage,
-  type Card,
-  type Catalog,
-  cardName,
-  image,
-  language,
-  words,
-} from "./catalog";
+import { CardRow } from "./CardRow";
+import { type Catalog, language } from "./catalog";
 import { Explore } from "./Explore";
-import { Mana } from "./Mana";
-import { describe, Language } from "./Printing";
-
-// Nothing renders behind these, so a thumbnail would be a broken image.
-const NO_IMAGE = new Set(["missing", "placeholder"]);
-
-// Card names are read in the app's language, not the printing's. A setting of
-// its own once there is somewhere to put it — see `docs/search.md`.
-const APP = appLanguage();
 
 // A cap on what one query collects, so a single letter doesn't gather every
 // card containing it. Rows past the fold cost nothing to have — see the CSS.
@@ -62,81 +46,15 @@ export function Search({ catalog }: { catalog: Catalog }) {
 
       <ol className="results">
         {found.map((card) => (
-          <Result
+          <CardRow
             key={card.oracleId}
             card={card}
             catalog={catalog}
-            lang={lang}
+            // Filtered, so the printing shown is one that answers the search.
+            print={catalog.prints(card.index, lang)[0]}
           />
         ))}
       </ol>
     </>
-  );
-}
-
-function Result({
-  card,
-  catalog,
-  lang,
-}: {
-  card: Card;
-  catalog: Catalog;
-  lang: string;
-}) {
-  const [open, setOpen] = useState(false);
-
-  // Filtered, so the printing shown answers the search. The first of the run
-  // is the one to lead with.
-  const print = catalog.prints(card.index, lang)[0];
-  const tags = card.kind === "card" ? card.flags : [card.kind, ...card.flags];
-  const name = cardName(card.name, print, APP);
-
-  return (
-    <li>
-      {print && !NO_IMAGE.has(print.imageStatus) && (
-        <img src={image(print.id, "small")} alt="" loading="lazy" />
-      )}
-      <div>
-        <h2>
-          {name.text}
-          {/* Only when the printing isn't in the language it is read in, so
-              an English name over an English printing says nothing. */}
-          {print && print.lang !== name.lang && <Language code={print.lang} />}
-          {tags.map((tag) => (
-            <span className="tag" key={tag}>
-              {words(tag)}
-            </span>
-          ))}
-        </h2>
-        <p>
-          {card.typeLine}
-          {card.stats && <span className="stats">{card.stats}</span>}
-          {card.manaCost && <Mana cost={card.manaCost} />}
-        </p>
-        {print && <p className="print">{describe(print)}</p>}
-        <p className="print">
-          <button
-            type="button"
-            className="link"
-            onClick={() => setOpen(!open)}
-          >
-            {card.printings === 1
-              ? "one printing"
-              : `${card.printings} printings`}
-          </button>
-          {card.edhrecRank && ` · EDHREC #${card.edhrecRank.toLocaleString()}`}
-        </p>
-        {open && (
-          <ul className="printings">
-            {catalog.prints(card.index).map((one) => (
-              <li key={one.id}>
-                {one.lang !== "en" && <Language code={one.lang} />}
-                {describe(one)}
-              </li>
-            ))}
-          </ul>
-        )}
-      </div>
-    </li>
   );
 }

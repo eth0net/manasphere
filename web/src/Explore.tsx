@@ -1,8 +1,6 @@
 import { useMemo, useState } from "react";
-import { appLanguage, type Catalog, cardName, image } from "./catalog";
-import { describe, Language } from "./Printing";
-
-const APP = appLanguage();
+import { CardRow } from "./CardRow";
+import type { Catalog } from "./catalog";
 
 // What an empty search box shows. Browsing 988 sets answers "what did this set
 // hold" without a query, which paging 37,564 cards blindly would not.
@@ -95,16 +93,12 @@ function Printings({
       </p>
       <ol className="results">
         {printings.map(({ card, print }) => (
-          <li key={print.id}>
-            <img src={image(print.id, "small")} alt="" loading="lazy" />
-            <div>
-              <h2>{cardName(catalog.card(card).name, print, APP).text}</h2>
-              <p className="print">
-                {print.lang !== "en" && <Language code={print.lang} />}
-                {describe(print)}
-              </p>
-            </div>
-          </li>
+          <CardRow
+            key={print.id}
+            card={catalog.card(card)}
+            catalog={catalog}
+            print={print}
+          />
         ))}
       </ol>
     </>

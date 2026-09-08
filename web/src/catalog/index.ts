@@ -75,6 +75,10 @@ export type SetRow = [
   released: string,
 ];
 
+// Collector numbers aren't numbers: 10 follows 9, "329★" follows "329", and
+// The List prefixes them with a set code.
+const COLLECTOR = new Intl.Collator(undefined, { numeric: true });
+
 // Rows are positional, so a column read at the wrong index is plausible data.
 const CARD_FIELDS = [
   "oracleId",
@@ -350,9 +354,9 @@ export class Catalog {
     }));
   }
 
-  // Every printing in one set, with the card each belongs to. A scan of the
-  // whole file, which is a couple of milliseconds and beats an index that
-  // would have to be built at load for a question most visits never ask.
+  // Every printing in one set, in collector number order, with the card each
+  // belongs to. A scan of the whole file, which is a couple of milliseconds
+  // and beats an index built at load for a question most visits never ask.
   setPrints(code: string): { card: number; print: Print }[] {
     const set = this.#prints.sets.findIndex((one) => one[0] === code);
     if (set < 0) return [];
@@ -364,6 +368,10 @@ export class Catalog {
         found.push({ card: this.#owner(at), print: this.#print(row) });
       }
     }
+
+    found.sort((a, b) =>
+      COLLECTOR.compare(a.print.collectorNumber, b.print.collectorNumber),
+    );
     return found;
   }
 

@@ -203,9 +203,9 @@ input[type="search"] {
 .mana {
   display: inline-flex;
   gap: 0.125em;
-  height: 0.95em;
+  height: 0.85em;
   margin-left: 0.375em;
-  vertical-align: -0.16em;
+  vertical-align: -0.12em;
 }
 
 .mana abbr {
