@@ -9,6 +9,10 @@ use sqlx::SqlitePool;
 
 const CARDS: &str = include_str!("fixtures/cards.jsonl");
 
+/// Two printings of Urza's Tower in 9ED that tie on set, type, booster and
+/// release date, foil-only first as the file has it.
+const FOIL_TWIN: &str = include_str!("fixtures/foil-twin.jsonl");
+
 fn bulk(updated_at: &str) -> BulkData {
     serde_json::from_value(serde_json::json!({
         "id": "e2ef41e3-5778-4bc2-af3f-78eca4dd9c23",
@@ -132,6 +136,24 @@ async fn a_file_is_named_after_its_contents() {
         .await
         .unwrap();
     assert_ne!(same.cards.name, fewer.cards.name);
+}
+
+/// Printings that tie on everything else still come out in one order, and the
+/// ordinary printing leads. The run is what the client shows a card by, and the
+/// files are named after their own bytes, so a tie left to SQLite would rename
+/// them for no reason.
+#[tokio::test]
+async fn an_ordinary_printing_outranks_its_foil_only_twin() {
+    let built = catalog::build(&seeded_with(FOIL_TWIN).await).await.unwrap();
+    let file = read(&built.prints.json);
+    let prints = rows(&file, "prints");
+    let numbers: Vec<&str> = prints
+        .iter()
+        .map(|row| row[2].as_str().expect("a collector number"))
+        .collect();
+
+    assert_eq!(numbers, ["329", "329\u{2605}"]);
+    assert_eq!(rows(&read(&built.cards.json), "cards").len(), 1);
 }
 
 /// Finishes are a bitmask over the file's own `finishes` list.

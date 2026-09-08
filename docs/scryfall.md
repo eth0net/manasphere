@@ -236,7 +236,10 @@ searching and finding nothing is a worse failure than a noisy result.
 The noise was mostly a grouping problem. Paper alone is 108,275 printings
 across 37,563 cards, so "Forest" returned 865 rows. One row per card, with a
 count, and a representative printing chosen by preferring booster printings
-from expansions and core sets:
+from expansions and core sets, then nonfoil over a foil-only twin sharing its
+collector number. The order is total, ending in the printing id — the files
+are named after their own bytes, so a tie left to SQLite would rename them for
+nothing.
 
 | | printings | rank |
 |---|---|---|

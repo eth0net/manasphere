@@ -287,7 +287,10 @@ async fn build_prints(pool: &SqlitePool, version: &str) -> Result<Artifact> {
     )?;
 
     // Ordered as the cards file is, then as search orders printings within a
-    // card, so each card's printings are one contiguous run.
+    // card, so each card's printings are one contiguous run. A total order,
+    // ending in the primary key: the files are named after their own bytes, so
+    // a tie SQLite broke differently would rename them for no reason. The
+    // finish clause is what keeps 9ed #329 ahead of the foil-only #329★.
     let mut rows = sqlx::query_as::<_, PrintRow>(
         "SELECT c.id, c.set_code, c.collector_number, c.finishes, c.rarity,
                 c.layout, c.image_status, c.lang, c.printed_name
@@ -295,7 +298,9 @@ async fn build_prints(pool: &SqlitePool, version: &str) -> Result<Artifact> {
          WHERE NOT c.digital
          ORDER BY o.name, o.id,
                   CASE WHEN c.set_type IN ('expansion', 'core') THEN 0 ELSE 1 END,
-                  c.booster DESC, c.released_at DESC",
+                  c.booster DESC, c.released_at DESC,
+                  instr(c.finishes, 'nonfoil') = 0,
+                  c.collector_number, c.id",
     )
     .fetch(pool);
 
