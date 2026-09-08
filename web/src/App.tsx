@@ -1,5 +1,6 @@
 import { CatalogStatus, CatalogUpdate } from "./CatalogStatus";
 import { CATALOG } from "./config";
+import { Footer } from "./Footer";
 import { Search } from "./Search";
 import { useCatalog } from "./useCatalog";
 
@@ -25,6 +26,8 @@ export function App() {
           No catalog at <code>{CATALOG}</code>: {load.error}
         </p>
       )}
+
+      <Footer />
     </main>
   );
 }

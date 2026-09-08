@@ -8,7 +8,9 @@ client metadata document we serve. Our server never proxies a write.
 
 - **No token state on the server.** Access, refresh and DPoP keys live in the
   browser, so they're not ours to lose. Store the DPoP key as a non-extractable
-  `CryptoKey` and mean the CSP, because XSS becomes token compromise.
+  `CryptoKey` and mean the CSP, because XSS becomes token compromise. Two
+  Scryfall hosts have to be in `img-src`: `cards.scryfall.io` for card images
+  and `svgs.scryfall.io` for mana symbols.
 - **rkeys are ordinary TIDs.** Deterministic rkeys only helped a stateless
   server that had to find a record without a lookup; a local-first client holds
   its own stack-key → rkey index. It also dodges an ugly choice: a

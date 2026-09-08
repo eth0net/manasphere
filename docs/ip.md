@@ -19,6 +19,16 @@ What can be built and charged for, and under what license it ships.
 
 Two policies bind what can be built, whether or not money is involved.
 
+**Mana symbols are Wizards' as much as the card art.** Scryfall's own footer
+says so — "including card images and mana symbols" — and publishes an SVG per
+symbol at `svgs.scryfall.io`, open CORS and cached for a year. Hotlinked rather
+than redistributed, the same call as card images: we display Wizards' graphics
+under the policy below and never ship a copy of them.
+
+The disclaimer that obliges is in the app footer verbatim, with the detail
+behind a Licenses modal. Scryfall's guidelines also ask that the source of card
+data be identifiable, which the same footer does.
+
 **WotC Fan Content Policy.** Selling Wizards-related content needs their
 permission, and you "can't require payments, surveys, downloads, subscriptions,
 or email registration to access your Fan Content". Donations and ad revenue are

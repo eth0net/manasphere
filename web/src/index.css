@@ -46,11 +46,20 @@ h1 {
   margin: 0;
 }
 
-.status {
+footer {
+  border-top: 1px solid var(--edge);
   color: var(--quiet);
-  font-size: 0.8125rem;
-  font-variant-numeric: tabular-nums;
-  margin: 0;
+  font-size: 0.75rem;
+  margin-top: 3rem;
+  padding-top: 1rem;
+}
+
+footer p {
+  margin: 0 0 0.5rem;
+}
+
+footer a {
+  color: inherit;
 }
 
 .query {
@@ -169,7 +178,6 @@ input[type="search"] {
 
 .mana abbr {
   align-items: center;
-  background: #cac5c0;
   border-radius: 50%;
   color: #1a1a1a;
   display: inline-flex;
@@ -177,28 +185,20 @@ input[type="search"] {
   font-weight: 600;
   height: 1.0625rem;
   justify-content: center;
+  overflow: hidden;
+  position: relative;
   text-decoration: none;
   width: 1.0625rem;
 }
 
-.mana abbr[data-mana="W"] {
-  background: #fffbd5;
-}
-
-.mana abbr[data-mana="U"] {
-  background: #aae0fa;
-}
-
-.mana abbr[data-mana="B"] {
-  background: #cbc2bf;
-}
-
-.mana abbr[data-mana="R"] {
-  background: #f9aa8f;
-}
-
-.mana abbr[data-mana="G"] {
-  background: #9bd3ae;
+/* Scryfall's own symbol over the colored circle, so the circle and its letter
+   are what shows when the image can't be fetched. */
+.mana img {
+  height: 100%;
+  inset: 0;
+  object-fit: contain;
+  position: absolute;
+  width: 100%;
 }
 
 /* The header's own line: a plain button, so opening the panel can't reflow it. */
