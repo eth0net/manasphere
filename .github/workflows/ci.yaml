@@ -69,6 +69,15 @@ jobs:
       - run: bun run check
         working-directory: tools/lexicon-check
 
+  prose:
+    name: prose
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: oven-sh/setup-bun@v2
+      - run: bun run check
+        working-directory: tools/prose-check
+
   web:
     name: web
     runs-on: ubuntu-latest

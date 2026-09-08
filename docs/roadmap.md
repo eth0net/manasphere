@@ -113,9 +113,9 @@ damage, non-English printings — plus bulk scanning from uploaded photos.
   else. Reasoning in [`architecture.md`](architecture.md).
 - Deck records live in the owner's PDS, same single-owner model as collection
   entries.
-- A deck is a design with deck metadata and an **optional** container
-  reference, created the first time it's physically built, so pure concepts
-  don't litter the model with empty containers.
+- A deck's container reference is **optional**, created the first time it is
+  physically built, so pure concepts don't litter the model with empty
+  containers.
 - Three ways to add a card, one schema: bind to a print you own (default), pick
   one deliberately for flavor, or omit it for "any printing". Legality
   checking and recommendations key on `oracle_id`, which every entry carries.
@@ -160,10 +160,8 @@ model too.
 - Same build shape as the scanner index: precompute offline, ship the artifact,
   serve it statically.
 - Co-occurrence is a later enhancement, once Explore provides a corpus of our
-  own. Two counts fall out of the same index long before any model does: how
-  many copies the network holds, and how many decks play a card. Those also
-  replace the borrowed EDHREC rank that search leans on today, and cover the
-  formats EDHREC never sees — see [`search.md`](search.md).
+  own — and the same index answers what search borrows from EDHREC today, in
+  [`search.md`](search.md).
 
 ## Phase 5 — Game toolkit (life totals, dice, game history)
 

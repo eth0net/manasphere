@@ -33,8 +33,7 @@ use tracing_subscriber::EnvFilter;
 /// Scryfall asks for gameplay data no more than once a week.
 const REFRESH: Duration = Duration::from_hours(7 * 24);
 
-/// Scryfall's terms require a user agent naming the app, explicitly not a
-/// library default.
+/// Scryfall's terms require a user agent of the app's own, not a library's.
 const USER_AGENT: &str = concat!(
     "Manasphere/",
     env!("CARGO_PKG_VERSION"),

@@ -143,9 +143,7 @@ async fn a_file_is_named_after_its_contents() {
 }
 
 /// Printings that tie on everything else still come out in one order, and the
-/// ordinary printing leads. The run is what the client shows a card by, and the
-/// files are named after their own bytes, so a tie left to SQLite would rename
-/// them for no reason.
+/// ordinary printing leads.
 #[tokio::test]
 async fn an_ordinary_printing_outranks_its_foil_only_twin() {
     let built = catalog::build(&seeded_with(FOIL_TWIN).await).await.unwrap();

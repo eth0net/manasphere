@@ -37,8 +37,7 @@ export async function latest(): Promise<Manifest> {
   return parse<Manifest>(await fetchFile(MANIFEST, true));
 }
 
-// By filename, not version: a rebuild of one Scryfall file can order printings
-// differently and so produce different bytes.
+// By filename, not version: one bulk file can rebuild to different bytes.
 export function same(a: Manifest, b: Manifest): boolean {
   return a.cards.name === b.cards.name && a.prints.name === b.prints.name;
 }

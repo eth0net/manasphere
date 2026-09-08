@@ -9,7 +9,7 @@ default:
 
 # every check CI runs that can run on one machine
 [group('checks')]
-check: rust deny spell lexicons web
+check: rust deny spell prose lexicons web
 
 # the Rust side, needing nothing but a cargo toolchain
 [group('checks')]
@@ -43,6 +43,11 @@ spell:
 [group('checks')]
 deny:
     cargo deny check
+
+# prose said twice: a comment restating a doc, or a doc another (needs bun)
+[group('checks')]
+prose:
+    cd tools/prose-check && bun install && bun run check
 
 # validate the lexicons against atproto's own implementation (needs bun)
 [group('checks')]

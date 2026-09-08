@@ -527,8 +527,7 @@ async fn digital_printings_never_surface() {
     }
 }
 
-/// An exact name match wins the tier, because someone typing a token's name
-/// means the token.
+/// An exact name match wins the tier.
 #[tokio::test]
 async fn an_exact_name_match_outranks_its_tier() {
     let pool = seeded_with(variants(&[&[
@@ -548,9 +547,8 @@ async fn an_exact_name_match_outranks_its_tier() {
     assert_eq!(hits[0].layout, "token");
 }
 
-/// The repair the split buys. A reversible printing carries no top-level
-/// gameplay data at all, so before the oracle row existed there was nowhere for
-/// it to come from; now any printing of the same card supplies it.
+/// The repair the split buys: a reversible printing carries none of its own
+/// gameplay data, and takes it from another printing of the same card.
 #[tokio::test]
 async fn a_reversible_printing_inherits_gameplay_data_from_a_normal_one() {
     // The fixture's Jinnie Fay is reversible-only; give it a normal printing.

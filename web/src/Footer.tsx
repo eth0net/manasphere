@@ -1,8 +1,7 @@
 import { Licenses } from "./Licenses";
 
 // The Fan Content Policy asks for its disclaimer verbatim wherever the project
-// is named, and Scryfall asks that the source of card data be identifiable.
-// `docs/ip.md` carries both policies.
+// is named, and Scryfall for a visible credit. Both are in `docs/ip.md`.
 export function Footer() {
   return (
     <footer>

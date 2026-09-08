@@ -16,7 +16,11 @@ and OAuth limits, `ip.md` for the WotC and Scryfall constraints. This file is th
 picking the project back up; each crate describes itself in its `Cargo.toml`.
 
 Prose here and in `lexicons/` is read more often than it is written, so keep
-it short: the non-obvious fact and its one consequence. Lexicon descriptions
+it short: the non-obvious fact and its one consequence. Two lines of comment
+is a lot, and the second is usually the justification `docs/` should carry.
+Write it that way first rather than trimming after — `just prose` fails on any
+eight words a comment shares with a doc, or one doc with another, because
+prose said twice drifts apart and figures said twice go stale. Lexicon descriptions
 say what a field is, never why — measured against Bluesky, WhiteWind and
 Leaflet, real ones run to a median of 48 characters and Leaflet describes no
 fields at all. Reasoning belongs in `docs/`.

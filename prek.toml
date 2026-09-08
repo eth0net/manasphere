@@ -56,6 +56,14 @@ hooks = [
   { id = "bun-test", name = "bun test", entry = "cd web && bun test", language = "system", files = '^web/', pass_filenames = false, require_serial = true, stages = ["pre-push"] },
 ]
 
+# Spans both sides, so it isn't scoped to either toolchain's files. 40ms, which
+# is why it runs on commit rather than on push.
+[[repos]]
+repo = "local"
+hooks = [
+  { id = "prose", name = "prose", entry = "cd tools/prose-check && bun run check", language = "system", files = '\.(rs|ts|tsx|css|md)$', pass_filenames = false, require_serial = true },
+]
+
 # The sign-off CONTRIBUTING asks for. Git has no `commit.signOff`, so an
 # unenforced convention is the only alternative. Merge commits are exempt, as
 # DCO checks conventionally are — they carry no new work to certify.

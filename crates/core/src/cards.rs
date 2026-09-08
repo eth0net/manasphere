@@ -1,8 +1,7 @@
 //! The Scryfall card cache: one full replace per bulk file, plus the lookups
 //! v0 needs.
 //!
-//! Split in two: `oracle` holds what the rules see, one row per card, and
-//! `cards` holds one physical printing each. Why, in `docs/scryfall.md`.
+//! Two tables rather than one, for the reasons in `docs/scryfall.md`.
 
 use std::cmp::Reverse;
 use std::collections::hash_map::Entry;
@@ -213,8 +212,8 @@ impl Oracle {
             Entry::Vacant(slot) => {
                 slot.insert(incoming);
             }
-            // Whichever ranks better keeps its own fields and folds the other
-            // in, so the file's order can't decide what a card's type line is.
+            // Whichever ranks better keeps its own fields and folds the
+            // other in, so the file's order decides nothing.
             Entry::Occupied(slot) => {
                 let entry = slot.into_mut();
                 if incoming.rank < entry.rank {
@@ -512,8 +511,8 @@ const UNGROUPED: &str = "\
 
 /// Name search, for a client that hasn't cached the catalog yet.
 ///
-/// Ranks cards above tokens above art series, and an exact name match above
-/// all three: someone typing a token's name means the token.
+/// Ranks cards above tokens above art series, with an exact name match above
+/// all three.
 ///
 /// # Errors
 ///

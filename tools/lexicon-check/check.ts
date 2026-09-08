@@ -1,6 +1,6 @@
 // Validates ../../lexicons against atproto's own lexicon implementation, then
-// against records that must be accepted and records that must be refused, then
-// the OAuth client metadata document against both.
+// against records it has to accept and refuse, then the OAuth client metadata
+// document against both.
 //
 //     bun install && bun run check
 //

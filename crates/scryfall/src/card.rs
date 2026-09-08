@@ -13,9 +13,8 @@ use uuid::Uuid;
 /// drops `mana_cost` and `colors`. What they omit lives on `card_faces`.
 ///
 /// Open taxonomies — `layout`, `rarity`, `set_type`, `finishes`, `games`,
-/// `legalities` — stay strings. Scryfall adds values without notice (`layout`
-/// gained `front_card` between the roadmap and this crate), and a weekly
-/// unattended sync shouldn't fail on one.
+/// `legalities` — stay strings, since Scryfall adds values without notice:
+/// `layout` gained `front_card` between the roadmap and this crate.
 #[derive(Debug, Clone, Deserialize)]
 #[expect(
     clippy::struct_excessive_bools,

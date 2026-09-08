@@ -324,11 +324,9 @@ async fn build_prints(pool: &SqlitePool, version: &str) -> Result<Artifact> {
         "prints",
     )?;
 
-    // Ordered as the cards file is, then as search orders printings within a
-    // card, so each card's printings are one contiguous run. A total order,
-    // ending in the primary key: the files are named after their own bytes, so
-    // a tie SQLite broke differently would rename them for no reason. The
-    // finish clause is what keeps 9ed #329 ahead of the foil-only #329★.
+    // Ordered as the cards file is, so each card's printings are one
+    // contiguous run, and to a total order — see `docs/search.md`. The finish
+    // clause keeps 9ed #329 ahead of the foil-only #329★.
     let mut rows = sqlx::query_as::<_, PrintRow>(
         "SELECT c.id, c.set_code, c.collector_number, c.finishes, c.rarity,
                 c.layout, c.image_status, c.lang, c.printed_name,
@@ -377,8 +375,7 @@ const IMAGE_STATUSES: &str = "SELECT image_status FROM cards WHERE NOT digital
      GROUP BY image_status ORDER BY count(*) DESC";
 const LANGS: &str = "SELECT lang FROM cards WHERE NOT digital GROUP BY lang ORDER BY count(*) DESC";
 
-/// Distinct values of one column, commonest first, so the value that repeats
-/// most is the shortest to write.
+/// Distinct values of one column, commonest first.
 async fn common_first(pool: &SqlitePool, query: &'static str) -> Result<Vec<String>> {
     let rows: Vec<(String,)> = sqlx::query_as(query).fetch_all(pool).await?;
     Ok(rows.into_iter().map(|(value,)| value).collect())

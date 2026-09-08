@@ -8,8 +8,8 @@ const API: &str = "https://api.scryfall.com";
 
 /// A Scryfall HTTP client.
 ///
-/// There is no `Default`: Scryfall's API terms require a `User-Agent` naming the
-/// app, explicitly not a library default.
+/// There is no `Default`: Scryfall's terms require a `User-Agent` of the
+/// calling app's own.
 #[derive(Debug, Clone)]
 pub struct Client {
     http: reqwest::Client,
