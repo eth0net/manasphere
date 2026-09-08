@@ -68,9 +68,7 @@ interface PrintFile {
   prints: PrintRow[];
 }
 
-// The columns this client reads, in the order it reads them. Rows are
-// positional, so a column read at the wrong index is plausible data rather
-// than an error — and every file names its own, so hold it to them.
+// Rows are positional, so a column read at the wrong index is plausible data.
 const CARD_FIELDS = [
   "oracleId",
   "name",
@@ -211,8 +209,7 @@ export class Catalog {
     columns("cards", cards.fields, CARD_FIELDS);
     columns("prints", prints.fields, PRINT_FIELDS);
 
-    // A JavaScript shift is taken modulo 32, so a 32nd language would alias
-    // onto the first rather than fail.
+    // A shift is taken modulo 32, so a 32nd language would alias onto the first.
     if (prints.langs.length > 31) {
       throw new Error(`${prints.langs.length} languages exceed a bitmask`);
     }

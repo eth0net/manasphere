@@ -53,9 +53,7 @@ export function search(
   const wanted = normalize(query);
   if (!wanted) return [];
 
-  // Kinds order cards before tokens before art series, and come from the file
-  // rather than from a constant here, so one added there can't land a card in
-  // another tier's bucket.
+  // Kinds come from the file: one added there would else change tier.
   const { names, kinds, scores, kindCount } = index;
   const buckets: number[][] = Array.from(
     { length: TIERS * kindCount },
