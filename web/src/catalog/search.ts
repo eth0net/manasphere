@@ -6,6 +6,8 @@ export interface Index {
   kinds: number[];
   // Lower is better, from `scores`.
   scores: Float64Array;
+  // How many kinds the file declares, buckets being one per tier per kind.
+  kindCount: number;
 }
 
 // One popularity number per card, lower being better. An unranked card — every
@@ -41,9 +43,6 @@ export function normalize(text: string): string {
 // Exact, then starting a word, then anywhere.
 const TIERS = 3;
 
-// Cards, then tokens, then art series, as `kind` already orders them.
-const KINDS = 3;
-
 // `keep` narrows what is searched, not what survives being searched.
 export function search(
   index: Index,
@@ -54,13 +53,20 @@ export function search(
   const wanted = normalize(query);
   if (!wanted) return [];
 
-  const { names, kinds, scores } = index;
-  const buckets: number[][] = Array.from({ length: TIERS * KINDS }, () => []);
+  // Kinds order cards before tokens before art series, and come from the file
+  // rather than from a constant here, so one added there can't land a card in
+  // another tier's bucket.
+  const { names, kinds, scores, kindCount } = index;
+  const buckets: number[][] = Array.from(
+    { length: TIERS * kindCount },
+    () => [],
+  );
 
   for (let card = 0; card < names.length; card++) {
     const tier = rank(names[card] as string, wanted);
     if (tier !== null && (!keep || keep(card))) {
-      (buckets[tier * KINDS + (kinds[card] as number)] as number[]).push(card);
+      const at = tier * kindCount + (kinds[card] as number);
+      (buckets[at] as number[]).push(card);
     }
   }
 

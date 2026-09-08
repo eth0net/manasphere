@@ -47,6 +47,7 @@ type PrintRow = [
 
 interface CardFile {
   version: string;
+  fields: string[];
   kinds: string[];
   flags: string[];
   cards: CardRow[];
@@ -55,6 +56,7 @@ interface CardFile {
 // Every integer column on a print row indexes one of these, commonest first.
 interface PrintFile {
   version: string;
+  fields: string[];
   finishes: string[];
   flags: string[];
   rarities: string[];
@@ -65,6 +67,38 @@ interface PrintFile {
   sets: [code: string, name: string, kind: string, released: string][];
   prints: PrintRow[];
 }
+
+// The columns this client reads, in the order it reads them. Rows are
+// positional, so a column read at the wrong index is plausible data rather
+// than an error — and every file names its own, so hold it to them.
+const CARD_FIELDS = [
+  "oracleId",
+  "name",
+  "typeLine",
+  "manaCost",
+  "cmc",
+  "colors",
+  "colorIdentity",
+  "kind",
+  "printings",
+  "edhrecRank",
+  "stats",
+  "flags",
+];
+
+const PRINT_FIELDS = [
+  "id",
+  "set",
+  "collectorNumber",
+  "finishes",
+  "rarity",
+  "layout",
+  "imageStatus",
+  "lang",
+  "printedName",
+  "artist",
+  "flags",
+];
 
 export interface Card {
   index: number;
@@ -144,6 +178,14 @@ export function words(name: string): string {
   return name.replace(/([a-z])([A-Z])/g, "$1 $2").toLowerCase();
 }
 
+function columns(file: string, held: string[], read: string[]) {
+  if (held.join() !== read.join()) {
+    throw new Error(
+      `${file} holds ${held.join()}, this client reads ${read.join()}`,
+    );
+  }
+}
+
 // A bitmask against the list the file names it with.
 function decode(mask: number, names: string[]): string[] {
   return names.filter((_, bit) => mask & (1 << bit));
@@ -164,6 +206,15 @@ export class Catalog {
       throw new Error(
         `catalog halves disagree: ${cards.version} and ${prints.version}`,
       );
+    }
+
+    columns("cards", cards.fields, CARD_FIELDS);
+    columns("prints", prints.fields, PRINT_FIELDS);
+
+    // A JavaScript shift is taken modulo 32, so a 32nd language would alias
+    // onto the first rather than fail.
+    if (prints.langs.length > 31) {
+      throw new Error(`${prints.langs.length} languages exceed a bitmask`);
     }
 
     this.version = cards.version;
@@ -202,6 +253,7 @@ export class Catalog {
         cards.cards.map((row) => row[9]),
         cards.cards.map((row) => row[8]),
       ),
+      kindCount: cards.kinds.length,
     };
   }
 

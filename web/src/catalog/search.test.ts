@@ -38,6 +38,7 @@ function index(cards: Row[]): { index: Index; names: string[] } {
         sorted.map(([, , , rank]) => rank ?? null),
         sorted.map(([, , printings]) => printings),
       ),
+      kindCount: 3,
     },
     names: sorted.map(([name]) => name),
   };
@@ -124,6 +125,20 @@ describe("search", () => {
     ];
     expect(find(cards, "bolt", 2)).toEqual(["Lightning Bolt", "Bolt Bend"]);
   });
+});
+
+test("a kind the file adds stays in its own tier", () => {
+  // Four kinds, and the fourth must not land where tier 1 begins.
+  const built = index([
+    ["Bolt Bend", 3, 4, 537],
+    ["Lightning Bolt", 0, 67, 158],
+  ]);
+  built.index.kindCount = 4;
+  const found = search(built.index, "bolt", 10);
+  expect(found.map((at) => built.names[at])).toEqual([
+    "Lightning Bolt",
+    "Bolt Bend",
+  ]);
 });
 
 describe("readable", () => {
