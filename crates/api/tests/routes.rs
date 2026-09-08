@@ -4,7 +4,7 @@ use std::path::PathBuf;
 use std::{env, fs};
 
 use axum::body::{Body, to_bytes};
-use axum::http::{Request, Response, StatusCode};
+use axum::http::{HeaderValue, Request, Response, StatusCode};
 use serde_json::Value;
 use tower::ServiceExt as _;
 
@@ -52,6 +52,22 @@ async fn the_catalog_directory_is_served() {
 
     let missing = get(catalog.clone(), "/nothing.json").await;
     assert_eq!(missing.status(), StatusCode::NOT_FOUND);
+
+    fs::remove_dir_all(catalog).unwrap();
+}
+
+#[tokio::test]
+async fn the_catalog_is_readable_from_another_origin() {
+    let catalog = scratch("cors");
+    fs::write(catalog.join("manifest.json"), br#"{"version":"x"}"#).unwrap();
+
+    // The app is served from a different host than the catalog, so without
+    // this the first fetch fails in the browser and nowhere else.
+    let response = get(catalog.clone(), "/manifest.json").await;
+    assert_eq!(
+        response.headers().get("access-control-allow-origin"),
+        Some(&HeaderValue::from_static("*"))
+    );
 
     fs::remove_dir_all(catalog).unwrap();
 }

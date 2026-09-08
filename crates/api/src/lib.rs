@@ -11,13 +11,14 @@ use std::path::PathBuf;
 
 use axum::Router;
 use axum::extract::State;
-use axum::http::StatusCode;
 use axum::http::header::{CACHE_CONTROL, CONTENT_TYPE};
+use axum::http::{Method, StatusCode};
 use axum::response::{IntoResponse, Response};
 use axum::routing::get;
 use manasphere_core::cards;
 use serde::Serialize;
 use sqlx::SqlitePool;
+use tower_http::cors::{Any, CorsLayer};
 use tower_http::services::ServeDir;
 
 /// Every route the server answers, with `catalog` served as files underneath.
@@ -25,10 +26,18 @@ use tower_http::services::ServeDir;
 /// Nothing here sets `Cache-Control`: the objects carry their own once
 /// uploaded, and a dev server wants none of it.
 pub fn router(pool: SqlitePool, catalog: PathBuf) -> Router {
+    // The catalog is public data on a different origin from the app, so any
+    // origin may read it. Matches what the bucket has to allow in production,
+    // and what Scryfall's own API sends.
+    let cors = CorsLayer::new()
+        .allow_origin(Any)
+        .allow_methods([Method::GET, Method::HEAD]);
+
     Router::new()
         .route("/health", get(health))
         .with_state(pool)
         .fallback_service(ServeDir::new(catalog))
+        .layer(cors)
 }
 
 #[derive(Debug, Serialize)]
