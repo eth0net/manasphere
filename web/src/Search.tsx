@@ -6,10 +6,11 @@ import {
   cardName,
   image,
   language,
-  type Print,
   words,
 } from "./catalog";
+import { Explore } from "./Explore";
 import { Mana } from "./Mana";
+import { describe, Language } from "./Printing";
 
 // Nothing renders behind these, so a thumbnail would be a broken image.
 const NO_IMAGE = new Set(["missing", "placeholder"]);
@@ -18,13 +19,17 @@ const NO_IMAGE = new Set(["missing", "placeholder"]);
 // its own once there is somewhere to put it — see `docs/search.md`.
 const APP = appLanguage();
 
+// A cap on what one query collects, so a single letter doesn't gather every
+// card containing it. Rows past the fold cost nothing to have — see the CSS.
+const FOUND = 600;
+
 export function Search({ catalog }: { catalog: Catalog }) {
   const [query, setQuery] = useState("");
   const [lang, setLang] = useState("");
 
   // A few milliseconds per keystroke, so no debounce.
   const found = useMemo(
-    () => catalog.search(query, { lang }),
+    () => catalog.search(query, { lang, limit: FOUND }),
     [catalog, query, lang],
   );
 
@@ -47,12 +52,14 @@ export function Search({ catalog }: { catalog: Catalog }) {
         </select>
       </div>
 
+      {!query && <Explore catalog={catalog} />}
       {query && found.length === 0 && (
         <p>
           Nothing matches “{query}”
           {lang && ` with a ${language(lang)} printing`}.
         </p>
       )}
+
       <ol className="results">
         {found.map((card) => (
           <Result
@@ -132,25 +139,4 @@ function Result({
       </div>
     </li>
   );
-}
-
-function Language({ code }: { code: string }) {
-  return (
-    <span className="tag" title={language(code)}>
-      {code}
-    </span>
-  );
-}
-
-// One printing, as much of it as it has. Language is a tag of its own.
-function describe(print: Print) {
-  return [
-    `${print.setName} · ${print.set.toUpperCase()} #${print.collectorNumber}`,
-    print.rarity,
-    print.finishes.join("/"),
-    print.artist,
-    ...print.flags.map(words),
-  ]
-    .filter(Boolean)
-    .join(" · ");
 }

@@ -89,6 +89,17 @@ A card page wants the larger art, every printing, and the full details. All of
 that is in the artifact except oracle text, which is the opt-in part above:
 images derive from the print id and the printings are the run.
 
+**A row's art and its name lead to different places.** The art opens the art
+at full size, the name opens the details — the same split on a card page as in
+a result row, so the gesture means one thing everywhere.
+
+**Neither list pages.** An empty search box shows the 988 sets rather than
+paging blindly through 37,564 cards, and a set's printings — 5,584 of them for
+The List — scroll inside a bounded box. `content-visibility: auto` leaves rows
+past the fold unlaid-out until they approach it, which is what makes that many
+rows cheap without a windowing library; `contain-intrinsic-size` keeps the
+scrollbar honest until each is measured.
+
 **Our own popularity signal replaces EDHREC's** once Explore exists (Phase 3):
 how many copies the network holds, and how many decks play a card, are both
 things we would then know first-hand — computed from indexed records rather

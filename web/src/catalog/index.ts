@@ -64,9 +64,16 @@ interface PrintFile {
   imageStatuses: string[];
   langs: string[];
   artists: string[];
-  sets: [code: string, name: string, kind: string, released: string][];
+  sets: SetRow[];
   prints: PrintRow[];
 }
+
+export type SetRow = [
+  code: string,
+  name: string,
+  kind: string,
+  released: string,
+];
 
 // Rows are positional, so a column read at the wrong index is plausible data.
 const CARD_FIELDS = [
@@ -226,6 +233,8 @@ export class Catalog {
   #index: Index;
   // A bit per entry of the prints file's `langs`, all 19 in one integer.
   #languages: Int32Array;
+  // How many printings each set holds, tallied on the same pass.
+  #setSizes: Int32Array;
 
   constructor(cards: CardFile, prints: PrintFile) {
     if (cards.version !== prints.version) {
@@ -262,11 +271,14 @@ export class Catalog {
     }
 
     this.#languages = new Int32Array(cards.cards.length);
+    this.#setSizes = new Int32Array(prints.sets.length);
     for (let card = 0; card < cards.cards.length; card++) {
       let langs = 0;
       const end = this.#offsets[card + 1] as number;
       for (let at = this.#offsets[card] as number; at < end; at++) {
-        langs |= 1 << (prints.prints[at] as PrintRow)[7];
+        const row = prints.prints[at] as PrintRow;
+        langs |= 1 << row[7];
+        this.#setSizes[row[1]] = (this.#setSizes[row[1]] as number) + 1;
       }
       this.#languages[card] = langs;
     }
@@ -328,6 +340,44 @@ export class Catalog {
       stats: row[10],
       flags: decode(row[11], this.#cards.flags),
     };
+  }
+
+  // Every set with a paper printing, and how many each holds.
+  sets(): { set: SetRow; printings: number }[] {
+    return this.#prints.sets.map((set, at) => ({
+      set,
+      printings: this.#setSizes[at] as number,
+    }));
+  }
+
+  // Every printing in one set, with the card each belongs to. A scan of the
+  // whole file, which is a couple of milliseconds and beats an index that
+  // would have to be built at load for a question most visits never ask.
+  setPrints(code: string): { card: number; print: Print }[] {
+    const set = this.#prints.sets.findIndex((one) => one[0] === code);
+    if (set < 0) return [];
+
+    const found: { card: number; print: Print }[] = [];
+    for (let at = 0; at < this.#prints.prints.length; at++) {
+      const row = this.#prints.prints[at] as PrintRow;
+      if (row[1] === set) {
+        found.push({ card: this.#owner(at), print: this.#print(row) });
+      }
+    }
+    return found;
+  }
+
+  // Which card a printing belongs to, by searching the runs rather than
+  // keeping an owner per printing.
+  #owner(print: number): number {
+    let low = 0;
+    let high = this.#cards.cards.length - 1;
+    while (low < high) {
+      const mid = (low + high + 1) >> 1;
+      if ((this.#offsets[mid] as number) <= print) low = mid;
+      else high = mid - 1;
+    }
+    return low;
   }
 
   // Every paper printing, in the order search shows them.
