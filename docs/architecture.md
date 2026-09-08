@@ -60,6 +60,11 @@ An R2 custom domain caches only certain file types by default and JSON isn't
 among them, so it needs a cache rule. Files upload uncompressed for the CDN to
 compress.
 
+Two origins also means every catalog fetch is cross-origin, so the bucket
+needs a CORS policy. `Access-Control-Allow-Origin: *` is right: the catalog is
+public data derived from Scryfall, whose own API sends the same. `just serve`
+sends it too, or the dev loop fails at the first fetch and only in a browser.
+
 ## Preview deployments
 
 Two Pages behaviors decide what a preview can do:
