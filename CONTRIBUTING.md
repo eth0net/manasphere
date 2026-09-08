@@ -19,8 +19,10 @@ cargo test
 
 [prek](https://github.com/j178/prek) runs what CI runs — `cargo fmt`, a
 warning-free `cargo clippy --all-targets --all-features`, `cargo test`,
-`typos` and the sign-off check — on commit and push, so a red build costs no
-round trip. CI itself also runs on macOS and Windows.
+`biome`, `tsc`, `bun test`, `typos` and the sign-off check — on commit and
+push, so a red build costs no round trip. The Rust and web hooks are scoped by
+path, so touching one side never asks for the other's toolchain. CI itself
+also runs on macOS and Windows.
 
 Spelling is American, because the vocabulary already is: `color`, `license`,
 `serialize`. `typos` enforces it, and `typos.toml` says what it skips —
@@ -28,7 +30,8 @@ captured Scryfall fixtures, license text, and translations when they arrive.
 
 [just](https://github.com/casey/just) holds the whole workflow — `just check`
 runs every check CI does, `just serve` starts the server, and `just --list`
-shows the rest.
+shows the rest. Every recipe names the one toolchain it wants, so `just rust`
+needs nothing but cargo and `just web` nothing but bun.
 
 Tests are offline, against Scryfall responses captured under
 `crates/*/tests/fixtures`. The parts that talk to Scryfall are examples, run by

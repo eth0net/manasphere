@@ -9,7 +9,11 @@ default:
 
 # every check CI runs that can run on one machine
 [group('checks')]
-check: fmt-check lint test spell deny lexicons web
+check: rust deny spell lexicons web
+
+# the Rust side, needing nothing but a cargo toolchain
+[group('checks')]
+rust: fmt-check lint test
 
 # format in place
 [group('checks')]
@@ -25,27 +29,27 @@ fmt-check:
 lint:
     cargo clippy --locked --all-targets --all-features -- -D warnings
 
-# the test suite, optionally filtered: `just test search`
+# the Rust test suite, optionally filtered: `just test search`
 [group('checks')]
 test filter="":
     cargo test --locked --all-targets {{ filter }}
 
-# spelling, at the version prek pins
+# spelling, at the version prek pins (needs prek)
 [group('checks')]
 spell:
     prek run --all-files typos
 
-# advisories, licenses, duplicate versions and crate sources
+# advisories, licenses, duplicate versions and crate sources (needs cargo-deny)
 [group('checks')]
 deny:
     cargo deny check
 
-# validate the lexicons against atproto's own implementation
+# validate the lexicons against atproto's own implementation (needs bun)
 [group('checks')]
 lexicons:
     cd tools/lexicon-check && bun install && bun run check
 
-# lint, typecheck, test and build the client
+# lint, typecheck, test and build the client (needs bun)
 [group('checks')]
 web:
     cd web && bun install && bun run check
