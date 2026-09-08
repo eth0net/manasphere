@@ -8,9 +8,11 @@ default:
     @just --list
 
 # every check CI runs that can run on one machine
+[group('checks')]
 check: fmt-check lint test spell deny lexicons
 
 # format in place
+[group('checks')]
 fmt:
     cargo fmt --all
 
@@ -19,24 +21,50 @@ fmt-check:
     cargo fmt --all --check
 
 # clippy, warnings denied as CI denies them
+[group('checks')]
 lint:
     cargo clippy --locked --all-targets --all-features -- -D warnings
 
 # the test suite, optionally filtered: `just test search`
+[group('checks')]
 test filter="":
     cargo test --locked --all-targets {{ filter }}
 
 # spelling, at the version prek pins
+[group('checks')]
 spell:
     prek run --all-files typos
 
 # advisories, licenses, duplicate versions and crate sources
+[group('checks')]
 deny:
     cargo deny check
 
-[doc('hold a deployed client metadata document to its own URL')]
+# validate the lexicons against atproto's own implementation
+[group('checks')]
+lexicons:
+    cd tools/lexicon-check && bun install && bun run check
+
+# export the catalog and serve it for local development
+[group('dev')]
+serve:
+    MANASPHERE_DATABASE={{ db }} cargo run -p manasphere-appview
+
+# sync the card cache from Scryfall (~78MB), or from a file already on disk
+[group('dev')]
+sync file="":
+    cargo run --release -p manasphere-core --example sync -- {{ db }} {{ file }}
+
+# build the client artifact and report its size, optionally writing the files
+[group('dev')]
+catalog out="":
+    cargo run --release -p manasphere-core --example catalog -- {{ db }} {{ out }}
+
+# Needs a deployment rather than a checkout, which is why it is not in `check`.
+[doc('fetch a deployed client metadata document and hold it to its own URL')]
+[group('deploy')]
 [script('python3')]
-oauth url="https://manasphere.app/oauth/client-metadata.json":
+verify-oauth url="https://manasphere.app/oauth/client-metadata.json":
     import json, sys, urllib.error, urllib.request
 
     url = "{{ url }}"
@@ -72,19 +100,3 @@ oauth url="https://manasphere.app/oauth/client-metadata.json":
         print(f"  FAIL  {problem}")
     print("\nFAILED" if problems else "  ok    served as its own client_id")
     sys.exit(1 if problems else 0)
-
-# validate the lexicons against atproto's own implementation
-lexicons:
-    cd tools/lexicon-check && bun install && bun run check
-
-# export the catalog and serve it for local development
-serve:
-    MANASPHERE_DATABASE={{ db }} cargo run -p manasphere-appview
-
-# sync the card cache from Scryfall (~78MB), or from a file already on disk
-sync file="":
-    cargo run --release -p manasphere-core --example sync -- {{ db }} {{ file }}
-
-# build the client artifact and report its size, optionally writing the files
-catalog out="":
-    cargo run --release -p manasphere-core --example catalog -- {{ db }} {{ out }}

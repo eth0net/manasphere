@@ -90,7 +90,7 @@ Nothing registers it anywhere: the authorization server fetches it from the
 origin. `client_id` must equal that URL exactly, and the reference provider
 also wants `client_uri` to be a parent path of it. The response has to be a
 plain 200 with `application/json`, which a single-page fallback quietly
-violates by answering 200 with HTML for a missing path — so `just oauth`
+violates by answering 200 with HTML for a missing path. `just verify-oauth`
 fetches a deployed copy, no local check being able to tell whether it arrived.
 
 **Committed rather than generated.** The client imports the same bytes to
