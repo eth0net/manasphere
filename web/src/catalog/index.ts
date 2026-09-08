@@ -30,6 +30,8 @@ type CardRow = [
   kind: number,
   printings: number,
   edhrecRank: number | null,
+  stats: string | null,
+  flags: number,
 ];
 
 type PrintRow = [
@@ -42,11 +44,14 @@ type PrintRow = [
   imageStatus: number,
   lang: number,
   printedName: string | null,
+  artist: number | null,
+  flags: number,
 ];
 
 interface CardFile {
   version: string;
   kinds: string[];
+  flags: string[];
   cards: CardRow[];
 }
 
@@ -55,10 +60,12 @@ interface CardFile {
 interface PrintFile {
   version: string;
   finishes: string[];
+  flags: string[];
   rarities: string[];
   layouts: string[];
   imageStatuses: string[];
   langs: string[];
+  artists: string[];
   sets: [code: string, name: string, kind: string, released: string][];
   prints: PrintRow[];
 }
@@ -68,6 +75,9 @@ export interface Card {
   oracleId: string;
   name: string;
   typeLine: string | null;
+  // Empty and absent differ on both of these: a land's cost is empty and a
+  // colorless card's colors are, where a reversible card has neither at the
+  // top level because they sit on its faces.
   manaCost: string | null;
   cmc: number | null;
   colors: string | null;
@@ -77,6 +87,12 @@ export interface Card {
   // EDHREC's Commander popularity, lower being more played. Absent for every
   // token and art series, and for the basic lands.
   edhrecRank: number | null;
+  // Power and toughness as `3/3`, or a planeswalker's loyalty or a battle's
+  // defense on its own. The type line says which.
+  stats: string | null;
+  // `reserved`, `gameChanger`. Named by the file, so a flag added to the
+  // artifact needs nothing here to show up.
+  flags: string[];
 }
 
 export interface Print {
@@ -90,6 +106,10 @@ export interface Print {
   imageStatus: string;
   lang: string;
   printedName: string | null;
+  artist: string | null;
+  // `promo`, `variation`, `fullArt`, `textless`, `oversized` — what makes this
+  // copy not the plain one.
+  flags: string[];
 }
 
 // Scryfall's image CDN, hotlinked: the path derives from the id, so no URL is
@@ -97,6 +117,17 @@ export interface Print {
 // `placeholder`.
 export function image(id: string, size = "normal"): string {
   return `https://cards.scryfall.io/${size}/front/${id[0]}/${id[1]}/${id}.jpg`;
+}
+
+// A camelCase name from the artifact as something to put on screen.
+export function words(name: string): string {
+  return name.replace(/([a-z])([A-Z])/g, "$1 $2").toLowerCase();
+}
+
+// A bitmask against the list the file names it with, so a value the artifact
+// gains appears without a change here.
+function decode(mask: number, names: string[]): string[] {
+  return names.filter((_, bit) => mask & (1 << bit));
 }
 
 export class Catalog {
@@ -172,6 +203,8 @@ export class Catalog {
       kind: this.#cards.kinds[row[7]] as string,
       printings: row[8],
       edhrecRank: row[9],
+      stats: row[10],
+      flags: decode(row[11], this.#cards.flags),
     };
   }
 
@@ -198,12 +231,14 @@ export class Catalog {
       set: set[0],
       setName: set[1],
       collectorNumber: row[2],
-      finishes: this.#prints.finishes.filter((_, bit) => row[3] & (1 << bit)),
+      finishes: decode(row[3], this.#prints.finishes),
       rarity: this.#prints.rarities[row[4]] as string,
       layout: this.#prints.layouts[row[5]] as string,
       imageStatus: this.#prints.imageStatuses[row[6]] as string,
       lang: this.#prints.langs[row[7]] as string,
       printedName: row[8],
+      artist: row[9] === null ? null : (this.#prints.artists[row[9]] ?? null),
+      flags: decode(row[10], this.#prints.flags),
     };
   }
 }

@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { type Card, type Catalog, image } from "./catalog";
+import { type Card, type Catalog, image, words } from "./catalog";
 import { Mana } from "./Mana";
 
 // Nothing renders behind these, so a thumbnail would be a broken image.
@@ -8,7 +8,7 @@ const NO_IMAGE = new Set(["missing", "placeholder"]);
 export function Search({ catalog }: { catalog: Catalog }) {
   const [query, setQuery] = useState("");
 
-  // A scan of every name costs about a millisecond, so it runs per keystroke
+  // A scan of every name costs a few milliseconds, so it runs per keystroke
   // rather than behind a debounce.
   const found = useMemo(() => catalog.search(query), [catalog, query]);
 
@@ -34,6 +34,7 @@ function Result({ card, catalog }: { card: Card; catalog: Catalog }) {
   // The first of the run is the printing to show, which is what the artifact's
   // ordering decides.
   const print = catalog.prints(card.index)[0];
+  const tags = card.kind === "card" ? card.flags : [card.kind, ...card.flags];
 
   return (
     <li>
@@ -43,21 +44,39 @@ function Result({ card, catalog }: { card: Card; catalog: Catalog }) {
       <div>
         <h2>
           {card.name}
-          {card.kind !== "card" && <span className="tag">{card.kind}</span>}
+          {tags.map((tag) => (
+            <span className="tag" key={tag}>
+              {words(tag)}
+            </span>
+          ))}
         </h2>
         <p>
           {card.typeLine}
+          {card.stats && <span className="stats">{card.stats}</span>}
           {card.manaCost && <Mana cost={card.manaCost} />}
         </p>
         {print && (
           <p className="print">
-            {print.setName} · {print.set.toUpperCase()} #
-            {print.collectorNumber} · {print.rarity}
-            {card.printings > 1 && ` · ${card.printings} printings`}
-            {card.edhrecRank &&
-              ` · EDHREC #${card.edhrecRank.toLocaleString()}`}
+            {[
+              `${print.setName} · ${print.set.toUpperCase()} #${print.collectorNumber}`,
+              print.rarity,
+              print.artist,
+              ...print.flags.map(words),
+            ]
+              .filter(Boolean)
+              .join(" · ")}
           </p>
         )}
+        <p className="print">
+          {[
+            card.printings === 1
+              ? "one printing"
+              : `${card.printings} printings`,
+            card.edhrecRank && `EDHREC #${card.edhrecRank.toLocaleString()}`,
+          ]
+            .filter(Boolean)
+            .join(" · ")}
+        </p>
       </div>
     </li>
   );
