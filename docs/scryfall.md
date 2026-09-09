@@ -74,13 +74,11 @@ it can wait for an import path that carries one.
 2,581 migrations exist: 2,354 deletes and 227 merges. A merge gives
 `new_scryfall_id`, so it's a remap; a delete gives no replacement.
 
-Most are corrections of printings that never existed — 1,043 "Localized version
-doesn't actually exist", 532 phantom Portuguese CMM cards, 404 "Mistakenly
-imported" — which nobody can have owned. The rate has collapsed too: 1,270 in
-2023 against 65 so far in 2026.
+Most are corrections of printings that never existed, which nobody can have
+owned, and the rate has collapsed since 2023.
 
 Consume them weekly alongside the bulk sync. Remap merges silently; surface
-deletes, because 471 carry no metadata and an orphaned reference to one of
+deletes, because some carry no metadata and an orphaned reference to one of
 those can't be interpreted at all. The rest preserve name, set, collector
 number and oracle id, so an orphan usually stays readable.
 
@@ -160,9 +158,8 @@ afterwards, where the reverse produces a gap. People who diligently edited
 theirs get an opt-in.
 
 ManaBox's `Added` seeds `createdAt`. It records when a row entered ManaBox
-rather than when the cards were bought — a 4,337-row export runs to 27 distinct
-days, one instant holding 513 rows where an existing collection was catalogued
-in bulk. Dragon Shield's Date Bought is the other fact and seeds an
+rather than when the cards were bought, so a collection catalogued in bulk
+carries one timestamp across everything added that session. Dragon Shield's Date Bought is the other fact and seeds an
 acquisition's `at`. MTGGoldfish and TCGplayer export no date, so those imports
 leave `createdAt` at import time. Moxfield's `Last Modified` seeds `updatedAt`.
 
@@ -187,8 +184,8 @@ it to come from; the card's row is filled from the best-ranked printing and any
 field still missing from whichever printing has it. All 81 now resolve to a
 card with a type line.
 
-Best-ranked is not first-seen: 8 cards have a reversible printing as their
-best, so a printing arriving later can displace what earlier ones established.
+Best-ranked is not first-seen: a reversible printing can be a card's best, so
+a printing arriving later can displace what earlier ones established.
 The two merge either way round rather than the later one starting over, or the
 file's order would decide what a card's type line is.
 
