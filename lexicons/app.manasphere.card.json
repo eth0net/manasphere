@@ -94,7 +94,7 @@
         "at": {
           "type": "string",
           "format": "datetime",
-          "description": "Absent when the source didn't record it — ManaBox exports no dates."
+          "description": "Absent when the source didn't record it."
         },
         "price": {
           "type": "string",

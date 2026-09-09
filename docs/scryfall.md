@@ -89,13 +89,13 @@ number and oracle id, so an orphan usually stays readable.
 Sample CSVs from five tools, since these are the import targets and their
 columns are the evidence for what a collection row needs.
 
-| | container | trade qty | tags | notes | serial | price paid | date bought |
-|---|---|---|---|---|---|---|---|
-| ManaBox | Binder Name + Type | — | — | — | — | yes | — |
-| Moxfield | — | yes | yes | — | — | yes | — |
-| Dragon Shield | Folder Name | yes | — | — | — | yes | yes |
-| MTGGoldfish | — | — | — | — | — | — | — |
-| TCGplayer | — | — | — | — | — | — | — |
+| | container | trade qty | tags | notes | serial | price paid | date added | date bought |
+|---|---|---|---|---|---|---|---|---|
+| ManaBox | Binder Name + Type | — | — | — | — | yes | yes | — |
+| Moxfield | — | yes | yes | — | — | yes | — | — |
+| Dragon Shield | Folder Name | yes | — | — | — | yes | — | yes |
+| MTGGoldfish | — | — | — | — | — | — | — | — |
+| TCGplayer | — | — | — | — | — | — | — | — |
 
 **No tracker records a serial number**, which settles the serialized question:
 treat it as the promo printing it is. Scryfall lists `serialized` alongside
@@ -149,9 +149,12 @@ an unpaid amount in `price` produces a confident lie in every comparison
 afterwards, where the reverse produces a gap. People who diligently edited
 theirs get an opt-in.
 
-Neither ManaBox nor MTGGoldfish nor TCGplayer exports any date, so an import
-leaves `createdAt` at import time rather than when the card was really added.
-Moxfield's `Last Modified` seeds `updatedAt`.
+ManaBox's `Added` seeds `createdAt`. It records when a row entered ManaBox
+rather than when the cards were bought — a 4,337-row export runs to 27 distinct
+days, one instant holding 513 rows where an existing collection was catalogued
+in bulk. Dragon Shield's Date Bought is the other fact and seeds an
+acquisition's `at`. MTGGoldfish and TCGplayer export no date, so those imports
+leave `createdAt` at import time. Moxfield's `Last Modified` seeds `updatedAt`.
 
 ## Oracle and printing are two tables
 
