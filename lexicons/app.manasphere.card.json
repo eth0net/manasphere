@@ -110,7 +110,7 @@
         "marketValue": {
           "type": "string",
           "maxLength": 32,
-          "description": "What a copy was worth when acquired — never what you paid."
+          "description": "What a copy was worth when the row was written."
         },
         "marketCurrency": {
           "type": "string",

@@ -132,24 +132,23 @@ paid is often just a snapshot, and afterwards the two are indistinguishable.
 That makes its profit-and-loss really "market drift since I added it" wearing
 a P&L label.
 
-Measured across a real 3,743-row export: 251 identity keys repeat, 216 of them
-differing only in price, and the recorded figures track market value — median
-ratio to current price 0.67, quartiles 0.37 and 1.20, with only 26% landing on
-a 5p boundary against the ~20% chance alone would give. Hand-typed prices
-would cluster on round numbers and sit far below market for bulk. These are
-snapshots taken on different days.
+Measured across a real export: 251 identity keys repeat, and 216 of them differ
+only in price. The same card at a different figure each time is a snapshot of
+the market on the day the row was added, not something anyone typed.
 
 So an acquisition carries both, named for what they are: `price` is what you
 paid and is absent when you didn't say, `marketValue` is what a copy was worth
-at the time. Both are decimal strings, because money is not a float, and both
-carry their own currency — Scryfall quotes USD and EUR, and you may well have
-paid in neither. `marketValue` has to be stored rather than derived later,
-since Scryfall publishes no price history and no prices bulk file.
+when the row was written — for an import, the day it was catalogued rather than
+the day it was bought. Both are decimal strings, because money is not a float,
+and both carry their own currency — Scryfall quotes USD and EUR, and you may
+well have paid in neither. `marketValue` has to be stored rather than derived
+later, since Scryfall publishes no price history and no prices bulk file.
 
 Two honest figures come out of that instead of one false one: what you paid
 against what it is worth now, over the cards where cost is known and showing
-that coverage, and drift since acquisition, which works everywhere because we
-snapshot it.
+that coverage, and drift since the row was added, which works everywhere
+because we snapshot it. Drift since acquisition is a different figure needing a
+purchase date, which only Dragon Shield exports.
 
 **A ManaBox import writes `marketValue`, not `price`.** We cannot tell an
 edited row from an auto-filled one, and the costs are not symmetrical: putting
@@ -159,9 +158,10 @@ theirs get an opt-in.
 
 ManaBox's `Added` seeds `createdAt`. It records when a row entered ManaBox
 rather than when the cards were bought, so a collection catalogued in bulk
-carries one timestamp across everything added that session. Dragon Shield's Date Bought is the other fact and seeds an
-acquisition's `at`. MTGGoldfish and TCGplayer export no date, so those imports
-leave `createdAt` at import time. Moxfield's `Last Modified` seeds `updatedAt`.
+carries one timestamp across everything added that session. Dragon Shield's
+Date Bought is the other fact and seeds an acquisition's `at`. MTGGoldfish and
+TCGplayer export no date, so those imports leave `createdAt` at import time.
+Moxfield's `Last Modified` seeds `updatedAt`.
 
 ## Oracle and printing are two tables
 
