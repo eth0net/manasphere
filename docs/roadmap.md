@@ -1,4 +1,4 @@
-# Manasphere roadmap
+# Manaweb roadmap
 
 Phases and scope. The reasoning behind each decision lives alongside its
 subject: [data model](data-model.md), [architecture](architecture.md),
@@ -106,7 +106,7 @@ damage, non-English printings — plus bulk scanning from uploaded photos.
 - **This is where Jetstream arrives.** Explore needs indexing across users,
   the first thing a local-first client genuinely can't do for itself.
   Subscribe with `wantedCollections` scoped to our own NSIDs, network-wide —
-  cheap, since only Manasphere users emit matching events.
+  cheap, since only Manaweb users emit matching events.
 - **The index stops being disposable here.** Activity seen only over the
   firehose can't be re-derived from Scryfall or from anyone's PDS, so it wants
   a SQLite file of its own and a backup story — R2 snapshots, or something
@@ -171,7 +171,7 @@ model too.
   peer-to-peer sync between devices for a shared table view if needed.
 - Persist only an optional *summary* record at game end (final life totals,
   winner, deck used, date).
-- Own lexicon namespace, `app.manasphere.game.*` — "game" here means a game
+- Own lexicon namespace, `app.manaweb.game.*` — "game" here means a game
   being played, not which TCG. Kept apart from collection and deck lexicons.
 
 ## Multi-TCG (deferred, maybe never)

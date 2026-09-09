@@ -11,7 +11,7 @@ export function App() {
   return (
     <main>
       <header>
-        <h1>Manasphere</h1>
+        <h1>Manaweb</h1>
         {load.status === "ready" && (
           <CatalogStatus status={status} loaded={load} />
         )}

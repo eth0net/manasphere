@@ -8,7 +8,7 @@ pub enum Error {
     Migrate(#[from] sqlx::migrate::MigrateError),
 
     #[error("reading the card stream failed")]
-    Scryfall(#[from] manasphere_scryfall::Error),
+    Scryfall(#[from] manaweb_scryfall::Error),
 
     /// A full replace that wrote nothing would empty the catalog, so the
     /// transaction rolls back instead.

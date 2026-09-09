@@ -13,15 +13,15 @@ edition = "2024"
 rust-version = "1.98"
 license = "AGPL-3.0-only"
 authors = ["eth0net <eth0net@pm.me>"]
-repository = "https://github.com/eth0net/manasphere"
+repository = "https://github.com/eth0net/manaweb"
 
 # Versions live here so two crates can't drift apart, and a member declaring
 # `workspace = true` against a different version is a build error rather than
 # something noticed later. Features are added per crate where they differ.
 [workspace.dependencies]
-manasphere-api = { path = "crates/api" }
-manasphere-core = { path = "crates/core" }
-manasphere-scryfall = { path = "crates/scryfall" }
+manaweb-api = { path = "crates/api" }
+manaweb-core = { path = "crates/core" }
+manaweb-scryfall = { path = "crates/scryfall" }
 
 async-compression = { version = "0.4.44", features = ["gzip", "tokio"] }
 axum = "0.8.9"

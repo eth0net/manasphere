@@ -1,6 +1,6 @@
 # Contributing
 
-Manasphere is pre-v0: plenty of design in [`docs/`](docs/roadmap.md),
+Manaweb is pre-v0: plenty of design in [`docs/`](docs/roadmap.md),
 little code yet. The most useful contribution is a second opinion on the
 lexicon shapes, before records exist in other people's PDSes — that's the part
 expensive to change later.
@@ -11,8 +11,8 @@ Rust (stable, 2024 edition), and [Bun](https://bun.sh) if you're touching
 `web/` or `tools/`.
 
 ```sh
-git clone https://github.com/eth0net/manasphere
-cd manasphere
+git clone https://github.com/eth0net/manaweb
+cd manaweb
 prek install
 cargo test
 ```
@@ -38,7 +38,7 @@ Tests are offline, against Scryfall responses captured under
 hand, since they pull ~78MB from a free service:
 
 ```sh
-cargo run --release -p manasphere-scryfall --example stream  # parse only
+cargo run --release -p manaweb-scryfall --example stream  # parse only
 just sync                                                    # into the cache
 ```
 

@@ -6,7 +6,7 @@ export function Footer() {
   return (
     <footer>
       <p>
-        Manasphere is unofficial Fan Content permitted under the{" "}
+        Manaweb is unofficial Fan Content permitted under the{" "}
         <a href="https://company.wizards.com/en/legal/fancontentpolicy">
           Fan Content Policy
         </a>

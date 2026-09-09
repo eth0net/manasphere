@@ -2,25 +2,24 @@
 
 Constraints the protocol puts on the design, and what it costs to work with.
 
-NSIDs carry no game segment: `app.manasphere.card`, not
-`app.manasphere.mtg.card`. Manasphere is an MTG app, and a segment
-added against a game that may never exist would sit in every record forever.
-That reverses an earlier decision — the original argument was firehose
-filtering and cheap optionality, but filtering by NSID stays clean either way,
-and the optionality was speculation.
+NSIDs carry no game segment: `app.manaweb.card`, not `app.manaweb.mtg.card`.
+Manaweb is an MTG app, and a segment added against a game that may never exist
+would sit in every record forever. That reverses an earlier decision — the
+original argument was firehose filtering and cheap optionality, but filtering
+by NSID stays clean either way, and the optionality was speculation.
 
-- **Records sit flat under `app.manasphere.*`**, with an area segment only
+- **Records sit flat under `app.manaweb.*`**, with an area segment only
   where a genuine cluster earns one. Surveyed 2026-09-07: Leaflet, Streamplace,
   Frontpage and Standard all put their record types directly under the app
   authority and group only real clusters (Leaflet's 23 `blocks.*`). Bluesky's
   uniform four segments come from having 404 lexicons across 47 authorities,
-  not from a rule. So `app.manasphere.game.*` later is fine — that is a
+  not from a rule. So `app.manaweb.game.*` later is fine — that is a
   cluster — but a `collection.` segment holding one record would not be.
-- The owned-card record is `app.manasphere.card`, not
-  `app.manasphere.collection`: each record is one card in however many copies,
+- The owned-card record is `app.manaweb.card`, not
+  `app.manaweb.collection`: each record is one card in however many copies,
   so "collection" would name the whole rather than the line. `card` matches
   how the domain talks — ManaBox exports one row per card with a quantity
-  column. It does mean `manasphere_scryfall::Card` (a printing) and the record
+  column. It does mean `manaweb_scryfall::Card` (a printing) and the record
   type want distinguishable Rust names.
 - Adding a *new* lexicon collection later is cheap.
 - Changing an *existing* NSID's required shape is not. Records written under it
@@ -101,7 +100,7 @@ deployment and only a client deriving it from `window.location` breaks. Two
 callbacks are declared, production and `dev` —
 [`architecture.md`](architecture.md) covers why that's enough for previews.
 
-Scopes are granular — `repo:app.manasphere.card` and one per other record type
+Scopes are granular — `repo:app.manaweb.card` and one per other record type
 we write, which is all a client that writes only its own records needs. Reads
 need no scope, records being publicly fetchable. `transition:generic` is listed
 too, because a PDS without permissions support rejects the granular ones
@@ -152,11 +151,11 @@ websocket — which is how the firehose itself is defined.
 Three concerns that don't need the same domain, and conflating them is what
 makes migration look frightening:
 
-- **NSID root** — `app.manasphere.*`, from `manasphere.app`. Reverse-DNS,
+- **NSID root** — `app.manaweb.*`, from `manaweb.app`. Reverse-DNS,
   permanent, embedded in every record ever written, and it needs DNS control
   rather than hosting. Registered, so this is settled: after the first record
   exists it can't change without a per-user migration.
-- **App hosting** — `manasphere.app`, and the app is the only thing on it. The
+- **App hosting** — `manaweb.app`, and the app is the only thing on it. The
   signed-out root is the front page rather than a separate marketing site,
   because moving the app to a subdomain would move the `client_id` with it.
   Changeable, unlike the NSID root that shares its name, but not free.

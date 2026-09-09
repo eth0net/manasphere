@@ -1087,11 +1087,11 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "112b39cec0b298b6c1999fee3e31427f74f676e4cb9879ed1a121b43661a4154"
 
 [[package]]
-name = "manasphere-api"
+name = "manaweb-api"
 version = "0.2.0"
 dependencies = [
  "axum",
- "manasphere-core",
+ "manaweb-core",
  "serde",
  "serde_json",
  "sqlx",
@@ -1101,13 +1101,13 @@ dependencies = [
 ]
 
 [[package]]
-name = "manasphere-appview"
+name = "manaweb-appview"
 version = "0.2.0"
 dependencies = [
  "axum",
- "manasphere-api",
- "manasphere-core",
- "manasphere-scryfall",
+ "manaweb-api",
+ "manaweb-core",
+ "manaweb-scryfall",
  "sqlx",
  "tokio",
  "tower-http",
@@ -1116,11 +1116,11 @@ dependencies = [
 ]
 
 [[package]]
-name = "manasphere-core"
+name = "manaweb-core"
 version = "0.2.0"
 dependencies = [
  "futures-util",
- "manasphere-scryfall",
+ "manaweb-scryfall",
  "serde",
  "serde_json",
  "sqlx",
@@ -1129,7 +1129,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "manasphere-scryfall"
+name = "manaweb-scryfall"
 version = "0.2.0"
 dependencies = [
  "async-compression",

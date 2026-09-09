@@ -1,7 +1,7 @@
 //! Streams Default Cards from Scryfall and reports what came back.
 //!
 //! ```sh
-//! cargo run --release -p manasphere-scryfall --example stream
+//! cargo run --release -p manaweb-scryfall --example stream
 //! ```
 //!
 //! Deliberately not a test: it pulls ~78MB from a free service.
@@ -10,11 +10,11 @@ use std::collections::BTreeMap;
 use std::error::Error;
 use std::time::Instant;
 
-use manasphere_scryfall::{BulkKind, Client};
+use manaweb_scryfall::{BulkKind, Client};
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
-    let client = Client::new("Manasphere/0.1 (+https://manasphere.app)")?;
+    let client = Client::new("Manaweb/0.1 (+https://manaweb.app)")?;
     let bulk = client.bulk_data(BulkKind::DefaultCards).await?;
     println!(
         "{}, updated {}, {:.0}MB compressed",

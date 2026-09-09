@@ -39,8 +39,8 @@ catalog change for different reasons:
 
 | | origin | built from | changes on |
 |---|---|---|---|
-| app, client metadata | `manasphere.app`, Pages | the repo | a commit |
-| catalog, manifest | `static.manasphere.app`, R2 | the cache | a set |
+| app, client metadata | `manaweb.app`, Pages | the repo | a commit |
+| catalog, manifest | `static.manaweb.app`, R2 | the cache | a set |
 
 `static` rather than `catalog` because more artifacts of that shape are coming
 — a scanner index, precomputed recommendations — and the Phase 3 query API
@@ -75,7 +75,7 @@ sends it too, or the dev loop fails at the first fetch and only in a browser.
 
 Two Pages behaviors decide what a preview can do:
 
-- A custom domain attaches to a **branch**, so `dev.manasphere.app` serves the
+- A custom domain attaches to a **branch**, so `dev.manaweb.app` serves the
   `dev` branch and a login callback sits on a host we control.
 - Pages **does not build previews for pull requests from forks**, so only
   someone with push access can produce a preview host.

@@ -46,7 +46,7 @@ terms are in [`ip.md`](ip.md); what the client does with the artifact is in
   since a printing you can own has to be findable.
 - Refresh weekly — Scryfall says gameplay data needs fetching "once per week or
   right after set releases". The API also requires an accurate `User-Agent`
-  naming the app (`Manasphere/0.1`), explicitly not a library default.
+  naming the app (`Manaweb/0.1`), explicitly not a library default.
 - Don't ship image URIs; they derive from the card id as
   `cards.scryfall.io/{size}/front/{id[0]}/{id[1]}/{id}.jpg`, the query string
   being a cache-buster. Keep `image_status` — `missing`/`placeholder` printings
@@ -65,7 +65,7 @@ Ring is collector number `0`.
 
 **Neither the print-run size nor the individual number exists anywhere in
 Scryfall.** So "042/500" is data we hold with nothing to validate it against.
-An optional `serial` string on `app.manasphere.card` covers it, with quantity 1
+An optional `serial` string on `app.manaweb.card` covers it, with quantity 1
 whenever it's set, since numbered copies aren't interchangeable. Additive, so
 it can wait for an import path that carries one.
 

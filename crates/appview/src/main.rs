@@ -1,4 +1,4 @@
-//! The Manasphere server: it keeps the card cache fresh and exports the
+//! The Manaweb server: it keeps the card cache fresh and exports the
 //! catalog built from it.
 //!
 //! Nothing here is browser-facing in production: the catalog is uploaded to
@@ -11,10 +11,10 @@
 //!
 //! | Variable | Default |
 //! |---|---|
-//! | `MANASPHERE_DATABASE` | `manasphere.db` |
-//! | `MANASPHERE_CATALOG` | `catalog` |
-//! | `MANASPHERE_BIND` | `127.0.0.1:8080` |
-//! | `MANASPHERE_SYNC` | `1` |
+//! | `MANAWEB_DATABASE` | `manaweb.db` |
+//! | `MANAWEB_CATALOG` | `catalog` |
+//! | `MANAWEB_BIND` | `127.0.0.1:8080` |
+//! | `MANAWEB_SYNC` | `1` |
 
 use std::error::Error;
 use std::net::SocketAddr;
@@ -22,8 +22,8 @@ use std::path::{Path, PathBuf};
 use std::time::Duration;
 use std::{env, process};
 
-use manasphere_core::{cards, catalog};
-use manasphere_scryfall::{BulkKind, Client};
+use manaweb_core::{cards, catalog};
+use manaweb_scryfall::{BulkKind, Client};
 use sqlx::SqlitePool;
 use tokio::net::TcpListener;
 use tokio::time::{MissedTickBehavior, interval};
@@ -35,9 +35,9 @@ const REFRESH: Duration = Duration::from_hours(7 * 24);
 
 /// Scryfall's terms require a user agent of the app's own, not a library's.
 const USER_AGENT: &str = concat!(
-    "Manasphere/",
+    "Manaweb/",
     env!("CARGO_PKG_VERSION"),
-    " (+https://manasphere.app)"
+    " (+https://manaweb.app)"
 );
 
 #[tokio::main]
@@ -56,7 +56,7 @@ async fn main() {
 
 async fn run() -> Result<(), Box<dyn Error>> {
     let settings = Settings::from_env()?;
-    let pool = manasphere_core::open(&settings.database).await?;
+    let pool = manaweb_core::open(&settings.database).await?;
 
     // A restart shouldn't wait on a sync, so the catalog comes from whatever
     // the cache already holds.
@@ -79,7 +79,7 @@ async fn run() -> Result<(), Box<dyn Error>> {
     );
     axum::serve(
         listener,
-        manasphere_api::router(pool, settings.catalog).layer(TraceLayer::new_for_http()),
+        manaweb_api::router(pool, settings.catalog).layer(TraceLayer::new_for_http()),
     )
     .with_graceful_shutdown(shutdown())
     .await?;
@@ -88,7 +88,7 @@ async fn run() -> Result<(), Box<dyn Error>> {
 }
 
 /// Builds the catalog from the cache and writes it out for upload.
-async fn export(pool: &SqlitePool, dir: &Path) -> manasphere_core::Result<String> {
+async fn export(pool: &SqlitePool, dir: &Path) -> manaweb_core::Result<String> {
     let built = catalog::build(pool).await?;
     built.write(dir).await?;
     tracing::info!(
@@ -167,14 +167,12 @@ struct Settings {
 
 impl Settings {
     fn from_env() -> Result<Self, Box<dyn Error>> {
-        let bind = var("MANASPHERE_BIND", "127.0.0.1:8080");
+        let bind = var("MANAWEB_BIND", "127.0.0.1:8080");
         Ok(Self {
-            database: var("MANASPHERE_DATABASE", "manasphere.db"),
-            catalog: PathBuf::from(var("MANASPHERE_CATALOG", "catalog")),
-            bind: bind
-                .parse()
-                .map_err(|_| format!("MANASPHERE_BIND: {bind}"))?,
-            sync: !matches!(var("MANASPHERE_SYNC", "1").as_str(), "0" | "false"),
+            database: var("MANAWEB_DATABASE", "manaweb.db"),
+            catalog: PathBuf::from(var("MANAWEB_CATALOG", "catalog")),
+            bind: bind.parse().map_err(|_| format!("MANAWEB_BIND: {bind}"))?,
+            sync: !matches!(var("MANAWEB_SYNC", "1").as_str(), "0" | "false"),
         })
     }
 }

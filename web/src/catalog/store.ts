@@ -4,7 +4,7 @@
 // Every call resolves rather than throwing: a browser with site data blocked
 // opens no database at all, and the catalog is re-fetchable.
 
-const DATABASE = "manasphere";
+const DATABASE = "manaweb";
 const STORE = "catalog";
 
 // Cached too, so a load with no network knows which pair to look for.

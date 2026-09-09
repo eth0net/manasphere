@@ -10,16 +10,16 @@ use tower::ServiceExt as _;
 
 /// A directory of its own per test, since `ServeDir` needs a real one.
 fn scratch(name: &str) -> PathBuf {
-    let dir = env::temp_dir().join(format!("manasphere-{name}-{}", std::process::id()));
+    let dir = env::temp_dir().join(format!("manaweb-{name}-{}", std::process::id()));
     fs::create_dir_all(&dir).expect("a scratch directory");
     dir
 }
 
 async fn get(catalog: PathBuf, path: &str) -> Response<Body> {
-    let pool = manasphere_core::open_memory()
+    let pool = manaweb_core::open_memory()
         .await
         .expect("migrations should apply");
-    manasphere_api::router(pool, catalog)
+    manaweb_api::router(pool, catalog)
         .oneshot(Request::get(path).body(Body::empty()).unwrap())
         .await
         .expect("routing is infallible")

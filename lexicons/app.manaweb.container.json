@@ -1,6 +1,6 @@
 {
   "lexicon": 1,
-  "id": "app.manasphere.container",
+  "id": "app.manaweb.container",
   "defs": {
     "main": {
       "type": "record",

@@ -70,31 +70,31 @@ for (const ref of [...refs].sort()) {
 const NOW = "2026-09-07T02:40:00.000Z";
 const DID = "did:plc:sesxeihcsbjxpez2l4of7oie";
 const SOURCE = {
-  uri: `at://${DID}/app.manasphere.deck/3l4xk`,
+  uri: `at://${DID}/app.manaweb.deck/3l4xk`,
   cid: "bafyreidfayvfuwqa7qlnopdjiqrxzs6blmoeu4rujcjtnci5beludirz2a",
 };
 const BOLT = "44623693-51d6-49ad-8cd7-140505caf02f";
 
 const accepted: Array<[string, Record<string, unknown>]> = [
   ["a stack with only what is required", {
-    $type: "app.manasphere.card",
+    $type: "app.manaweb.card",
     scryfallId: "435589bb-27c6-4a6d-9d63-394d5092b9d8",
     finish: "nonfoil",
     quantity: 1,
     createdAt: NOW,
   }],
   ["a graded, filed, foil stack", {
-    $type: "app.manasphere.card",
+    $type: "app.manaweb.card",
     scryfallId: "b68be6a7-0515-42e0-abe9-b3f14b118c19",
     finish: "foil",
     quantity: 3,
     condition: "nearMint",
-    container: `at://${DID}/app.manasphere.container/3l4xm`,
+    container: `at://${DID}/app.manaweb.container/3l4xm`,
     acquiredAt: NOW,
     createdAt: NOW,
   }],
   ["a stack with provenance, a note and tags", {
-    $type: "app.manasphere.card",
+    $type: "app.manaweb.card",
     scryfallId: BOLT,
     finish: "nonfoil",
     quantity: 2,
@@ -109,24 +109,24 @@ const accepted: Array<[string, Record<string, unknown>]> = [
     createdAt: NOW,
   }],
   ["a container", {
-    $type: "app.manasphere.container",
+    $type: "app.manaweb.container",
     name: "Trade binder",
     kind: "binder",
     createdAt: NOW,
   }],
   ["a deck that is still just a concept", {
-    $type: "app.manasphere.deck",
+    $type: "app.manaweb.deck",
     name: "Jinnie Fay tokens",
     createdAt: NOW,
   }],
   ["a built commander deck, forked, with history", {
-    $type: "app.manasphere.deck",
+    $type: "app.manaweb.deck",
     name: "Jetmir",
     format: "commander",
-    container: `at://${DID}/app.manasphere.container/3l4xm`,
+    container: `at://${DID}/app.manaweb.container/3l4xm`,
     archived: false,
     visibility: "unlisted",
-    forkedFrom: { source: SOURCE, snapshot: `at://${DID}/app.manasphere.snapshot/3l4xn` },
+    forkedFrom: { source: SOURCE, snapshot: `at://${DID}/app.manaweb.snapshot/3l4xn` },
     entries: [
       { oracleId: "61fbaaf2-4286-4e9a-b9cb-aa31262b596a", quantity: 1, section: "commander" },
       {
@@ -144,14 +144,14 @@ const accepted: Array<[string, Record<string, unknown>]> = [
     updatedAt: NOW,
   }],
   ["a wishlist", {
-    $type: "app.manasphere.list",
+    $type: "app.manaweb.list",
     name: "Want",
     purpose: "wishlist",
     entries: [{ oracleId: BOLT, quantity: 1 }],
     createdAt: NOW,
   }],
   ["a named snapshot", {
-    $type: "app.manasphere.snapshot",
+    $type: "app.manaweb.snapshot",
     subject: SOURCE,
     name: "Pre-rotation",
     entries: [{ oracleId: BOLT, quantity: 1 }],
@@ -159,14 +159,14 @@ const accepted: Array<[string, Record<string, unknown>]> = [
   }],
   // knownValues, not enum: a value Scryfall adds later must stay writable.
   ["a finish this schema has never heard of", {
-    $type: "app.manasphere.card",
+    $type: "app.manaweb.card",
     scryfallId: BOLT,
     finish: "surgeFoil",
     quantity: 1,
     createdAt: NOW,
   }],
   ["a format this schema has never heard of", {
-    $type: "app.manasphere.deck",
+    $type: "app.manaweb.deck",
     name: "Whatever comes next",
     format: "someFutureFormat",
     createdAt: NOW,
@@ -175,48 +175,48 @@ const accepted: Array<[string, Record<string, unknown>]> = [
 
 const refused: Array<[string, Record<string, unknown>]> = [
   ["a stack with no finish, which would break stack identity", {
-    $type: "app.manasphere.card",
+    $type: "app.manaweb.card",
     scryfallId: BOLT,
     quantity: 1,
     createdAt: NOW,
   }],
   ["a stack of zero, which should be a delete", {
-    $type: "app.manasphere.card",
+    $type: "app.manaweb.card",
     scryfallId: BOLT,
     finish: "foil",
     quantity: 0,
     createdAt: NOW,
   }],
   ["a design entry with no oracleId, unusable for legality", {
-    $type: "app.manasphere.deck",
+    $type: "app.manaweb.deck",
     name: "d",
     entries: [{ scryfallId: BOLT, quantity: 1 }],
     createdAt: NOW,
   }],
   ["a container with an empty name", {
-    $type: "app.manasphere.container",
+    $type: "app.manaweb.container",
     name: "",
     createdAt: NOW,
   }],
   ["a snapshot of nothing", {
-    $type: "app.manasphere.snapshot",
+    $type: "app.manaweb.snapshot",
     entries: [],
     createdAt: NOW,
   }],
   ["a snapshot subject with no cid, which would not pin a version", {
-    $type: "app.manasphere.snapshot",
+    $type: "app.manaweb.snapshot",
     subject: { uri: SOURCE.uri },
     entries: [],
     createdAt: NOW,
   }],
   ["a fork source that is a bare uri rather than a strongRef", {
-    $type: "app.manasphere.deck",
+    $type: "app.manaweb.deck",
     name: "d",
     forkedFrom: { source: SOURCE.uri },
     createdAt: NOW,
   }],
   ["a proxy flag that is a string rather than a boolean", {
-    $type: "app.manasphere.card",
+    $type: "app.manaweb.card",
     scryfallId: BOLT,
     finish: "foil",
     quantity: 1,
@@ -224,7 +224,7 @@ const refused: Array<[string, Record<string, unknown>]> = [
     createdAt: NOW,
   }],
   ["a currency that is not a three-letter code", {
-    $type: "app.manasphere.card",
+    $type: "app.manaweb.card",
     scryfallId: BOLT,
     finish: "foil",
     quantity: 1,
@@ -232,7 +232,7 @@ const refused: Array<[string, Record<string, unknown>]> = [
     createdAt: NOW,
   }],
   ["an acquisition of no copies", {
-    $type: "app.manasphere.card",
+    $type: "app.manaweb.card",
     scryfallId: BOLT,
     finish: "foil",
     quantity: 1,
@@ -240,7 +240,7 @@ const refused: Array<[string, Record<string, unknown>]> = [
     createdAt: NOW,
   }],
   ["an acquisition that is a bare number", {
-    $type: "app.manasphere.card",
+    $type: "app.manaweb.card",
     scryfallId: BOLT,
     finish: "foil",
     quantity: 1,
@@ -248,7 +248,7 @@ const refused: Array<[string, Record<string, unknown>]> = [
     createdAt: NOW,
   }],
   ["a container reference that is a bare rkey", {
-    $type: "app.manasphere.card",
+    $type: "app.manaweb.card",
     scryfallId: BOLT,
     finish: "foil",
     quantity: 1,

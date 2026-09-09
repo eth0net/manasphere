@@ -1,7 +1,7 @@
 # The whole workflow, so `just --list` beats remembering which toolchain each
 # step wants. Every recipe is a plain command underneath.
 
-db := env("MANASPHERE_DATABASE", "manasphere.db")
+db := env("MANAWEB_DATABASE", "manaweb.db")
 
 [private]
 default:
@@ -62,7 +62,7 @@ web:
 # export the catalog and serve it for local development
 [group('dev')]
 serve:
-    MANASPHERE_DATABASE={{ db }} cargo run -p manasphere-appview
+    MANAWEB_DATABASE={{ db }} cargo run -p manaweb-appview
 
 # the client's dev server, fetching the catalog from `just serve`
 [group('dev')]
@@ -72,18 +72,18 @@ client:
 # sync the card cache from Scryfall (~78MB), or from a file already on disk
 [group('dev')]
 sync file="":
-    cargo run --release -p manasphere-core --example sync -- {{ db }} {{ file }}
+    cargo run --release -p manaweb-core --example sync -- {{ db }} {{ file }}
 
 # build the client artifact and report its size, optionally writing the files
 [group('dev')]
 catalog out="":
-    cargo run --release -p manasphere-core --example catalog -- {{ db }} {{ out }}
+    cargo run --release -p manaweb-core --example catalog -- {{ db }} {{ out }}
 
 # Needs a deployment rather than a checkout, which is why it is not in `check`.
 [doc('fetch a deployed client metadata document and hold it to its own URL')]
 [group('deploy')]
 [script('python3')]
-verify-oauth url="https://manasphere.app/oauth/client-metadata.json":
+verify-oauth url="https://manaweb.app/oauth/client-metadata.json":
     import json, sys, urllib.error, urllib.request
 
     url = "{{ url }}"

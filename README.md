@@ -1,4 +1,4 @@
-# Manasphere
+# Manaweb
 
 An [atproto](https://atproto.com) AppView for tracking a Magic: The Gathering
 collection — your cards live as records in your own PDS, not in someone else's
@@ -11,7 +11,7 @@ game toolkit later.
 
 Pre-v0, and it runs. `crates/scryfall` streams Scryfall's bulk data,
 `crates/core` shreds 117,630 printings of 38,633 cards into an 81MB SQLite
-file, and the `manasphere` binary exports the 3.67MB catalog a browser needs.
+file, and the `manaweb` binary exports the 3.67MB catalog a browser needs.
 The lexicons are validated against atproto's own implementation in CI, along
 with the OAuth client metadata document. No client yet.
 
@@ -25,10 +25,10 @@ with the OAuth client metadata document. No client yet.
 ## Layout
 
 ```
-manasphere/
+manaweb/
   crates/
     api/                 routes and handlers
-    appview/             the `manasphere` binary
+    appview/             the `manaweb` binary
     core/                card cache, and the catalog it exports
     scryfall/            bulk-data fetch/parse
   docs/                  roadmap, and the reasoning behind each decision
@@ -51,7 +51,7 @@ vocabulary, and copyleft on a schema file would discourage the adoption that's
 the whole point of publishing them.
 
 Card data and images come from [Scryfall](https://scryfall.com) under the
-Wizards of the Coast Fan Content Policy. Manasphere is unofficial Fan Content
+Wizards of the Coast Fan Content Policy. Manaweb is unofficial Fan Content
 permitted under the Fan Content Policy. Not approved or endorsed by Wizards.
 Portions of the materials used are property of Wizards of the Coast.
 ©Wizards of the Coast LLC.

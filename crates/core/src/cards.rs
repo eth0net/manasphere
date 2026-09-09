@@ -7,7 +7,7 @@ use std::cmp::Reverse;
 use std::collections::hash_map::Entry;
 use std::collections::{BTreeSet, HashMap};
 
-use manasphere_scryfall::{BulkData, Card, CardStream, Color, Error as ScryfallError};
+use manaweb_scryfall::{BulkData, Card, CardStream, Color, Error as ScryfallError};
 use sqlx::{Sqlite, SqlitePool, Transaction};
 
 use crate::{Error, Result};

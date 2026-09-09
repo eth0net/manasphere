@@ -6,7 +6,7 @@
 
 use std::io::Cursor;
 
-use manasphere_scryfall::{BulkIndex, BulkKind, Card, CardStream, Error};
+use manaweb_scryfall::{BulkIndex, BulkKind, Card, CardStream, Error};
 
 const LAYOUTS: &str = include_str!("fixtures/layouts.jsonl");
 const BULK_INDEX: &str = include_str!("fixtures/bulk-data.json");
@@ -171,7 +171,7 @@ async fn non_english_printings_keep_their_printed_name() {
 
 #[tokio::test]
 async fn colors_sort_into_wubrg_order() {
-    use manasphere_scryfall::Color::{B, G, R, U, W};
+    use manaweb_scryfall::Color::{B, G, R, U, W};
 
     let mut colors = vec![G, B, W, R, U];
     colors.sort();

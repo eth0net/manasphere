@@ -1,4 +1,4 @@
-# Manasphere
+# Manaweb
 
 Personal/hobby project: an atproto-based Magic: The Gathering collection
 tracker, scanner, and deck builder. MTG-first, designed not to paint into a
@@ -123,19 +123,18 @@ backend:
 - **A print id already pins the language.** Every language of a printing has
   its own Scryfall id (m10 #146 has nine), so collection entries carry no
   `language` field — it would only ever contradict the id.
-- Lexicon NSIDs are rooted at `app.manasphere.*` (from `manasphere.app`) and
-  carry **no game segment**: `app.manasphere.card`, not
-  `app.manasphere.mtg.card`. Manasphere is an MTG app; a segment
-  for a game that may never exist would sit in every record forever. A second
-  TCG would be a fork sharing extracted libraries, not a branch of this
-  namespace.
+- Lexicon NSIDs are rooted at `app.manaweb.*` (from `manaweb.app`) and carry
+  **no game segment**: `app.manaweb.card`, not `app.manaweb.mtg.card`. Manaweb
+  is an MTG app; a segment for a game that may never exist would sit in every
+  record forever. A second TCG would be a fork sharing extracted libraries,
+  not a branch of this namespace.
 
 ## Firehose strategy (Phase 3, not v0)
 
 - Not needed for v0 (see Core architecture). Building a consumer earlier means
   writing it for records nobody has created yet.
 - When it lands: `wantedCollections` scoped to our own NSIDs, network-wide, for
-  published/explore decks — cheap, because only Manasphere users ever match
+  published/explore decks — cheap, because only Manaweb users ever match
   those collections.
 - Use Jetstream's time-based cursor for reconnects; keep indexing idempotent.
 - Jetstream doesn't verify signatures — it's a convenience relay, not the
@@ -155,7 +154,7 @@ backend:
 - **Deploy**: Pages for the app, R2 for the catalog, which **reverses the
   earlier `rust-embed` decision** — there is nothing to embed, and Bun never
   enters a Rust build at all. The binary writes a catalog directory
-  (`MANASPHERE_CATALOG`); uploading it is a separate step. Still a `justfile`
+  (`MANAWEB_CATALOG`); uploading it is a separate step. Still a `justfile`
   rather than `build.rs`, for the same reason as before.
 - **Local dev**: frontend runs its own dev server (`bun run dev`, hot reload)
   fetching the catalog from the binary's site directory. Nothing has to be
@@ -178,7 +177,7 @@ backend:
    Deck, list and snapshot precede their implementation deliberately: the
    design entry and collection entry interlock, so the join wants settling
    together.
-4. **Done** — the `manasphere` binary. Exports the content-addressed catalog
+4. **Done** — the `manaweb` binary. Exports the content-addressed catalog
    and its manifest from the cache, serves them for local development, and
    refreshes the cache weekly. Configured from the environment; `just serve`.
    The OAuth client metadata document is committed at

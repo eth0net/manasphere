@@ -5,7 +5,7 @@ use serde::Deserialize;
 use serde_json::value::RawValue;
 use uuid::Uuid;
 
-/// One printing, trimmed to what Manasphere queries.
+/// One printing, trimmed to what Manaweb queries.
 ///
 /// Absent fields are absent rather than empty, and not only on obscure cards:
 /// `reversible_card` carries no top-level `oracle_id`, `cmc`, `mana_cost`,

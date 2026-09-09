@@ -2,8 +2,8 @@
 
 use std::io::Cursor;
 
-use manasphere_core::{Error, cards, catalog, open_memory};
-use manasphere_scryfall::{BulkData, CardStream};
+use manaweb_core::{Error, cards, catalog, open_memory};
+use manaweb_scryfall::{BulkData, CardStream};
 use serde_json::Value;
 use sqlx::SqlitePool;
 
@@ -238,7 +238,7 @@ async fn the_manifest_names_files_that_sit_beside_it() {
     let pool = seeded_with(CARDS).await;
     let built = catalog::build(&pool).await.unwrap();
 
-    let dir = std::env::temp_dir().join(format!("manasphere-write-{}", std::process::id()));
+    let dir = std::env::temp_dir().join(format!("manaweb-write-{}", std::process::id()));
     built.write(&dir).await.unwrap();
 
     let manifest: Value =

@@ -1,7 +1,7 @@
 [package]
-name = "manasphere-api"
+name = "manaweb-api"
 version.workspace = true
-description = "Manasphere API routes and handlers."
+description = "Manaweb API routes and handlers."
 edition.workspace = true
 rust-version.workspace = true
 license.workspace = true
@@ -13,7 +13,7 @@ publish = false
 workspace = true
 
 [dependencies]
-manasphere-core.workspace = true
+manaweb-core.workspace = true
 
 axum.workspace = true
 serde.workspace = true

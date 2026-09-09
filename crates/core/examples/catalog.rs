@@ -3,16 +3,16 @@
 //! `docs/architecture.md`.
 //!
 //! ```sh
-//! cargo run --release -p manasphere-core --example catalog -- cards.db
+//! cargo run --release -p manaweb-core --example catalog -- cards.db
 //! # or with somewhere to write the files, to look at them:
-//! cargo run --release -p manasphere-core --example catalog -- cards.db out/
+//! cargo run --release -p manaweb-core --example catalog -- cards.db out/
 //! ```
 
 use std::env;
 use std::error::Error;
 use std::time::Instant;
 
-use manasphere_core::{catalog, open};
+use manaweb_core::{catalog, open};
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {

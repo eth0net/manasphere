@@ -1,6 +1,6 @@
 {
   "lexicon": 1,
-  "id": "app.manasphere.list",
+  "id": "app.manaweb.list",
   "defs": {
     "main": {
       "type": "record",
@@ -32,22 +32,22 @@
             "maxLength": 10000,
             "items": {
               "type": "ref",
-              "ref": "app.manasphere.defs#designEntry"
+              "ref": "app.manaweb.defs#designEntry"
             },
             "description": "Larger ceiling than a deck; a cube or bulk trade pile is a list."
           },
           "visibility": {
             "type": "ref",
-            "ref": "app.manasphere.defs#visibility"
+            "ref": "app.manaweb.defs#visibility"
           },
           "forkedFrom": {
             "type": "ref",
-            "ref": "app.manasphere.defs#forkRef"
+            "ref": "app.manaweb.defs#forkRef"
           },
           "recentChanges": {
             "type": "array",
             "maxLength": 100,
-            "items": { "type": "ref", "ref": "app.manasphere.defs#change" }
+            "items": { "type": "ref", "ref": "app.manaweb.defs#change" }
           },
           "createdAt": { "type": "string", "format": "datetime" },
           "updatedAt": { "type": "string", "format": "datetime" }

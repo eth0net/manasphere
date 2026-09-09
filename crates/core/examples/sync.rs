@@ -1,18 +1,18 @@
 //! Syncs the card cache from Scryfall's Default Cards file.
 //!
 //! ```sh
-//! cargo run --release -p manasphere-core --example sync -- cards.db
+//! cargo run --release -p manaweb-core --example sync -- cards.db
 //! # or from a copy already on disk, to leave a free service alone:
-//! cargo run --release -p manasphere-core --example sync -- cards.db default-cards.jsonl.gz
+//! cargo run --release -p manaweb-core --example sync -- cards.db default-cards.jsonl.gz
 //! ```
 
 use std::env;
 use std::error::Error;
 use std::time::Instant;
 
-use manasphere_core::cards::{self, Search};
-use manasphere_core::open;
-use manasphere_scryfall::{BulkKind, CardStream, Client};
+use manaweb_core::cards::{self, Search};
+use manaweb_core::open;
+use manaweb_scryfall::{BulkKind, CardStream, Client};
 use tokio::fs::File;
 
 #[tokio::main]
@@ -22,7 +22,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let local = args.next();
 
     let pool = open(&db).await?;
-    let client = Client::new("Manasphere/0.1 (+https://manasphere.app)")?;
+    let client = Client::new("Manaweb/0.1 (+https://manaweb.app)")?;
 
     // The index is 3KB, so it's cheap even when the file is already on disk.
     let bulk = client.bulk_data(BulkKind::DefaultCards).await?;

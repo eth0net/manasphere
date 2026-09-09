@@ -1,14 +1,14 @@
 {
-  "client_id": "https://manasphere.app/oauth/client-metadata.json",
-  "client_name": "Manasphere",
-  "client_uri": "https://manasphere.app",
+  "client_id": "https://manaweb.app/oauth/client-metadata.json",
+  "client_name": "Manaweb",
+  "client_uri": "https://manaweb.app",
   "redirect_uris": [
-    "https://manasphere.app/oauth/callback",
-    "https://dev.manasphere.app/oauth/callback"
+    "https://manaweb.app/oauth/callback",
+    "https://dev.manaweb.app/oauth/callback"
   ],
   "grant_types": ["authorization_code", "refresh_token"],
   "response_types": ["code"],
-  "scope": "atproto repo:app.manasphere.card repo:app.manasphere.container repo:app.manasphere.deck repo:app.manasphere.list repo:app.manasphere.snapshot transition:generic",
+  "scope": "atproto repo:app.manaweb.card repo:app.manaweb.container repo:app.manaweb.deck repo:app.manaweb.list repo:app.manaweb.snapshot transition:generic",
   "token_endpoint_auth_method": "none",
   "application_type": "web",
   "dpop_bound_access_tokens": true

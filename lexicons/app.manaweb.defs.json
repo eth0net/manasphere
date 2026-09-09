@@ -1,6 +1,6 @@
 {
   "lexicon": 1,
-  "id": "app.manasphere.defs",
+  "id": "app.manaweb.defs",
   "description": "Shapes shared between designs — decks, lists and snapshots.",
   "defs": {
     "designEntry": {

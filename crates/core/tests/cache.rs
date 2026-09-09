@@ -6,9 +6,9 @@
 
 use std::io::Cursor;
 
-use manasphere_core::cards::{self, Search, SyncReport};
-use manasphere_core::{Error, open_memory};
-use manasphere_scryfall::{BulkData, CardStream};
+use manaweb_core::cards::{self, Search, SyncReport};
+use manaweb_core::{Error, open_memory};
+use manaweb_scryfall::{BulkData, CardStream};
 use sqlx::SqlitePool;
 
 const CARDS: &str = include_str!("fixtures/cards.jsonl");

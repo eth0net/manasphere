@@ -6,10 +6,10 @@ export function Licenses() {
   return (
     <Modal label="Licenses" trigger="link" title="Licenses">
       <dl>
-        <dt>Manasphere</dt>
+        <dt>Manaweb</dt>
         <dd>
           AGPL-3.0-only —{" "}
-          <a href="https://github.com/eth0net/manasphere">source</a>
+          <a href="https://github.com/eth0net/manaweb">source</a>
         </dd>
 
         <dt>Card names, text and mana symbols</dt>

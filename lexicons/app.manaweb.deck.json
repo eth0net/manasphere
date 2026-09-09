@@ -1,6 +1,6 @@
 {
   "lexicon": 1,
-  "id": "app.manasphere.deck",
+  "id": "app.manaweb.deck",
   "defs": {
     "main": {
       "type": "record",
@@ -53,7 +53,7 @@
             "maxLength": 1000,
             "items": {
               "type": "ref",
-              "ref": "app.manasphere.defs#designEntry"
+              "ref": "app.manaweb.defs#designEntry"
             },
             "description": "The design. Order is not meaningful."
           },
@@ -68,16 +68,16 @@
           },
           "visibility": {
             "type": "ref",
-            "ref": "app.manasphere.defs#visibility"
+            "ref": "app.manaweb.defs#visibility"
           },
           "forkedFrom": {
             "type": "ref",
-            "ref": "app.manasphere.defs#forkRef"
+            "ref": "app.manaweb.defs#forkRef"
           },
           "recentChanges": {
             "type": "array",
             "maxLength": 100,
-            "items": { "type": "ref", "ref": "app.manasphere.defs#change" },
+            "items": { "type": "ref", "ref": "app.manaweb.defs#change" },
             "description": "Recent edits, newest first. How many to keep is client policy."
           },
           "createdAt": { "type": "string", "format": "datetime" },

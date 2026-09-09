@@ -1,17 +1,17 @@
 # Lexicons
 
-atproto record schemas for Manasphere, rooted at `app.manasphere.*`. MIT rather
+atproto record schemas for Manaweb, rooted at `app.manaweb.*`. MIT rather
 than AGPL like the rest of the repo — schemas are shared vocabulary. See
 [LICENSE](LICENSE).
 
 | NSID | One record |
 |---|---|
-| `app.manasphere.card` | A card you own, in however many copies |
-| `app.manasphere.container` | A binder, box or deck box |
-| `app.manasphere.deck` | A design with deck metadata, contents embedded |
-| `app.manasphere.list` | A design without it — wishlist, trade pile, staging |
-| `app.manasphere.snapshot` | A complete named copy of a design |
-| `app.manasphere.defs` | Shapes shared between designs — no records |
+| `app.manaweb.card` | A card you own, in however many copies |
+| `app.manaweb.container` | A binder, box or deck box |
+| `app.manaweb.deck` | A design with deck metadata, contents embedded |
+| `app.manaweb.list` | A design without it — wishlist, trade pile, staging |
+| `app.manaweb.snapshot` | A complete named copy of a design |
+| `app.manaweb.defs` | Shapes shared between designs — no records |
 
 Deck, list and snapshot run ahead of their implementation; decks arrive in
 Phase 3. They stay freely changeable until records exist.

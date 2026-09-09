@@ -1,6 +1,6 @@
 {
   "lexicon": 1,
-  "id": "app.manasphere.snapshot",
+  "id": "app.manaweb.snapshot",
   "defs": {
     "main": {
       "type": "record",
@@ -30,7 +30,7 @@
             "maxLength": 10000,
             "items": {
               "type": "ref",
-              "ref": "app.manasphere.defs#designEntry"
+              "ref": "app.manaweb.defs#designEntry"
             },
             "description": "Complete contents, not a diff."
           },

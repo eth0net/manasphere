@@ -15,7 +15,7 @@ use axum::http::header::{CACHE_CONTROL, CONTENT_TYPE};
 use axum::http::{Method, StatusCode};
 use axum::response::{IntoResponse, Response};
 use axum::routing::get;
-use manasphere_core::cards;
+use manaweb_core::cards;
 use serde::Serialize;
 use sqlx::SqlitePool;
 use tower_http::cors::{Any, CorsLayer};
