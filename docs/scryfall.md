@@ -116,6 +116,16 @@ Bought onto an acquisition's `at`. `note` and `tags` between them give
 serialized numbers, misprints, alters and provenance a home without a typed
 field each.
 
+Only ManaBox's whole-collection export names a binder per row. A binder export
+and a list export carry the same sixteen columns with nothing distinguishing
+them, though one is cards you own in one container and the other references
+you may not own, so import asks which it is rather than sniffing the header.
+
+Import parses rather than splits: card names carry commas inside quotes, and
+nothing guarantees a line ending or rules out a leading BOM across five tools
+and the browsers and systems they run on. The fixtures are stored LF, and a
+test varies the ending rather than a second file carrying it.
+
 ### What you paid is not what it was worth
 
 ManaBox's `Purchase price` holds two different things. Left alone it fills in
