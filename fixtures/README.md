@@ -52,3 +52,22 @@ The invite code generates itself, so `PDS_INVITE_REQUIRED` costs nothing here.
 `goat pds admin account delete <did>` clears an account off the PDS, but its
 PLC entry stays public permanently — a DID can be tombstoned, never withdrawn.
 So keep the cast small and reuse it.
+
+## Resetting
+
+`pds.e0n.sh` announces itself to `https://bsky.network`, so an account here is
+an account on the public network: the relay carries whole repos, which means
+`app.manaweb.*` records ride the firehose alongside anything Bluesky reads.
+
+**Delete the accounts, then wipe the disk — never the other way round.**
+`goat pds admin account delete <did>` drops the repo and sequences an event
+saying so, which is what lets relays and AppViews let go of it. Wiping
+`pds_data` first skips that: the directory still points every DID at this
+server, which no longer holds their repos, so those reads start failing against
+a relay that believes otherwise. Reusing a DID afterwards is worse than
+orphaning it, because a repo whose revision restarts below what the relay
+already holds reads as a fork.
+
+Recreating an account is therefore a new DID and a new identity, not the same
+one back. `docs/atproto.md` covers what survives a reset and what a rotation
+key is for.

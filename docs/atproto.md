@@ -138,19 +138,19 @@ back rather than on holding a session. Measured against both servers
 primary target: it is what almost every self-hoster has and what `bsky.social`
 serves, and a client that works nowhere else still works for nearly everyone.
 
-**A second implementation is the cheap way to find a bug in our own
-assumptions.** Servers differ where OAuth actually bites, and the differences
-are invisible until something 403s. Tranquil earns its place for one reason in
-particular: it puts a consent screen in front of the user with each permission
-individually uncheckable, which is the only practical way to produce a partial
-grant on demand and prove the token-response gating above really fires.
+**A second implementation is still the cheap way to find a bug in our own
+assumptions**, because servers differ where OAuth bites and the difference is
+invisible until something 403s. Tranquil's per-permission consent screen was
+wanted to force a partial grant; this one grants what it is asked for, so that
+rig can wait until an implementation disagrees.
 
 **`rsky` is worth reading whether or not it is worth running.** It is the Rust
 one, so it is the implementation whose source we can work in, and its choices
 — Postgres over SQLite, S3-compatible blobs over local disk — are the ones a
-real deployment makes. `com.atproto.repo.importRepo` is unimplemented there,
-which is the same method the import ceiling above turns on, so a contribution
-and a thing we need to understand happen to coincide.
+real deployment makes. It implements `com.atproto.repo.importRepo` in full,
+streaming the car and verifying the diff, with its own size ceiling in
+`IMPORT_REPO_LIMIT`, so reading how it bounds an import is more use to us than
+anything we could contribute there.
 
 Writing our own is a project, not an exercise, and it competes for the time
 this one needs. Reading rsky buys the same understanding.
@@ -193,14 +193,58 @@ makes migration look frightening:
   signed-out root is the front page rather than a separate marketing site,
   because moving the app to a subdomain would move the `client_id` with it.
   Changeable, unlike the NSID root that shares its name, but not free.
-- **PDS** — a separate domain, deliberately. atproto's production guide wants
-  the PDS and the app on different registrable domains, since blobs served from
-  the PDS would otherwise share an origin with the app's OAuth and session
-  pages. Changing a PDS hostname once it has accounts is also genuinely hard
-  (per-account PLC rotation), so it wants settling early and leaving alone.
+- **PDS** — a separate domain, deliberately, and `mnwb.me` is it. atproto's
+  production guide wants the PDS and the app on different registrable domains,
+  since blobs served from the PDS would otherwise share an origin with the
+  app's OAuth and session pages. Moving a PDS hostname later costs one PLC
+  operation per account, which is an afternoon at our scale and a project at
+  someone else's, so it scales with how long it is left.
 
 OAuth `client_id` follows app hosting, so moving domains costs users one
 re-authorization. Unrelated to NSIDs.
+
+## What a PDS actually commits us to
+
+Less than it looks, and not where it looks. The DID is permanent; the endpoint
+and signing key it points at are one PLC operation from changing, so an
+implementation swap is a migration — the repo travels as a car file, and the
+retired signing key stays in the audit log keeping old commits verifiable.
+Neither server's choice of database enters it.
+
+**Swapping the software behind a settled name is an announcement, not an
+outage.** A sequence number is only a consumer's replay position, and
+correctness is answered per account: a break in a repository's commits marks
+that repository desynchronized and the consumer refetches its car, while a
+`#sync` event lets the new server assert each head rather than wait to be
+caught out. So the hostname can be permanent, which is what we want of it,
+since it is the `did:web`, the OAuth issuer and the name on every consent
+screen.
+
+**The lock-in is the rotation key.** Only a rotation key can sign a PLC
+operation, and a PDS holds one of its own that is the sole entry on every
+account it creates. Lose that key and the DIDs anchored to it are not hard to
+move, they are unmovable — nothing can ever update the document again. So it
+belongs in a password manager the moment a PDS is worth keeping accounts on,
+and an account worth keeping should carry a personal rotation key too, which
+PLC honors ahead of the server's.
+
+**A crawled PDS is public, and an uncrawled one is only quieter.** Dropping the
+crawler list keeps a host off relays, so nothing it holds reaches the firehose,
+but each account still registers in the public directory, whose log is
+append-only — a deleted one leaves a permanent record that it existed and
+where it lived. A directory of our own would erase even that, at
+the price of DIDs nothing else resolves — the browser client takes a
+`plcDirectoryUrl`, so such a rig is buildable and can only ever be a rig. An
+uncrawled host on the public directory keeps the sign-in ordinary, which is
+worth more.
+
+**So two hosts, not three.** One uncrawled, holding the cast in
+`fixtures/README.md` and wiped whenever it suits; one crawled, holding a
+personal account and the two or three long-lived ones that prove federation
+works. A third for staging would be crawled to be worth having, and a crawled
+host is indistinguishable from production to the network — it would spend the
+same public directory and the same firehose, protecting only our own disk,
+which separate accounts already do.
 
 ## Sharing
 
