@@ -186,8 +186,9 @@ backend:
    `web/public/oauth/client-metadata.json`, not generated.
 5. Web client: OAuth, reads from own PDS, local view in IndexedDB, writes back.
    Where the data model actually gets exercised.
-6. A dev CLI writing records with an app password, to seed fixtures without the
-   UI. Cheap, and useful forever.
+6. Fixture records seeding a dev account without the UI. `goat` is the atproto
+   CLI and already writes them from an app password, so what is left is a
+   directory of JSON and a `just` recipe rather than a program.
 
 Jetstream and the query API arrive with Phase 3 (Explore), not before. That
 API is XRPC, and nothing else is — see `docs/atproto.md`.
