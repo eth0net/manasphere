@@ -3,3 +3,24 @@
 export const CATALOG = import.meta.env.DEV
   ? `http://${location.hostname}:8080`
   : "https://static.manaweb.app";
+
+// A browser has no DNS, so resolving a handle needs a service that has.
+export const RESOLVER = "https://pds.e0n.sh";
+
+// A `repo:` scope names one exact collection, so this list is the enumeration.
+export const COLLECTIONS = [
+  "app.manaweb.card",
+  "app.manaweb.container",
+  "app.manaweb.deck",
+  "app.manaweb.list",
+  "app.manaweb.snapshot",
+] as const;
+
+// Held equal to the committed document by a test: PAR refuses what it omits.
+export const SCOPES = [
+  "atproto",
+  ...COLLECTIONS.map((collection) => `repo:${collection}`),
+  "transition:generic",
+];
+
+export const CLIENT_ID = "https://manaweb.app/oauth/client-metadata.json";
