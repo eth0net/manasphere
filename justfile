@@ -59,15 +59,16 @@ lexicons:
 web:
     cd web && bun install && bun run check
 
-# export the catalog and serve it for local development
+# Both default to loopback; pass 0.0.0.0 to either to reach it from a phone.
+[doc('export the catalog and serve it for local development')]
 [group('dev')]
-serve:
-    MANAWEB_DATABASE={{ db }} cargo run -p manaweb-appview
+serve bind="127.0.0.1:8080":
+    MANAWEB_DATABASE={{ db }} MANAWEB_BIND={{ bind }} cargo run -p manaweb-appview
 
-# the client's dev server, fetching the catalog from `just serve`
+[doc("the client's dev server, fetching the catalog from `just serve`")]
 [group('dev')]
-client:
-    cd web && bun install && bun run dev
+client host="127.0.0.1":
+    cd web && bun install && bun run dev --host {{ host }}
 
 # sync the card cache from Scryfall (~78MB), or from a file already on disk
 [group('dev')]
