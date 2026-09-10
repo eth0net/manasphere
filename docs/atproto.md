@@ -56,7 +56,9 @@ the reference provider defaults it on (`atprotoLoopbackClientMetadata`), so it
 works unless a PDS explicitly disables it.
 
 `client_id` must be exactly `http://localhost` — no port, no path, and
-`127.0.0.1` is rejected there. Redirect URIs go in query parameters on the
+`127.0.0.1` is rejected there. Its `scope` parameter has to name `atproto` or
+the id itself is refused: `ATProto Loopback ClientID must include "atproto"
+scope`. Redirect URIs go in query parameters on the
 `client_id`, defaulting to `http://127.0.0.1/` and `http://[::1]/`, and ports
 aren't matched, so a shifting dev-server port is fine.
 
@@ -113,13 +115,45 @@ adding a scope, which costs every existing user a fresh consent. All five are
 declared now though v0 writes two; `tools/lexicon-check` holds the document
 and the schemas to each other for that reason.
 
-Which to request is read, not retried: the authorization server's metadata
-carries `scopes_supported`. And **a scope the server doesn't support fails
-silently** — RFC 6749 lets it ignore part of a request, so consent succeeds
-and the first write 403s. Gate writes on the `scope` in the token response
-rather than on having a session. Asking for something the *document* doesn't
-declare fails loudly instead, as `invalid_scope` before the user sees
-anything.
+Which to request is a design choice, not something to read off the server.
+`scopes_supported` carries `atproto` and the transitional scopes and nothing
+else, on both `pds.e0n.sh` and `bsky.social`, yet both accept the `repo:`
+family neither of them enumerates.
+
+**The client metadata document is the gate before consent.** A request for a
+scope the document leaves out is refused at PAR: `Scope
+"repo:app.manaweb.deck" is not declared in the client metadata`. Nothing else
+is refused there, and `bogus:nonsense` and `repo:*` each come back with a
+`request_uri`.
+
+**The token response is the gate after consent, and the only one.** RFC 6749
+lets a server drop part of a scope request, so consent succeeds, the session
+looks whole, and the first write 403s. Gate writes on the `scope` that comes
+back rather than on holding a session. Measured against both servers
+2026-09-10.
+
+## Which PDS to develop against
+
+`pds.e0n.sh` on sautekh runs the reference implementation, so that is the
+primary target: it is what almost every self-hoster has and what `bsky.social`
+serves, and a client that works nowhere else still works for nearly everyone.
+
+**A second implementation is the cheap way to find a bug in our own
+assumptions.** Servers differ where OAuth actually bites, and the differences
+are invisible until something 403s. Tranquil earns its place for one reason in
+particular: it puts a consent screen in front of the user with each permission
+individually uncheckable, which is the only practical way to produce a partial
+grant on demand and prove the token-response gating above really fires.
+
+**`rsky` is worth reading whether or not it is worth running.** It is the Rust
+one, so it is the implementation whose source we can work in, and its choices
+— Postgres over SQLite, S3-compatible blobs over local disk — are the ones a
+real deployment makes. `com.atproto.repo.importRepo` is unimplemented there,
+which is the same method the import ceiling above turns on, so a contribution
+and a thing we need to understand happen to coincide.
+
+Writing our own is a project, not an exercise, and it competes for the time
+this one needs. Reading rsky buys the same understanding.
 
 ## The query API is XRPC, everything else is plain HTTP
 
