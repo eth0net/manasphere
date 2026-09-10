@@ -14,7 +14,7 @@ a path it exercises rather than for itself.
 
 | handle | did | role it plays |
 |---|---|---|
-| `liliana.mnwb.me` | | primary author: a real collection and published decks |
+| `liliana.mnwb.me` | `did:plc:rk2rhs4yvucutbrd2aoi5gci` | primary author: a real collection and published decks |
 | `jace.mnwb.me` | | forks everything, so `forkedFrom` is always exercised |
 | `nissa.mnwb.me` | | hoards. Thousands of entries, for the import ceiling |
 | `squee.mnwb.me` | | writes and deletes constantly, and comes back regardless |
