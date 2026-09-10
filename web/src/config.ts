@@ -20,7 +20,6 @@ export const COLLECTIONS = [
 export const SCOPES = [
   "atproto",
   ...COLLECTIONS.map((collection) => `repo:${collection}`),
-  "transition:generic",
 ];
 
 export const CLIENT_ID = "https://manaweb.app/oauth/client-metadata.json";

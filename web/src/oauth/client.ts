@@ -8,6 +8,7 @@ function loopbackId(): string {
     location.hostname === "localhost" ? "127.0.0.1" : location.hostname;
   const params = new URLSearchParams({
     redirect_uri: `http://${host}:${location.port}/`,
+    // Part of the id, so editing it strands a code issued to the old one.
     scope: SCOPES.join(" "),
   });
   return `http://localhost?${params}`;

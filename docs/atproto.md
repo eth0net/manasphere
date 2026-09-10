@@ -104,10 +104,20 @@ callbacks are declared, production and `dev` —
 
 Scopes are granular — `repo:app.manaweb.card` and one per other record type
 we write, which is all a client that writes only its own records needs. Reads
-need no scope, records being publicly fetchable. `transition:generic` is listed
-too, because a PDS without permissions support rejects the granular ones
-outright; it grants app-password-level access to the whole repo, so the client
-asks for it last and the entry comes out once granular scopes can be assumed.
+need no scope, records being publicly fetchable.
+
+**They are granted, not merely accepted.** Signing in against `pds.e0n.sh` on
+2026-09-10 returned every one of the six requested, and its consent screen
+itemizes them: one row per collection, with create, update and delete marked
+separately. So a request for all five costs one legible screen rather than a
+vague one, which is the argument for asking once at sign-in instead of staging
+the scopes behind the features that need them.
+
+`transition:generic` is the fallback for a server that refuses the granular
+form, and is not requested until one does. It grants app-password-level access
+to the whole repo, which that screen renders as managing posts, likes and
+follows and reading private preferences — everything, to write five
+collections.
 
 **`repo:` takes `*` or an exact NSID, and nothing in between.** So the
 enumeration is the only granular form, and adding a record type later means
@@ -119,6 +129,12 @@ Which to request is a design choice, not something to read off the server.
 `scopes_supported` carries `atproto` and the transitional scopes and nothing
 else, on both `pds.e0n.sh` and `bsky.social`, yet both accept the `repo:`
 family neither of them enumerates.
+
+A loopback client has no document to gate: the server builds one from the id,
+which carries the redirect and the scope as query parameters. So the scope is
+part of the client's identity in development, and editing it mid-flow answers
+the exchange with `invalid_grant` — the code was issued to a client that no
+longer exists.
 
 **The client metadata document is the gate before consent.** A request for a
 scope the document leaves out is refused at PAR: `Scope
