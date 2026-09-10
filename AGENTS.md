@@ -58,10 +58,10 @@ backend:
   Indexing only earns its place when we need what the client can't do locally —
   Explore, cross-user aggregates.
 - **Our database is disposable.** Everything in it derives from Scryfall or
-  from records we can re-read from PDSes; tokens live in the browser. Two
-  exceptions arrive with Phase 3: the list of known DIDs we subscribe to, and
-  activity history only ever seen over the firehose (Jetstream's replay window
-  is bounded).
+  from records we can re-read from PDSes; tokens live in the browser. One
+  exception arrives with Phase 3: activity history only ever seen over the
+  firehose, a record written and deleted between two reads leaving nothing in
+  the repo to find.
 - Bias toward flexibility in the DB/AppView layer; be conservative about
   lexicon NSIDs and required fields, since those are costly to change once real
   records exist in other people's repos.
@@ -138,6 +138,8 @@ backend:
 - When it lands: `wantedCollections` scoped to our own NSIDs, network-wide, for
   published/explore decks — cheap, because only Manaweb users ever match
   those collections.
+- **Discovery needs no DID list.** A network-wide collection filter means
+  anyone writing one of our records announces themselves.
 - Use Jetstream's time-based cursor for reconnects; keep indexing idempotent.
 - Jetstream doesn't verify signatures — it's a convenience relay, not the
   authenticated firehose. A real trust assumption once we're indexing arbitrary

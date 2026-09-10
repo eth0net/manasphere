@@ -119,11 +119,18 @@ a card's rules say is its own table, for the reasons in
 which otherwise sits at roughly the size of the database again.
 
 **Phase 3's non-derivable state gets a file of its own.** Everything in the
-cache derives from Scryfall, which is what makes it disposable; two things
-arriving with Explore won't, being the known-DID list and activity only ever
-seen over the firehose. Put those in a second SQLite file rather than adding
-tables to the cache — free now, a schema split later — so any durability they
-need applies to a small file rather than an 81MB derived one.
+cache derives from Scryfall, which is what makes it disposable; one thing
+arriving with Explore won't, being activity we only ever saw go past. A record
+written and deleted between two of our reads leaves nothing behind to re-read,
+and the replay window bounds how far a reconnect recovers. Put that in a second
+SQLite file rather than adding tables to the cache — free now, a schema split
+later — so any durability it needs applies to a small file rather than an 81MB
+derived one.
+
+The accounts we index are not that. A collection filter is network-wide, so a
+DID arrives with the first record it writes; a table of them is an index for
+backfill, rebuilt by the next thing each account writes, rather than the
+subscription's input.
 
 What that durability is stays open. An R2 object snapshot is the cheap answer
 and we upload the catalog there anyway. Litestream is the obvious tool and a
