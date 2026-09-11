@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { CardRow } from "./CardRow";
 import type { Catalog } from "./catalog";
+import { useOwning } from "./collection/context";
 
 // What an empty search box shows. Browsing 988 sets answers "what did this set
 // hold" without a query, which paging 37,564 cards blindly would not.
@@ -34,6 +35,12 @@ function Sets({
   onFilter: (filter: string) => void;
   onSet: (code: string) => void;
 }) {
+  const owning = useOwning();
+  const owned = useMemo(
+    () => catalog.bySet(owning?.printings ?? []),
+    [catalog, owning?.printings],
+  );
+
   const sets = useMemo(() => {
     const wanted = filter.trim().toLowerCase();
     return (
@@ -72,7 +79,19 @@ function Sets({
             </button>
             <span>
               {set[0].toUpperCase()} · {set[3].slice(0, 4)} ·{" "}
-              {printings.toLocaleString()} printing{printings === 1 ? "" : "s"}
+              {/* What is owned against what exists, once either is worth
+                  comparing: an empty collection would read 0 of everything. */}
+              {owned.get(set[0]) ? (
+                <>
+                  {owned.get(set[0])?.toLocaleString()} of{" "}
+                  {printings.toLocaleString()}
+                </>
+              ) : (
+                <>
+                  {printings.toLocaleString()} printing
+                  {printings === 1 ? "" : "s"}
+                </>
+              )}
             </span>
           </li>
         ))}

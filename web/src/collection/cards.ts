@@ -22,6 +22,8 @@ export type Collection = {
   owned: (scryfallId: string) => number;
   // Copies filed in one place, or unfiled where that is null.
   copies: (container: string | null) => number;
+  // Every printing owned, for asking the catalog where they all sit.
+  printings: string[];
   total: number;
   add: (scryfallId: string, finish: string) => Promise<void>;
 };
@@ -126,7 +128,17 @@ export function useCollection(
     [session, destination, held],
   );
 
-  return { ready, error, owned, copies, total: totals.total, add };
+  const printings = useMemo(() => [...totals.prints.keys()], [totals]);
+
+  return {
+    ready,
+    error,
+    owned,
+    copies,
+    printings,
+    total: totals.total,
+    add,
+  };
 }
 
 function reason(failure: unknown): string {

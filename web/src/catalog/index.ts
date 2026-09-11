@@ -346,6 +346,21 @@ export class Catalog {
     };
   }
 
+  // How many of the given printings each set holds, by code. One scan rather
+  // than an index: a collection is small and this is asked once per change.
+  bySet(ids: Iterable<string>): Map<string, number> {
+    const wanted = ids instanceof Set ? ids : new Set(ids);
+    const tally = new Map<string, number>();
+    if (wanted.size === 0) return tally;
+
+    for (const row of this.#prints.prints) {
+      if (!wanted.has(row[0])) continue;
+      const set = this.#prints.sets[row[1]] as SetRow;
+      tally.set(set[0], (tally.get(set[0]) ?? 0) + 1);
+    }
+    return tally;
+  }
+
   // Every set with a paper printing, and how many each holds.
   sets(): { set: SetRow; printings: number }[] {
     return this.#prints.sets.map((set, at) => ({
