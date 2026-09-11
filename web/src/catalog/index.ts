@@ -361,6 +361,23 @@ export class Catalog {
     return tally;
   }
 
+  // The card and printing behind each of the given ids, in one scan as above.
+  resolve(ids: Iterable<string>): Map<string, { card: Card; print: Print }> {
+    const wanted = ids instanceof Set ? ids : new Set(ids);
+    const found = new Map<string, { card: Card; print: Print }>();
+    if (wanted.size === 0) return found;
+
+    for (let at = 0; at < this.#prints.prints.length; at++) {
+      const row = this.#prints.prints[at] as PrintRow;
+      if (!wanted.has(row[0])) continue;
+      found.set(row[0], {
+        card: this.card(this.#owner(at)),
+        print: this.#print(row),
+      });
+    }
+    return found;
+  }
+
   // Every set with a paper printing, and how many each holds.
   sets(): { set: SetRow; printings: number }[] {
     return this.#prints.sets.map((set, at) => ({

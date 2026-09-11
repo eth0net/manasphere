@@ -9,12 +9,19 @@ export const TABS = [
 
 export const HOME = "/cards";
 
-// Which tab a path belongs to, drill-downs included. An OAuth callback and a
-// cold load of `/` are both on their way here too.
+// A tab and everything it drills down into.
+function within(path: string, at: string): boolean {
+  return path === at || path.startsWith(`${at}/`);
+}
+
+// Whether the bar can mark this path. An OAuth callback and a bare `/` can't,
+// and are the only paths anything rewrites.
+export function known(path: string): boolean {
+  return TABS.some(({ path: at }) => within(path, at));
+}
+
 export function tab(path: string): string {
-  const found = TABS.find(
-    ({ path: at }) => path === at || path.startsWith(`${at}/`),
-  );
+  const found = TABS.find(({ path: at }) => within(path, at));
   return found ? found.path : HOME;
 }
 

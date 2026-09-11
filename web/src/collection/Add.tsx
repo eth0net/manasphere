@@ -12,14 +12,29 @@ export function Add({ print }: { print: Print }) {
     <>
       <span className="owned">{have > 0 ? `${have} owned` : ""}</span>
       {print.finishes.map((finish) => (
-        <button
-          key={finish}
-          type="button"
-          className="plus"
-          onClick={() => void owning.add(print.id, finish)}
-        >
-          {finish === "nonfoil" ? "+" : `+ ${words(finish)}`}
-        </button>
+        <span className="adjust" key={finish}>
+          {/* The minus reaches the stack the plus writes to, so copies filed
+            anywhere else leave it present and disabled. */}
+          {owning.owned(print.id, finish) > 0 && (
+            <button
+              type="button"
+              className="step"
+              aria-label={`One fewer ${words(finish)}`}
+              disabled={owning.filed(print.id, finish) === 0}
+              onClick={() => void owning.take(print.id, finish)}
+            >
+              −
+            </button>
+          )}
+          <button
+            type="button"
+            className="step"
+            aria-label={`Add ${words(finish)}`}
+            onClick={() => void owning.add(print.id, finish)}
+          >
+            {finish === "nonfoil" ? "+" : `+ ${words(finish)}`}
+          </button>
+        </span>
       ))}
     </>
   );

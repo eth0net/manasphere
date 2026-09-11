@@ -17,6 +17,10 @@ export type Container = Fields<Main>;
 // The lexicon's `knownValues`, which it calls cosmetic, so the order is ours.
 export const KINDS = ["binder", "box", "deckBox", "shelf", "other"];
 
+// Nothing picked leaves `container` off the record, which the lexicon reads as
+// unfiled, so this is a name and a route segment but never a record.
+export const UNFILED = { name: "Collection", key: "unfiled" };
+
 export type Containers = {
   held: Held<Container>[];
   error?: string;

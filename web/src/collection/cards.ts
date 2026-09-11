@@ -1,49 +1,136 @@
 import type { OAuthSession } from "@atproto/oauth-client-browser";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import type { Main } from "../lexicons/app/manaweb/card";
+import type { Acquisition, Main } from "../lexicons/app/manaweb/card";
 import {
   create,
   type Fields,
   type Held,
   list,
   put,
+  remove,
   rkey,
 } from "../oauth/repo";
 
 export const CARD = "app.manaweb.card";
 
+// The lexicon's `knownValues`, best grade first.
+export const CONDITIONS = [
+  "mint",
+  "nearMint",
+  "excellent",
+  "good",
+  "lightPlayed",
+  "played",
+  "poor",
+];
+
 // Copies you own, however many of them are identical.
 export type Owned = Fields<Main>;
+
+// One record, and where the repo holds it.
+export type Stack = Held<Owned>;
+
+// What an amendment comes to: the writes it needs, and the stacks left after.
+export type Change = {
+  writes: { uri: string; value: Owned }[];
+  drops: string[];
+  stacks: Stack[];
+};
 
 export type Holdings = {
   ready: boolean;
   error?: string;
-  // Copies of one printing, wherever they sit and whatever grade they carry.
-  owned: (scryfallId: string) => number;
+  // Copies of one printing, wherever they sit and whatever grade they carry,
+  // narrowed to one finish where that is given.
+  owned: (scryfallId: string, finish?: string) => number;
   // Copies filed in one place, or unfiled where that is null.
   copies: (container: string | null) => number;
+  // Copies of one printing and finish where adds are going.
+  filed: (scryfallId: string, finish: string) => number;
+  // Every stack, for listing one place's contents.
+  stacks: Stack[];
   // Every printing owned, for asking the catalog where they all sit.
   printings: string[];
   total: number;
   add: (scryfallId: string, finish: string) => Promise<void>;
+  take: (scryfallId: string, finish: string) => Promise<void>;
+  amend: (uri: string, changes: Partial<Owned>) => Promise<void>;
 };
 
-// Two stacks of one printing differ by grade and by where they sit, so all
-// four fields identify a stack, and an add matching all four is an increment.
-export function stack(one: Owned): string {
+// The lexicon's ceilings on one stack: lots recorded, and copies held.
+const LOTS = 64;
+const COPIES = 10000;
+
+// Everything said about these copies in particular, which is what makes two
+// stacks of one printing different things rather than one count split in two.
+export function stack(
+  one: Pick<Owned, "scryfallId" | "finish"> & Partial<Owned>,
+): string {
   return JSON.stringify([
     one.scryfallId,
     one.finish,
     one.condition ?? null,
     one.container ?? null,
+    one.proxy ?? false,
+    [...(one.tags ?? [])].sort(),
+    one.note ?? null,
   ]);
+}
+
+// One amendment against the stacks as they stand, which a merge needs whole:
+// a change landing on another stack's identity joins it.
+export function apply(
+  stacks: Stack[],
+  uri: string,
+  changes: Partial<Owned>,
+  at: string,
+): Change {
+  const one = stacks.find((other) => other.uri === uri);
+  if (!one) return { writes: [], drops: [], stacks };
+
+  const next = clean({ ...one.value, ...changes, updatedAt: at });
+  const rest = stacks.filter((other) => other.uri !== uri);
+
+  if (next.quantity < 1) return { writes: [], drops: [uri], stacks: rest };
+
+  const into = rest.find((other) => stack(other.value) === stack(next));
+  // Both histories survive, and a merge crossing either ceiling is not made.
+  const lots = [
+    ...(into?.value.acquisitions ?? []),
+    ...(next.acquisitions ?? []),
+  ];
+  const copies = (into?.value.quantity ?? 0) + next.quantity;
+  if (into && lots.length <= LOTS && copies <= COPIES) {
+    const merged = clean({
+      ...into.value,
+      quantity: copies,
+      ...(lots.length > 0 ? { acquisitions: lots } : {}),
+      createdAt: earlier(into.value.createdAt, next.createdAt),
+      updatedAt: at,
+    });
+    return {
+      writes: [{ uri: into.uri, value: merged }],
+      drops: [uri],
+      stacks: rest.map((other) =>
+        other.uri === into.uri ? { ...other, value: merged } : other,
+      ),
+    };
+  }
+
+  return {
+    writes: [{ uri, value: next }],
+    drops: [],
+    stacks: stacks.map((other) =>
+      other.uri === uri ? { ...other, value: next } : other,
+    ),
+  };
 }
 
 export function useCollection(
   session: OAuthSession | null,
   destination: string | null,
 ): Holdings {
-  const [held, setHeld] = useState<Held<Owned>[]>([]);
+  const [held, setHeld] = useState<Stack[]>([]);
   const [ready, setReady] = useState(false);
   const [error, setError] = useState<string>();
 
@@ -69,20 +156,26 @@ export function useCollection(
 
   const totals = useMemo(() => {
     const prints = new Map<string, number>();
+    const finishes = new Map<string, number>();
     const places = new Map<string | null, number>();
     let total = 0;
     for (const { value } of held) {
       const print = value.scryfallId;
+      const finish = JSON.stringify([print, value.finish]);
       const place = value.container ?? null;
       prints.set(print, (prints.get(print) ?? 0) + value.quantity);
+      finishes.set(finish, (finishes.get(finish) ?? 0) + value.quantity);
       places.set(place, (places.get(place) ?? 0) + value.quantity);
       total += value.quantity;
     }
-    return { prints, places, total };
+    return { prints, finishes, places, total };
   }, [held]);
 
   const owned = useCallback(
-    (scryfallId: string) => totals.prints.get(scryfallId) ?? 0,
+    (scryfallId: string, finish?: string) =>
+      (finish === undefined
+        ? totals.prints.get(scryfallId)
+        : totals.finishes.get(JSON.stringify([scryfallId, finish]))) ?? 0,
     [totals],
   );
 
@@ -91,41 +184,94 @@ export function useCollection(
     [totals],
   );
 
-  const add = useCallback(
-    async (scryfallId: string, finish: string) => {
-      if (!session) return;
-      const now = new Date().toISOString();
-      const wanted: Owned = {
-        scryfallId,
-        finish,
-        quantity: 1,
-        createdAt: now,
-        ...(destination ? { container: destination } : {}),
-      };
-      const already = held.find((one) => stack(one.value) === stack(wanted));
+  // What a plus or a minus reaches: an ungraded stack of this printing where
+  // adds are going, rather than every copy owned.
+  const target = useCallback(
+    (scryfallId: string, finish: string) =>
+      held.find(
+        (one) =>
+          stack(one.value) ===
+          stack({
+            scryfallId,
+            finish,
+            ...(destination ? { container: destination } : {}),
+          }),
+      ),
+    [held, destination],
+  );
 
+  const filed = useCallback(
+    (scryfallId: string, finish: string) =>
+      target(scryfallId, finish)?.value.quantity ?? 0,
+    [target],
+  );
+
+  // The local view is the writes this client just made, so nothing is re-read
+  // to learn what it already decided.
+  const run = useCallback(
+    async (change: Change) => {
+      if (!session) return;
       try {
-        if (already) {
-          const value: Owned = {
-            ...already.value,
-            quantity: already.value.quantity + 1,
-            updatedAt: now,
-          };
-          const written = await put(session, CARD, rkey(already.uri), value);
-          setHeld((was) =>
-            was.map((one) =>
-              one.uri === already.uri ? { ...written, value } : one,
-            ),
-          );
-        } else {
-          const written = await create(session, CARD, wanted);
-          setHeld((was) => [...was, { ...written, value: wanted }]);
+        const written = new Map<string, string>();
+        for (const { uri, value } of change.writes) {
+          const { cid } = await put(session, CARD, rkey(uri), value);
+          written.set(uri, cid);
         }
+        for (const uri of change.drops) {
+          await remove(session, CARD, rkey(uri));
+        }
+        setHeld(
+          change.stacks.map((one) => {
+            const cid = written.get(one.uri);
+            return cid ? { ...one, cid } : one;
+          }),
+        );
       } catch (failure) {
         setError(reason(failure));
       }
     },
-    [session, destination, held],
+    [session],
+  );
+
+  const amend = useCallback(
+    async (uri: string, changes: Partial<Owned>) => {
+      await run(apply(held, uri, changes, new Date().toISOString()));
+    },
+    [held, run],
+  );
+
+  const add = useCallback(
+    async (scryfallId: string, finish: string) => {
+      if (!session) return;
+      const already = target(scryfallId, finish);
+      if (already) {
+        await amend(already.uri, { quantity: already.value.quantity + 1 });
+        return;
+      }
+
+      const record = clean({
+        scryfallId,
+        finish,
+        quantity: 1,
+        createdAt: new Date().toISOString(),
+        ...(destination ? { container: destination } : {}),
+      });
+      try {
+        const written = await create(session, CARD, record);
+        setHeld((was) => [...was, { ...written, value: record }]);
+      } catch (failure) {
+        setError(reason(failure));
+      }
+    },
+    [session, destination, target, amend],
+  );
+
+  const take = useCallback(
+    async (scryfallId: string, finish: string) => {
+      const one = target(scryfallId, finish);
+      if (one) await amend(one.uri, { quantity: one.value.quantity - 1 });
+    },
+    [target, amend],
   );
 
   const printings = useMemo(() => [...totals.prints.keys()], [totals]);
@@ -135,10 +281,45 @@ export function useCollection(
     error,
     owned,
     copies,
+    filed,
+    stacks: held,
     printings,
     total: totals.total,
     add,
+    take,
+    amend,
   };
+}
+
+// Timestamps carry whatever offset wrote them, so they compare as instants.
+function earlier(one: string, other: string): string {
+  return Date.parse(one) <= Date.parse(other) ? one : other;
+}
+
+// The shape a record is written in: tags as the set they are, history in date
+// order, and undefined dropped, which is absence only once JSON has run.
+function clean(one: Owned): Owned {
+  const kept = Object.entries(one).filter(([, value]) => value !== undefined);
+  const record = Object.fromEntries(kept) as Owned;
+  if (record.tags) record.tags = [...new Set(record.tags)].sort();
+  if (record.acquisitions) {
+    record.acquisitions = [...record.acquisitions].sort(byDate);
+  }
+  return record;
+}
+
+// Subtracting two undated lots gives NaN, and a sort is stable only where its
+// comparison is an ordering.
+function byDate(one: Acquisition, other: Acquisition): number {
+  const first = when(one);
+  const second = when(other);
+  return first === second ? 0 : first < second ? -1 : 1;
+}
+
+// Undated lots sort first, and so does anything that won't parse.
+function when(lot: Acquisition): number {
+  const at = lot.at ? Date.parse(lot.at) : Number.NaN;
+  return Number.isNaN(at) ? Number.NEGATIVE_INFINITY : at;
 }
 
 function reason(failure: unknown): string {

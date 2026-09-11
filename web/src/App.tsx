@@ -10,7 +10,7 @@ import { CATALOG } from "./config";
 import { Footer } from "./Footer";
 import { Nav } from "./Nav";
 import { useSession } from "./oauth/useSession";
-import { replace, tab, usePath } from "./router";
+import { HOME, known, replace, tab, usePath } from "./router";
 import { Search } from "./Search";
 import { Soon } from "./Soon";
 import { useCatalog } from "./useCatalog";
@@ -30,8 +30,8 @@ export function App() {
   // A bare `/` and the OAuth callback both land somewhere the bar can't mark,
   // and the callback has to be read out of the address before it is rewritten.
   useEffect(() => {
-    if (account.state.status !== "restoring") replace(here);
-  }, [account.state.status, here]);
+    if (account.state.status !== "restoring" && !known(path)) replace(HOME);
+  }, [account.state.status, path]);
 
   return (
     <main>
@@ -74,7 +74,12 @@ export function App() {
 
           {here === "/collection" &&
             (signedIn ? (
-              <Collection containers={containers} owning={collection} />
+              <Collection
+                catalog={load.status === "ready" ? load.catalog : null}
+                containers={containers}
+                owning={collection}
+                path={path}
+              />
             ) : (
               <p className="quiet">Sign in to see what you own.</p>
             ))}

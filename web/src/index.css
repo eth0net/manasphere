@@ -29,6 +29,8 @@ body {
 /* An app shell: the page itself doesn't scroll, the list inside it does. Two
    scrolls put the footer below the fold, which is why it looked half gone.
    `dvh` rather than `vh` so mobile browser chrome doesn't cut it off. */
+/* todo(eth0net): what a tablet and a desktop do with the width this leaves
+   over — see the open question in `docs/data-model.md`. */
 main {
   box-sizing: border-box;
   display: flex;
@@ -112,11 +114,11 @@ nav a.here {
   padding: 0.5rem 0;
 }
 
-.breakdown li > span:first-child {
+.breakdown li > :first-child {
   flex: 1;
 }
 
-.breakdown li > span:last-child {
+.breakdown li > :last-child {
   font-variant-numeric: tabular-nums;
 }
 
@@ -222,7 +224,7 @@ input[type="search"] {
   margin-top: 0.375rem;
 }
 
-.plus {
+.step {
   flex: none;
   font-size: 0.8125rem;
   padding: 0.0625rem 0.375rem;
@@ -234,6 +236,18 @@ input[type="search"] {
 
 .owned:empty {
   display: none;
+}
+
+/* A minus, a count and a plus read as one control, so they sit closer to each
+   other than to whatever follows. */
+.adjust {
+  align-items: baseline;
+  display: inline-flex;
+  gap: 0.125rem;
+}
+
+.adjust .owned {
+  padding: 0 0.25rem;
 }
 
 .results h2 {
@@ -452,6 +466,20 @@ button:disabled {
 
 .places .link {
   text-align: left;
+}
+
+/* A label above what it names, since a select is wide and a row of two would
+   wrap to one anyway. */
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  margin: 0 0 0.75rem;
+}
+
+.field label {
+  color: var(--quiet);
+  font-size: 0.8125rem;
 }
 
 /* A printing is chosen by looking at it, so the list leading with art needs

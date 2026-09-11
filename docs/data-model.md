@@ -138,6 +138,31 @@ Proxies fill a slot and are worth nothing, so a deck's build and its value
 disagree deliberately.
 
 
+### Editing a stack
+
+A stack is identified by everything the record says about those copies in
+particular — printing, finish, grade, place, whether they are proxies, their
+tags and their note. Regrading a card or moving it is therefore a change of
+identity rather than a field edit, and where the amended stack matches one that
+already exists the two become one record: two entries claiming the same
+identity would each be a partial answer to "how many". A signed copy and a
+plain one at the same grade stay two stacks, being two different things.
+
+Quantity and the timestamps are the only fields outside identity, and
+acquisitions the one thing that combines: they are what the copies cost, so
+they join rather than one side being picked. A merge past a ceiling the lexicon
+sets is not made at all, leaving two stacks where one would have done and
+losing nothing. A stack taken to zero is deleted, never kept at zero.
+
+Tags are a set, written sorted and deduplicated and read without relying on
+either, since another client's records arrive however that client wrote them.
+Acquisitions are written in date order, undated lots first and keeping the
+order they arrived in: a merge concatenates two histories, so anything else
+would order a stack's past by which container was emptied first. Which side's
+undated lots lead is still the concatenation's doing, and no field in the
+record can settle it.
+
+
 ### Signed out, signed in, and on this device only
 
 Three states, because reading needs no account and only writing needs
@@ -328,6 +353,14 @@ first, then any-printing, extras as the complement.
 
 **Container references.** How an entry points at its container, and what
 happens to entries when a container is deleted, is unspecified.
+
+**One column at every width.** The shell is a phone's measure centered in
+whatever viewport it gets, so a desktop and an iPad both show a narrow strip
+with a tab bar under it. What the spare width becomes is unsettled — a rail in
+place of the bar, a wider measure, or a list in more than one column — and the
+three interact, so it wants looking at across phone, tablet and desktop
+together rather than a breakpoint at a time. Marked `todo(eth0net)` in
+`web/src/index.css`.
 
 **Set completion counts printings, and some collectors count treatments.**
 A foil and a nonfoil of one printing share a Scryfall id, so counting ids
