@@ -1,15 +1,14 @@
 import { words } from "../catalog";
-import type { Collection as Owned } from "./cards";
+import type { Holdings } from "./cards";
 import type { Containers } from "./containers";
 
-// What you own and where it sits. A container is a drill-down from here, never
-// a tab of its own — see `docs/data-model.md`.
+// What you own and where it sits.
 export function Collection({
   containers,
   owning,
 }: {
   containers: Containers;
-  owning: Owned;
+  owning: Holdings;
 }) {
   const unfiled = owning.copies(null);
   const empty = owning.total === 0 && containers.held.length === 0;

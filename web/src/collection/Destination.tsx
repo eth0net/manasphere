@@ -7,7 +7,6 @@ import { type Containers, KINDS } from "./containers";
 // unfiled, so this name is a label and never a record.
 const UNFILED = "Collection";
 
-// Where adds land, named wherever cards are being added from.
 export function Destination({
   containers,
   chosen,

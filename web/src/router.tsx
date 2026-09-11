@@ -57,8 +57,7 @@ export function Link({
       href={to}
       className={className}
       onClick={(event) => {
-        // A modified click means a new tab or a download, which the browser
-        // does better than we would.
+        // A modified click is the browser's to answer, not ours.
         if (event.metaKey || event.ctrlKey || event.shiftKey) return;
         event.preventDefault();
         navigate(to);

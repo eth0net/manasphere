@@ -1,8 +1,7 @@
 import { type Print, words } from "../catalog";
 import { useOwning } from "./context";
 
-// A finish is part of what a stack is, so it is pressed with the printing
-// rather than asked afterward.
+// A finish is part of what a stack is, so it is pressed with the printing.
 export function Add({ print }: { print: Print }) {
   const owning = useOwning();
   if (!owning) return null;

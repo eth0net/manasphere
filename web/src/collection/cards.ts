@@ -15,7 +15,7 @@ export const CARD = "app.manaweb.card";
 // Copies you own, however many of them are identical.
 export type Owned = Fields<Main>;
 
-export type Collection = {
+export type Holdings = {
   ready: boolean;
   error?: string;
   // Copies of one printing, wherever they sit and whatever grade they carry.
@@ -42,7 +42,7 @@ export function stack(one: Owned): string {
 export function useCollection(
   session: OAuthSession | null,
   destination: string | null,
-): Collection {
+): Holdings {
   const [held, setHeld] = useState<Held<Owned>[]>([]);
   const [ready, setReady] = useState(false);
   const [error, setError] = useState<string>();

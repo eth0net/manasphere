@@ -4,7 +4,7 @@ import { Add } from "./collection/Add";
 import { Modal } from "./Modal";
 import { describe, hasArt, Language } from "./Printing";
 
-// Art is what a printing is chosen by, which a line of text cannot carry.
+// Art is what a printing is chosen by.
 export function Printings({
   card,
   catalog,
@@ -39,8 +39,8 @@ function Gallery({
 }) {
   const [chosen, choose] = useState<Print | null>(start ?? null);
 
-  // The card at reading size, which is also the whole rules text and the only
-  // copy of it: the catalog carries none — see `docs/scryfall.md`.
+  // The image is the rules text: the catalog carries none, per
+  // `docs/scryfall.md`.
   if (chosen) {
     return (
       <div className="detail">

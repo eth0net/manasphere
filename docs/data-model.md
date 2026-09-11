@@ -113,7 +113,6 @@ fork copies something to edit, which `forkedFrom` already carries. One
 collection rather than two, because each one is another `repo:` scope on the
 consent screen.
 
-
 ### Counts and value
 
 Three numbers rather than one with a toggle, because they answer different
