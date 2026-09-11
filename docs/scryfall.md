@@ -248,8 +248,8 @@ header the way finishes are, so a flag added later needs no change in a client.
 the top level. Inside the fold it costs nothing, so it stays.
 
 Left out: oracle text, keywords, legality, frame and border color, and a
-printing's own release date — the set carries one. Oracle text alone is 5.4MB
-uncompressed, which is the third file when decks arrive.
+printing's own release date — the set carries one. Oracle text is the third file
+when decks arrive.
 
 ## What to cache, and when
 
@@ -258,12 +258,16 @@ which search and collection tracking cannot work without. Everything past it
 is opt-in, because the point of a catalog on the device is that someone chose
 to hold it.
 
-| part | brotli | when |
-|---|---|---|
-| cards, prints | 3.99MB | always |
-| text — oracle text, keywords | ~1.5MB | opt-in: offline viewing, text search |
-| names, per language | ~300KB each | opt-in: chosen at onboarding |
-| art | unbounded | opt-in, per card, the service worker's |
+| part | raw | brotli | when |
+|---|---|---|---|
+| cards, prints | 12.48MB | 3.99MB | always |
+| text — oracle text, keywords | 5.4MB | ~1.5MB | opt-in: offline viewing, text search |
+| names, per language | | ~300KB each | opt-in: chosen at onboarding |
+| art | unbounded | unbounded | opt-in, per card, the service worker's |
+
+Raw matters as much as brotli: one is the download and the other is what the
+device keeps. Text is a third again on the wire and not far off half on disk,
+which is small in absolute terms and still a choice worth offering.
 
 **cards and prints are one part in two files**, always fetched together:
 printings are grouped by card in the cards file's order, so either alone is
