@@ -49,6 +49,7 @@ export function App() {
         <p className="destination">
           <Destination
             containers={containers}
+            owning={collection}
             chosen={chosen}
             onChoose={choose}
           />

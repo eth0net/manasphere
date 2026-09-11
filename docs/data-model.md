@@ -162,6 +162,10 @@ would order a stack's past by which container was emptied first. Which side's
 undated lots lead is still the concatenation's doing, and no field in the
 record can settle it.
 
+Deleting a container unfiles what it held. A container names a place and not
+ownership, so losing the place cannot lose the cards — they go back to the
+unfiled pile, merging into whatever stack is already there.
+
 
 ### Signed out, signed in, and on this device only
 
@@ -350,9 +354,6 @@ states are per copy rather than per entry, and an "any printing" entry competes
 with a print-bound one for the same stack. Greedy matching gives different
 answers by iteration order. Needs a defined resolution order: print-bound
 first, then any-printing, extras as the complement.
-
-**Container references.** How an entry points at its container, and what
-happens to entries when a container is deleted, is unspecified.
 
 **One column at every width.** The shell is a phone's measure centered in
 whatever viewport it gets, so a desktop and an iPad both show a narrow strip

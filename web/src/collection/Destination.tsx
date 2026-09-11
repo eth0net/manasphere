@@ -1,18 +1,17 @@
 import { useState } from "react";
 import { words } from "../catalog";
 import { Modal } from "../Modal";
-import { type Containers, KINDS } from "./containers";
-
-// Nothing picked leaves `container` off the record, which the lexicon reads as
-// unfiled, so this name is a label and never a record.
-const UNFILED = "Collection";
+import type { Holdings } from "./cards";
+import { type Containers, KINDS, UNFILED } from "./containers";
 
 export function Destination({
   containers,
+  owning,
   chosen,
   onChoose,
 }: {
   containers: Containers;
+  owning: Holdings;
   chosen: string | null;
   onChoose: (uri: string | null) => void;
 }) {
@@ -23,7 +22,7 @@ export function Destination({
     <Modal
       trigger="summary"
       title="Where cards go"
-      label={`→ ${here?.value.name ?? UNFILED}`}
+      label={`→ ${here?.value.name ?? UNFILED.name}`}
     >
       <ul className="places">
         <li>
@@ -33,7 +32,7 @@ export function Destination({
             aria-current={chosen === null}
             onClick={() => onChoose(null)}
           >
-            {UNFILED}
+            {UNFILED.name}
           </button>
           <span>everything not filed anywhere</span>
         </li>
@@ -48,11 +47,14 @@ export function Destination({
               {one.value.name}
             </button>
             {one.value.kind && <span>{words(one.value.kind)}</span>}
+            {/* The cards outlive the record naming them, so they are put
+              back to unfiled before it goes. */}
             <button
               type="button"
-              onClick={() => {
+              onClick={async () => {
                 if (one.uri === chosen) onChoose(null);
-                void drop(one.uri);
+                await owning.unfile(one.uri);
+                await drop(one.uri);
               }}
             >
               Remove

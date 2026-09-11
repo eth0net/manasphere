@@ -55,6 +55,9 @@ export type Holdings = {
   add: (scryfallId: string, finish: string) => Promise<void>;
   take: (scryfallId: string, finish: string) => Promise<void>;
   amend: (uri: string, changes: Partial<Owned>) => Promise<void>;
+  // Cards outlive the container naming them, so a place is emptied before it
+  // is deleted.
+  unfile: (container: string) => Promise<void>;
 };
 
 // The lexicon's ceilings on one stack: lots recorded, and copies held.
@@ -123,6 +126,19 @@ export function apply(
     stacks: stacks.map((other) =>
       other.uri === uri ? { ...other, value: next } : other,
     ),
+  };
+}
+
+// Two changes in order, so a record written and then dropped is only dropped.
+export function then(first: Change, second: Change): Change {
+  const writes = new Map(
+    [...first.writes, ...second.writes].map((one) => [one.uri, one]),
+  );
+  for (const uri of second.drops) writes.delete(uri);
+  return {
+    writes: [...writes.values()],
+    drops: [...first.drops, ...second.drops],
+    stacks: second.stacks,
   };
 }
 
@@ -274,6 +290,24 @@ export function useCollection(
     [target, amend],
   );
 
+  const unfile = useCallback(
+    async (container: string) => {
+      const at = new Date().toISOString();
+      let change: Change = { writes: [], drops: [], stacks: held };
+      for (const one of held) {
+        if (one.value.container !== container) continue;
+        change = then(
+          change,
+          apply(change.stacks, one.uri, { container: undefined }, at),
+        );
+      }
+      if (change.writes.length > 0 || change.drops.length > 0) {
+        await run(change);
+      }
+    },
+    [held, run],
+  );
+
   const printings = useMemo(() => [...totals.prints.keys()], [totals]);
 
   return {
@@ -288,6 +322,7 @@ export function useCollection(
     add,
     take,
     amend,
+    unfile,
   };
 }
 

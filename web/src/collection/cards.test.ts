@@ -1,5 +1,12 @@
 import { expect, test } from "bun:test";
-import { apply, type Owned, type Stack, stack } from "./cards";
+import {
+  apply,
+  type Change,
+  type Owned,
+  type Stack,
+  stack,
+  then,
+} from "./cards";
 
 const copy: Owned = {
   scryfallId: "0000aaaa-0000-4000-8000-00000000000a",
@@ -9,8 +16,10 @@ const copy: Owned = {
 };
 
 const BOX = "at://did:plc:x/app.manaweb.container/box";
+const SHELF = "at://did:plc:x/app.manaweb.container/shelf";
 const NOW = "2026-09-12T00:00:00.000Z";
 const JAN = "2026-01-01T00:00:00.000Z";
+const MAR = "2026-03-01T00:00:00.000Z";
 const JUN = "2026-06-01T00:00:00.000Z";
 
 function stacks(...values: Owned[]): Stack[] {
@@ -175,6 +184,33 @@ test("undated lots keep the order they are already in", () => {
   ]);
 });
 
+test("two containers emptied in either order leave one history", () => {
+  const [first, second, loose] = stacks(
+    { ...copy, container: BOX, acquisitions: [{ quantity: 1, at: JUN }] },
+    { ...copy, container: SHELF, acquisitions: [{ quantity: 1, at: JAN }] },
+    { ...copy, acquisitions: [{ quantity: 1, at: MAR }] },
+  ) as [Stack, Stack, Stack];
+
+  const held = [first, second, loose];
+  const history = (order: Stack[]) => {
+    let change: Change = { writes: [], drops: [], stacks: held };
+    for (const one of order) {
+      change = then(
+        change,
+        apply(change.stacks, one.uri, { container: undefined }, NOW),
+      );
+    }
+    return change.stacks[0]?.value.acquisitions;
+  };
+
+  expect(history([first, second])).toEqual([
+    { quantity: 1, at: JAN },
+    { quantity: 1, at: MAR },
+    { quantity: 1, at: JUN },
+  ]);
+  expect(history([second, first])).toEqual(history([first, second]));
+});
+
 test("a grade of its own stays its own stack", () => {
   const [filed, loose] = stacks(
     { ...copy, container: BOX },
@@ -191,4 +227,40 @@ test("a grade of its own stays its own stack", () => {
   expect(change.drops).toEqual([]);
   expect(change.stacks).toHaveLength(2);
   expect(change.writes[0]?.value).not.toHaveProperty("container");
+});
+
+test("emptying a container folds every stack in it into one change", () => {
+  const [first, second, loose] = stacks(
+    { ...copy, quantity: 2, container: BOX },
+    { ...copy, quantity: 1, condition: "played", container: BOX },
+    { ...copy, quantity: 3 },
+  ) as [Stack, Stack, Stack];
+
+  let change: Change = {
+    writes: [],
+    drops: [],
+    stacks: [first, second, loose],
+  };
+  for (const one of [first, second]) {
+    change = then(
+      change,
+      apply(change.stacks, one.uri, { container: undefined }, NOW),
+    );
+  }
+
+  // The ungraded copies join what was already loose; the played one can't.
+  expect(change.drops).toEqual([first.uri]);
+  expect(change.writes.map((one) => one.uri)).toEqual([loose.uri, second.uri]);
+  expect(change.stacks).toHaveLength(2);
+});
+
+test("a record written then dropped is only dropped", () => {
+  const [one] = stacks(copy) as [Stack];
+  const change = then(
+    { writes: [{ uri: one.uri, value: one.value }], drops: [], stacks: [one] },
+    { writes: [], drops: [one.uri], stacks: [] },
+  );
+
+  expect(change.writes).toEqual([]);
+  expect(change.drops).toEqual([one.uri]);
 });
