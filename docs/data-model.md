@@ -72,6 +72,48 @@ The model makes decks, binders and lists the same thing. The UI should hide it.
   answer. Location tracking for those who want it, not a tax on those who
   don't.
 
+### Where things live
+
+Four tabs, and a fifth once there is anything social to put in it:
+
+    Cards · Collection · Decks · Lists    (· Feed, from Phase 3)
+
+Five is the ceiling, and what keeps it there is that **a tab is an object
+type, while segments say whose something is and what it is for**. Decks and
+Lists each carry Mine and Saved, `purpose` segments a list further, and Feed
+carries Following and Everyone, which is where exploring other people's decks
+lives. Whether you wrote a deck is a filter, not a different place to look.
+
+Containers are a drill-down inside Collection rather than a peer of it, and a
+deck is one inside Decks: depth belongs to the view, breadth to the bar.
+Following happens on a profile, the roster sits in yours, and the feed is what
+it produces, so none of that is a destination either. Profile, settings and app
+news live in the account control.
+
+**Scan is an action, not a place.** It is scoped by wherever it is pressed —
+into this container, into this deck — and in Cards it is a camera in the search
+field, scanning and typing being one intent by two inputs.
+
+Routes settle before the bar does, because a shared deck link outlives any
+arrangement of tabs. `/cards`, `/collection/:container`, `/decks/:deck` and
+`/lists/:list` are the commitment; their order along the bottom is not.
+
+### What following and saving still need
+
+Neither has a lexicon, and both are Phase 3.
+
+**A follow of ours, not Bluesky's.** The OAuth grant is `repo:app.manaweb.*`
+and nothing more, so writing `app.bsky.graph.follow` would mean asking for
+Bluesky access again — see [`atproto.md`](atproto.md). It is the right answer
+socially too, since following someone for their decks should not follow them
+anywhere else. Reading that graph to seed suggestions costs nothing.
+
+**One save record covering both.** A save points at something to find again; a
+fork copies something to edit, which `forkedFrom` already carries. One
+collection rather than two, because each one is another `repo:` scope on the
+consent screen.
+
+
 ### Counts and value
 
 Three numbers rather than one with a toggle, because they answer different
