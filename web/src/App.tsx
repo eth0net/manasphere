@@ -1,14 +1,18 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Account } from "./Account";
 import { CatalogStatus, CatalogUpdate } from "./CatalogStatus";
+import { Collection } from "./collection/Collection";
 import { useCollection } from "./collection/cards";
 import { useContainers } from "./collection/containers";
 import { Owning } from "./collection/context";
 import { Destination } from "./collection/Destination";
 import { CATALOG } from "./config";
 import { Footer } from "./Footer";
+import { Nav } from "./Nav";
 import { useSession } from "./oauth/useSession";
+import { replace, tab, usePath } from "./router";
 import { Search } from "./Search";
+import { Soon } from "./Soon";
 import { useCatalog } from "./useCatalog";
 
 export function App() {
@@ -20,6 +24,14 @@ export function App() {
   const containers = useContainers(signedIn);
   const [chosen, choose] = useState<string | null>(null);
   const collection = useCollection(signedIn, chosen);
+  const path = usePath();
+  const here = tab(path);
+
+  // A bare `/` and the OAuth callback both land somewhere the bar can't mark,
+  // and the callback has to be read out of the address before it is rewritten.
+  useEffect(() => {
+    if (account.state.status !== "restoring") replace(here);
+  }, [account.state.status, here]);
 
   return (
     <main>
@@ -33,7 +45,7 @@ export function App() {
 
       <CatalogUpdate status={status} />
 
-      {signedIn && (
+      {signedIn && here === "/cards" && (
         <p className="destination">
           <Destination
             containers={containers}
@@ -48,15 +60,31 @@ export function App() {
 
       {/* Signed out leaves this null, which is what hides every add button. */}
       <Owning value={collection.ready ? collection : null}>
-        {load.status === "loading" && <p>{load.step}…</p>}
-        {load.status === "ready" && <Search catalog={load.catalog} />}
-        {load.status === "failed" && (
-          <p>
-            No catalog at <code>{CATALOG}</code>: {load.error}
-          </p>
-        )}
+        <div className="view">
+          {here === "/cards" &&
+            (load.status === "ready" ? (
+              <Search catalog={load.catalog} />
+            ) : load.status === "loading" ? (
+              <p>{load.step}…</p>
+            ) : (
+              <p>
+                No catalog at <code>{CATALOG}</code>: {load.error}
+              </p>
+            ))}
+
+          {here === "/collection" &&
+            (signedIn ? (
+              <Collection containers={containers} owning={collection} />
+            ) : (
+              <p className="quiet">Sign in to see what you own.</p>
+            ))}
+
+          {here === "/decks" && <Soon what="Decks" />}
+          {here === "/lists" && <Soon what="Lists" />}
+        </div>
       </Owning>
 
+      <Nav path={here} />
       <Footer />
     </main>
   );

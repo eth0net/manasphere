@@ -20,6 +20,9 @@ export type Collection = {
   error?: string;
   // Copies of one printing, wherever they sit and whatever grade they carry.
   owned: (scryfallId: string) => number;
+  // Copies filed in one place, or unfiled where that is null.
+  copies: (container: string | null) => number;
+  total: number;
   add: (scryfallId: string, finish: string) => Promise<void>;
 };
 
@@ -63,18 +66,26 @@ export function useCollection(
   }, [session]);
 
   const totals = useMemo(() => {
-    const sums = new Map<string, number>();
+    const prints = new Map<string, number>();
+    const places = new Map<string | null, number>();
+    let total = 0;
     for (const { value } of held) {
-      sums.set(
-        value.scryfallId,
-        (sums.get(value.scryfallId) ?? 0) + value.quantity,
-      );
+      const print = value.scryfallId;
+      const place = value.container ?? null;
+      prints.set(print, (prints.get(print) ?? 0) + value.quantity);
+      places.set(place, (places.get(place) ?? 0) + value.quantity);
+      total += value.quantity;
     }
-    return sums;
+    return { prints, places, total };
   }, [held]);
 
   const owned = useCallback(
-    (scryfallId: string) => totals.get(scryfallId) ?? 0,
+    (scryfallId: string) => totals.prints.get(scryfallId) ?? 0,
+    [totals],
+  );
+
+  const copies = useCallback(
+    (container: string | null) => totals.places.get(container) ?? 0,
     [totals],
   );
 
@@ -115,7 +126,7 @@ export function useCollection(
     [session, destination, held],
   );
 
-  return { ready, error, owned, add };
+  return { ready, error, owned, copies, total: totals.total, add };
 }
 
 function reason(failure: unknown): string {
