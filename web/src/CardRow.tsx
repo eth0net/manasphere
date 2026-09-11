@@ -1,4 +1,3 @@
-import { useState } from "react";
 import {
   appLanguage,
   type Card,
@@ -8,13 +7,10 @@ import {
   type Print,
   words,
 } from "./catalog";
-import type { Collection } from "./collection/cards";
-import { useOwning } from "./collection/context";
+import { Add } from "./collection/Add";
 import { Mana } from "./Mana";
-import { describe, Language } from "./Printing";
-
-// Nothing renders behind these, so a thumbnail would be a broken image.
-const NO_IMAGE = new Set(["missing", "placeholder"]);
+import { describe, hasArt, Language } from "./Printing";
+import { Printings } from "./Printings";
 
 // Card names are read in the app's language, not the printing's. A setting of
 // its own once there is somewhere to put it — see `docs/search.md`.
@@ -31,15 +27,13 @@ export function CardRow({
   print: Print | undefined;
   catalog: Catalog;
 }) {
-  const [open, setOpen] = useState(false);
-  const owning = useOwning();
   const tags = card.kind === "card" ? card.flags : [card.kind, ...card.flags];
   const name = cardName(card.name, print, APP);
 
   return (
     <li>
       <div className="card">
-        {print && !NO_IMAGE.has(print.imageStatus) && (
+        {print && hasArt(print) && (
           <img src={image(print.id, "small")} alt="" loading="lazy" />
         )}
         <div>
@@ -63,56 +57,14 @@ export function CardRow({
           </p>
           {print && <p className="print">{describe(print)}</p>}
           <div className="meta">
-            {print && owning && <Add print={print} owning={owning} />}
-            <p className="print">
-              <button
-                type="button"
-                className="link"
-                onClick={() => setOpen(!open)}
-              >
-                {card.printings} printing{card.printings === 1 ? "" : "s"}
-              </button>
-              {card.edhrecRank &&
-                ` · EDHREC #${card.edhrecRank.toLocaleString()}`}
-            </p>
+            {print && <Add print={print} />}
+            <Printings card={card} catalog={catalog} name={name.text} />
+            {card.edhrecRank && (
+              <span>EDHREC #{card.edhrecRank.toLocaleString()}</span>
+            )}
           </div>
         </div>
       </div>
-
-      {open && (
-        <ul className="printings">
-          {catalog.prints(card.index).map((one) => (
-            <li key={one.id}>
-              <span>
-                {one.lang !== "en" && <Language code={one.lang} />}
-                {describe(one)}
-              </span>
-              {owning && <Add print={one} owning={owning} />}
-            </li>
-          ))}
-        </ul>
-      )}
     </li>
-  );
-}
-
-// A finish is part of what a stack is, so it is chosen in the same press as
-// the printing rather than asked afterward.
-function Add({ print, owning }: { print: Print; owning: Collection }) {
-  const have = owning.owned(print.id);
-
-  return (
-    <p className="add">
-      {print.finishes.map((finish) => (
-        <button
-          key={finish}
-          type="button"
-          onClick={() => void owning.add(print.id, finish)}
-        >
-          {finish === "nonfoil" ? "+" : `+ ${words(finish)}`}
-        </button>
-      ))}
-      {have > 0 && <span>{have} owned</span>}
-    </p>
   );
 }

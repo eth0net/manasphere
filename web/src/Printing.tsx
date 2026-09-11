@@ -8,6 +8,13 @@ export function Language({ code }: { code: string }) {
   );
 }
 
+// Nothing renders behind these, so a thumbnail would be a broken image.
+const NO_IMAGE = new Set(["missing", "placeholder"]);
+
+export function hasArt(print: Print): boolean {
+  return !NO_IMAGE.has(print.imageStatus);
+}
+
 // One printing, as much of it as it has. Language is a tag of its own.
 export function describe(print: Print) {
   return [
