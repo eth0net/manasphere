@@ -27,6 +27,14 @@ what a field is, never why — measured against Bluesky, WhiteWind and Leaflet,
 real ones run to a median of 48 characters and Leaflet describes no fields at
 all. Reasoning belongs in `docs/`.
 
+Deferred work is marked at the line it affects. `todo(<the thing>)` waits on
+something that does not exist yet — `todo(settings)`, say — and carries its
+reasoning in the matching doc's open questions. `todo(eth0net)` names whoever
+owns it, where that is a person rather than the code. A bare `todo:` is a fix
+nothing blocks and nobody owns, so prefer giving it an owner over leaving it —
+searching for one form finds a person's work, another a feature's, and `todo`
+alone finds every one of them before a release.
+
 Spelling is American, matching the vocabulary the code already uses. `typos`
 enforces it; `typos.toml` says what it skips.
 

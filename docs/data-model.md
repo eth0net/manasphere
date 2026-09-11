@@ -329,3 +329,10 @@ first, then any-printing, extras as the complement.
 
 **Container references.** How an entry points at its container, and what
 happens to entries when a container is deleted, is unspecified.
+
+**Set completion counts printings, and some collectors count treatments.**
+A foil and a nonfoil of one printing share a Scryfall id, so counting ids
+answers "which cards from this set do I have" and never "have I got both
+finishes". The second is a larger denominator — printings times the finishes
+each offers — and it is a preference rather than a correction, so it waits for
+somewhere to keep preferences. Marked `todo(settings)` where it is displayed.

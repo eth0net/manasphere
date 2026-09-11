@@ -80,7 +80,8 @@ function Sets({
             <span>
               {set[0].toUpperCase()} · {set[3].slice(0, 4)} ·{" "}
               {/* What is owned against what exists, once either is worth
-                  comparing: an empty collection would read 0 of everything. */}
+                  comparing: an empty collection would read 0 of everything.
+                  todo(settings): counting treatments as well as printings. */}
               {owned.get(set[0]) ? (
                 <>
                   {owned.get(set[0])?.toLocaleString()} of{" "}
