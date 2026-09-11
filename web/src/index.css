@@ -376,3 +376,27 @@ button:disabled {
 .places .link {
   text-align: left;
 }
+
+/* Under the printing it adds, so a press is unambiguous about which. */
+.add {
+  align-items: baseline;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.375rem;
+  margin: 0.375rem 0 0;
+}
+
+.add button {
+  font-size: 0.8125rem;
+  padding: 0.0625rem 0.375rem;
+}
+
+.add span {
+  color: var(--quiet);
+  font-size: 0.8125rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.printings .add {
+  margin-bottom: 0.25rem;
+}

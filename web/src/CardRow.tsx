@@ -8,6 +8,8 @@ import {
   type Print,
   words,
 } from "./catalog";
+import type { Collection } from "./collection/cards";
+import { useOwning } from "./collection/context";
 import { Mana } from "./Mana";
 import { describe, Language } from "./Printing";
 
@@ -30,6 +32,7 @@ export function CardRow({
   catalog: Catalog;
 }) {
   const [open, setOpen] = useState(false);
+  const owning = useOwning();
   const tags = card.kind === "card" ? card.flags : [card.kind, ...card.flags];
   const name = cardName(card.name, print, APP);
 
@@ -56,6 +59,7 @@ export function CardRow({
           {card.manaCost && <Mana cost={card.manaCost} />}
         </p>
         {print && <p className="print">{describe(print)}</p>}
+        {print && owning && <Add print={print} owning={owning} />}
         <p className="print">
           <button
             type="button"
@@ -72,11 +76,33 @@ export function CardRow({
               <li key={one.id}>
                 {one.lang !== "en" && <Language code={one.lang} />}
                 {describe(one)}
+                {owning && <Add print={one} owning={owning} />}
               </li>
             ))}
           </ul>
         )}
       </div>
     </li>
+  );
+}
+
+// A finish is part of what a stack is, so it is chosen in the same press as
+// the printing rather than asked afterward.
+function Add({ print, owning }: { print: Print; owning: Collection }) {
+  const have = owning.owned(print.id);
+
+  return (
+    <p className="add">
+      {print.finishes.map((finish) => (
+        <button
+          key={finish}
+          type="button"
+          onClick={() => void owning.add(print.id, finish)}
+        >
+          + {words(finish)}
+        </button>
+      ))}
+      {have > 0 && <span>{have} owned</span>}
+    </p>
   );
 }

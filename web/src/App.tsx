@@ -1,7 +1,9 @@
 import { useState } from "react";
 import { Account } from "./Account";
 import { CatalogStatus, CatalogUpdate } from "./CatalogStatus";
+import { useCollection } from "./collection/cards";
 import { useContainers } from "./collection/containers";
+import { Owning } from "./collection/context";
 import { Destination } from "./collection/Destination";
 import { CATALOG } from "./config";
 import { Footer } from "./Footer";
@@ -17,6 +19,7 @@ export function App() {
     account.state.status === "in" ? account.state.session : null;
   const containers = useContainers(signedIn);
   const [chosen, choose] = useState<string | null>(null);
+  const collection = useCollection(signedIn, chosen);
 
   return (
     <main>
@@ -37,16 +40,22 @@ export function App() {
             chosen={chosen}
             onChoose={choose}
           />
+          {collection.error && (
+            <span className="warn">{collection.error}</span>
+          )}
         </p>
       )}
 
-      {load.status === "loading" && <p>{load.step}…</p>}
-      {load.status === "ready" && <Search catalog={load.catalog} />}
-      {load.status === "failed" && (
-        <p>
-          No catalog at <code>{CATALOG}</code>: {load.error}
-        </p>
-      )}
+      {/* Signed out leaves this null, which is what hides every add button. */}
+      <Owning value={collection.ready ? collection : null}>
+        {load.status === "loading" && <p>{load.step}…</p>}
+        {load.status === "ready" && <Search catalog={load.catalog} />}
+        {load.status === "failed" && (
+          <p>
+            No catalog at <code>{CATALOG}</code>: {load.error}
+          </p>
+        )}
+      </Owning>
 
       <Footer />
     </main>
