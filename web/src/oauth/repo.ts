@@ -1,5 +1,11 @@
 import type { OAuthSession } from "@atproto/oauth-client-browser";
 
+// A record as it is written: `$type` is added below, and a plain Omit would
+// drop every named field past the open index signature a lexicon carries.
+export type Fields<T> = {
+  [K in keyof T as K extends "$type" ? never : K]: T[K];
+};
+
 // A record as the repo holds it: the value, plus what addresses and versions it.
 export type Held<T> = { uri: string; cid: string; value: T };
 

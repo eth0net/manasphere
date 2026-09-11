@@ -68,6 +68,10 @@ jobs:
         working-directory: tools/lexicon-check
       - run: bun run check
         working-directory: tools/lexicon-check
+      - run: bun install --frozen-lockfile
+        working-directory: tools/lex-gen
+      - run: bun run gen --check
+        working-directory: tools/lex-gen
 
   prose:
     name: prose

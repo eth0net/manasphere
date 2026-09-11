@@ -1,19 +1,19 @@
 import type { OAuthSession } from "@atproto/oauth-client-browser";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { create, type Held, list, put, rkey } from "../oauth/repo";
+import type { Main } from "../lexicons/app/manaweb/card";
+import {
+  create,
+  type Fields,
+  type Held,
+  list,
+  put,
+  rkey,
+} from "../oauth/repo";
 
 export const CARD = "app.manaweb.card";
 
 // Copies you own, however many of them are identical.
-export type Owned = {
-  scryfallId: string;
-  finish: string;
-  quantity: number;
-  condition?: string;
-  container?: string;
-  createdAt: string;
-  updatedAt?: string;
-};
+export type Owned = Fields<Main>;
 
 export type Collection = {
   ready: boolean;

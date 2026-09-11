@@ -93,8 +93,9 @@ backend:
 - **The client artifact is two files under one version**: cards, and paper
   printings grouped by card in the cards file's order. Written uncompressed
   for the CDN to compress. Positional rows with integer codes for
-  low-cardinality columns, and no oracle text or legality — collection
-  tracking needs neither.
+  low-cardinality columns. The base pair carries no oracle text or legality;
+  text is an opt-in part, because offline card viewing wants it and collection
+  tracking does not.
 - Price cache: **separate table**, keyed by `scryfall_id` + source + timestamp.
   Not built — nothing writes it before Phase 2, so the schema would be dead.
   Note there is **no prices bulk file** — prices exist only as fields inside

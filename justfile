@@ -53,6 +53,12 @@ prose:
 [group('checks')]
 lexicons:
     cd tools/lexicon-check && bun install && bun run check
+    cd tools/lex-gen && bun install && bun run gen --check
+
+# rewrite the record types the client reads records with (needs bun)
+[group('dev')]
+lexicon-types:
+    cd tools/lex-gen && bun install && bun run gen
 
 # lint, typecheck, test and build the client (needs bun)
 [group('checks')]

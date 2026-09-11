@@ -1,15 +1,18 @@
 import type { OAuthSession } from "@atproto/oauth-client-browser";
 import { useCallback, useEffect, useState } from "react";
-import { create, type Held, list, remove, rkey } from "../oauth/repo";
+import type { Main } from "../lexicons/app/manaweb/container";
+import {
+  create,
+  type Fields,
+  type Held,
+  list,
+  remove,
+  rkey,
+} from "../oauth/repo";
 
 export const CONTAINER = "app.manaweb.container";
 
-export type Container = {
-  name: string;
-  kind?: string;
-  note?: string;
-  createdAt: string;
-};
+export type Container = Fields<Main>;
 
 // The lexicon's `knownValues`, which it calls cosmetic, so the order is ours.
 export const KINDS = ["binder", "box", "deckBox", "shelf", "other"];
