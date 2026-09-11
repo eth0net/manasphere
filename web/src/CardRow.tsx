@@ -34,7 +34,16 @@ export function CardRow({
     <li>
       <div className="card">
         {print && hasArt(print) && (
-          <img src={image(print.id, "small")} alt="" loading="lazy" />
+          <Printings
+            card={card}
+            catalog={catalog}
+            name={name.text}
+            start={print}
+            trigger="art"
+            label={
+              <img src={image(print.id, "small")} alt="" loading="lazy" />
+            }
+          />
         )}
         <div>
           <h2>
@@ -58,7 +67,15 @@ export function CardRow({
           {print && <p className="print">{describe(print)}</p>}
           <div className="meta">
             {print && <Add print={print} />}
-            <Printings card={card} catalog={catalog} name={name.text} />
+            <Printings
+              card={card}
+              catalog={catalog}
+              name={name.text}
+              trigger="link"
+              label={`${card.printings} printing${
+                card.printings === 1 ? "" : "s"
+              }`}
+            />
             {card.edhrecRank && (
               <span>EDHREC #{card.edhrecRank.toLocaleString()}</span>
             )}

@@ -201,7 +201,7 @@ input[type="search"] {
   gap: 0.875rem;
 }
 
-.card > img {
+.card > .art > img {
   aspect-ratio: 146 / 204;
   border-radius: 0.25rem;
   /* Fixed rather than filling the row: a wrapped title on one card would
@@ -486,10 +486,12 @@ dialog.wide {
   padding-top: 0.25rem;
 }
 
-.prints .art {
+/* The art opens the card, in the row as much as in the gallery. */
+.art {
   background: none;
   border: 0;
   cursor: zoom-in;
+  flex: none;
   padding: 0;
 }
 

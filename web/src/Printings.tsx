@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { type ReactNode, useState } from "react";
 import { type Card, type Catalog, image, type Print } from "./catalog";
 import { Add } from "./collection/Add";
 import { Modal } from "./Modal";
@@ -9,25 +9,35 @@ export function Printings({
   card,
   catalog,
   name,
+  start,
+  trigger,
+  label,
 }: {
   card: Card;
   catalog: Catalog;
   name: string;
+  // Opens on one printing rather than on the grid of them.
+  start?: Print;
+  trigger: string;
+  label: ReactNode;
 }) {
   return (
-    <Modal
-      wide
-      trigger="link"
-      title={name}
-      label={`${card.printings} printing${card.printings === 1 ? "" : "s"}`}
-    >
-      <Gallery card={card} catalog={catalog} />
+    <Modal wide trigger={trigger} title={name} label={label}>
+      <Gallery card={card} catalog={catalog} start={start} />
     </Modal>
   );
 }
 
-function Gallery({ card, catalog }: { card: Card; catalog: Catalog }) {
-  const [chosen, choose] = useState<Print | null>(null);
+function Gallery({
+  card,
+  catalog,
+  start,
+}: {
+  card: Card;
+  catalog: Catalog;
+  start?: Print;
+}) {
+  const [chosen, choose] = useState<Print | null>(start ?? null);
 
   // The card at reading size, which is also the whole rules text and the only
   // copy of it: the catalog carries none — see `docs/scryfall.md`.
