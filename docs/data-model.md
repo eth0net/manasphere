@@ -72,6 +72,31 @@ The model makes decks, binders and lists the same thing. The UI should hide it.
   answer. Location tracking for those who want it, not a tax on those who
   don't.
 
+### Counts and value
+
+Three numbers rather than one with a toggle, because they answer different
+questions:
+
+- **Owned** — every collection entry, summed. Cards in a deck box count: a
+  deck box is a container, and what sits in it is still yours.
+- **Design** — a design's entries priced at the printing they name, or at the
+  cheapest where they name none. What it would cost to own, and what a
+  wishlist is worth.
+- **Gap** — design minus owned, straight out of the diff below. A shopping
+  list with a price on it.
+
+A deck shows all three, a list has no owned number, a container has only one.
+
+Nothing double counts, because a design holds references and only a collection
+entry is ownership. So Collection is not a place that decks sit outside of: it
+is the total, and containers are its breakdown, a deck box named for the deck
+it holds. ManaBox needs a toggle here because presence in a deck is a flag on
+its cards rather than where they sit.
+
+Proxies fill a slot and are worth nothing, so a deck's build and its value
+disagree deliberately.
+
+
 ### Signed out, signed in, and on this device only
 
 Three states, because reading needs no account and only writing needs
