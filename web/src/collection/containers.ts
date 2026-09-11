@@ -1,0 +1,79 @@
+import type { OAuthSession } from "@atproto/oauth-client-browser";
+import { useCallback, useEffect, useState } from "react";
+import { create, type Held, list, remove, rkey } from "../oauth/repo";
+
+export const CONTAINER = "app.manaweb.container";
+
+export type Container = {
+  name: string;
+  kind?: string;
+  note?: string;
+  createdAt: string;
+};
+
+// The lexicon's `knownValues`, which it calls cosmetic, so the order is ours.
+export const KINDS = ["binder", "box", "deckBox", "shelf", "other"];
+
+export type Containers = {
+  held: Held<Container>[];
+  error?: string;
+  add: (name: string, kind: string) => Promise<void>;
+  drop: (uri: string) => Promise<void>;
+};
+
+export function useContainers(session: OAuthSession | null): Containers {
+  const [held, setHeld] = useState<Held<Container>[]>([]);
+  const [error, setError] = useState<string>();
+
+  useEffect(() => {
+    if (!session) {
+      setHeld([]);
+      return;
+    }
+    let live = true;
+    list<Container>(session, CONTAINER).then(
+      (found) => live && setHeld(found),
+      (failure: unknown) => live && setError(reason(failure)),
+    );
+    return () => {
+      live = false;
+    };
+  }, [session]);
+
+  const add = useCallback(
+    async (name: string, kind: string) => {
+      if (!session) return;
+      const record: Container = {
+        name: name.trim(),
+        createdAt: new Date().toISOString(),
+        ...(kind ? { kind } : {}),
+      };
+      try {
+        const written = await create(session, CONTAINER, record);
+        setHeld((was) => [...was, { ...written, value: record }]);
+      } catch (failure) {
+        setError(reason(failure));
+      }
+    },
+    [session],
+  );
+
+  const drop = useCallback(
+    async (uri: string) => {
+      if (!session) return;
+      try {
+        await remove(session, CONTAINER, rkey(uri));
+        setHeld((was) => was.filter((one) => one.uri !== uri));
+      } catch (failure) {
+        setError(reason(failure));
+      }
+    },
+    [session],
+  );
+
+  return { held, error, add, drop };
+}
+
+function reason(failure: unknown): string {
+  return failure instanceof Error ? failure.message : String(failure);
+}

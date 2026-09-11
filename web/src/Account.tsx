@@ -2,10 +2,10 @@ import { useEffect, useState } from "react";
 import { SCOPES } from "./config";
 import { Modal } from "./Modal";
 import { type Repo, read } from "./oauth/records";
-import { useSession } from "./oauth/useSession";
+import type { Session } from "./oauth/useSession";
 
-export function Account() {
-  const { state, signIn, signOut } = useSession();
+export function Account({ account }: { account: Session }) {
+  const { state, signIn, signOut } = account;
   const [repo, setRepo] = useState<Repo | null>(null);
   const [failed, setFailed] = useState<string | null>(null);
 
@@ -62,7 +62,10 @@ export function Account() {
           {repo
             ? repo.counts.length > 0
               ? repo.counts
-                  .map((c) => `${c.collection.slice(12)} ${c.records}`)
+                  .map(
+                    (c) =>
+                      `${c.collection.slice(12)} ${c.records}${c.more ? "+" : ""}`,
+                  )
                   .join(", ")
               : "none yet"
             : "…"}

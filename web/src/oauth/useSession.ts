@@ -7,6 +7,8 @@ export type State =
   | { status: "out"; error?: string }
   | { status: "in"; session: OAuthSession };
 
+export type Session = ReturnType<typeof useSession>;
+
 export function useSession() {
   const [state, setState] = useState<State>({ status: "restoring" });
 
