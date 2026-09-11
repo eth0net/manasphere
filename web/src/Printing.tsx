@@ -13,7 +13,6 @@ export function describe(print: Print) {
   return [
     `${print.setName} · ${print.set.toUpperCase()} #${print.collectorNumber}`,
     print.rarity,
-    print.finishes.join("/"),
     print.artist,
     ...print.flags.map(words),
   ]

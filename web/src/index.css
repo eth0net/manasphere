@@ -188,9 +188,18 @@ input[type="search"] {
 }
 
 .printings li {
+  align-items: baseline;
   border-left: 2px solid var(--edge);
   color: var(--quiet);
+  display: flex;
+  gap: 0.5rem;
   padding: 0.125rem 0 0.125rem 0.625rem;
+}
+
+/* The buttons keep their width and the description gives way, so a long
+   artist name wraps rather than pushing them onto a line of their own. */
+.printings li > span {
+  flex: 1;
 }
 
 .sets li {
@@ -379,6 +388,7 @@ button:disabled {
 
 /* Under the printing it adds, so a press is unambiguous about which. */
 .add {
+  flex: none;
   align-items: baseline;
   display: flex;
   flex-wrap: wrap;
@@ -398,5 +408,5 @@ button:disabled {
 }
 
 .printings .add {
-  margin-bottom: 0.25rem;
+  margin: 0;
 }

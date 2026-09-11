@@ -74,8 +74,10 @@ export function CardRow({
           <ul className="printings">
             {catalog.prints(card.index).map((one) => (
               <li key={one.id}>
-                {one.lang !== "en" && <Language code={one.lang} />}
-                {describe(one)}
+                <span>
+                  {one.lang !== "en" && <Language code={one.lang} />}
+                  {describe(one)}
+                </span>
                 {owning && <Add print={one} owning={owning} />}
               </li>
             ))}
@@ -99,7 +101,7 @@ function Add({ print, owning }: { print: Print; owning: Collection }) {
           type="button"
           onClick={() => void owning.add(print.id, finish)}
         >
-          + {words(finish)}
+          {finish === "nonfoil" ? "+" : `+ ${words(finish)}`}
         </button>
       ))}
       {have > 0 && <span>{have} owned</span>}
