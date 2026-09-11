@@ -201,7 +201,7 @@ input[type="search"] {
   gap: 0.875rem;
 }
 
-.results img {
+.card > img {
   aspect-ratio: 146 / 204;
   border-radius: 0.25rem;
   /* Fixed rather than filling the row: a wrapped title on one card would
@@ -460,7 +460,12 @@ dialog.wide {
   max-width: min(40rem, calc(100vw - 2rem));
 }
 
+/* Art at a size worth looking at, so the modal is a grid of it rather than a
+   list with a thumbnail down the side. */
 .prints {
+  display: grid;
+  gap: 0.875rem;
+  grid-template-columns: repeat(auto-fill, minmax(10rem, 1fr));
   list-style: none;
   margin: 0 0 0.5rem;
   max-height: 60vh;
@@ -469,39 +474,79 @@ dialog.wide {
 }
 
 .prints li {
-  align-items: center;
-  border-top: 1px solid var(--edge);
   display: flex;
-  gap: 0.625rem;
-  padding: 0.375rem 0;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+/* Tiles stretch to the tallest in their row, so the controls hang off the
+   bottom rather than following however far the description wrapped. */
+.prints .row {
+  margin-top: auto;
+  padding-top: 0.25rem;
+}
+
+.prints .art {
+  background: none;
+  border: 0;
+  cursor: zoom-in;
+  padding: 0;
 }
 
 .prints img,
 .prints .noart {
   aspect-ratio: 146 / 204;
-  border-radius: 0.25rem;
-  flex: none;
-  height: 3.25rem;
-  width: auto;
+  border-radius: 0.375rem;
+  display: block;
+  width: 100%;
 }
 
 .prints .noart {
   background: var(--edge);
-  display: block;
 }
 
 .prints .what {
   color: var(--quiet);
-  flex: 1;
-  min-width: 0;
 }
 
-/* A column rather than whatever the count leaves over, so a row holding one
-   doesn't shift its buttons out of line with every other row. */
-.prints .owned,
-.prints .owned:empty {
-  display: block;
-  flex: none;
-  min-width: 4.5rem;
-  text-align: right;
+/* Buttons against the right edge of every tile, so the presence of a count
+   doesn't leave one tile's controls out of line with the next. */
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.375rem;
+  justify-content: flex-end;
+  margin: 0;
+}
+
+.row .owned {
+  margin-right: auto;
+}
+
+/* One printing at reading size: the image carries the rules text. */
+.detail {
+  align-items: center;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.detail img {
+  border-radius: 0.75rem;
+  max-height: 60vh;
+  max-width: 100%;
+  width: auto;
+}
+
+.detail p {
+  margin: 0;
+  text-align: center;
+}
+
+.detail .back {
+  align-self: flex-start;
+}
+
+.detail .row {
+  align-self: stretch;
 }
