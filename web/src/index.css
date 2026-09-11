@@ -126,22 +126,49 @@ input[type="search"] {
   padding: 0;
 }
 
-.results li,
-.sets li {
+/* Direct children only: a printing nested inside a result is neither its own
+   row to skip nor anything like 6.75rem tall. */
+.results > li,
+.sets > li {
   content-visibility: auto;
 }
 
-.results li {
+.results > li {
   border-top: 1px solid var(--edge);
-  contain-intrinsic-size: auto 6.75rem;
-  display: flex;
-  gap: 0.875rem;
+  contain-intrinsic-size: auto 7.75rem;
   padding: 0.75rem 0;
 }
 
+/* Art beside text. Stretch is the flex default, and it was pulling the
+   thumbnail to whatever height the text ran to. */
+.card {
+  align-items: flex-start;
+  display: flex;
+  gap: 0.875rem;
+}
+
 .results img {
+  aspect-ratio: 146 / 204;
   border-radius: 0.25rem;
-  width: 3.75rem;
+  /* Fixed rather than filling the row: a wrapped title on one card would
+     otherwise hand that card a larger picture than its neighbors. */
+  height: 6.25rem;
+  width: auto;
+}
+
+/* The two smallest things under a card share a line, which is what keeps a
+   row the same height signed in as out. */
+.meta {
+  align-items: baseline;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.375rem;
+}
+
+.meta .add,
+.meta p {
+  margin: 0;
 }
 
 .results h2 {
@@ -202,7 +229,7 @@ input[type="search"] {
   flex: 1;
 }
 
-.sets li {
+.sets > li {
   border-top: 1px solid var(--edge);
   contain-intrinsic-size: auto 2rem;
   display: flex;

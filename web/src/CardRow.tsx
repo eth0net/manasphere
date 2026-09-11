@@ -38,52 +38,60 @@ export function CardRow({
 
   return (
     <li>
-      {print && !NO_IMAGE.has(print.imageStatus) && (
-        <img src={image(print.id, "small")} alt="" loading="lazy" />
-      )}
-      <div>
-        <h2>
-          {name.text}
-          {/* Only when the printing isn't in the language it is read in, so
-              an English name over an English printing says nothing. */}
-          {print && print.lang !== name.lang && <Language code={print.lang} />}
-          {tags.map((tag) => (
-            <span className="tag" key={tag}>
-              {words(tag)}
-            </span>
-          ))}
-        </h2>
-        <p>
-          {card.typeLine}
-          {card.stats && <span className="stats">{card.stats}</span>}
-          {card.manaCost && <Mana cost={card.manaCost} />}
-        </p>
-        {print && <p className="print">{describe(print)}</p>}
-        {print && owning && <Add print={print} owning={owning} />}
-        <p className="print">
-          <button
-            type="button"
-            className="link"
-            onClick={() => setOpen(!open)}
-          >
-            {card.printings} printing{card.printings === 1 ? "" : "s"}
-          </button>
-          {card.edhrecRank && ` · EDHREC #${card.edhrecRank.toLocaleString()}`}
-        </p>
-        {open && (
-          <ul className="printings">
-            {catalog.prints(card.index).map((one) => (
-              <li key={one.id}>
-                <span>
-                  {one.lang !== "en" && <Language code={one.lang} />}
-                  {describe(one)}
-                </span>
-                {owning && <Add print={one} owning={owning} />}
-              </li>
-            ))}
-          </ul>
+      <div className="card">
+        {print && !NO_IMAGE.has(print.imageStatus) && (
+          <img src={image(print.id, "small")} alt="" loading="lazy" />
         )}
+        <div>
+          <h2>
+            {name.text}
+            {/* Only when the printing isn't in the language it is read in, so
+              an English name over an English printing says nothing. */}
+            {print && print.lang !== name.lang && (
+              <Language code={print.lang} />
+            )}
+            {tags.map((tag) => (
+              <span className="tag" key={tag}>
+                {words(tag)}
+              </span>
+            ))}
+          </h2>
+          <p>
+            {card.typeLine}
+            {card.stats && <span className="stats">{card.stats}</span>}
+            {card.manaCost && <Mana cost={card.manaCost} />}
+          </p>
+          {print && <p className="print">{describe(print)}</p>}
+          <div className="meta">
+            {print && owning && <Add print={print} owning={owning} />}
+            <p className="print">
+              <button
+                type="button"
+                className="link"
+                onClick={() => setOpen(!open)}
+              >
+                {card.printings} printing{card.printings === 1 ? "" : "s"}
+              </button>
+              {card.edhrecRank &&
+                ` · EDHREC #${card.edhrecRank.toLocaleString()}`}
+            </p>
+          </div>
+        </div>
       </div>
+
+      {open && (
+        <ul className="printings">
+          {catalog.prints(card.index).map((one) => (
+            <li key={one.id}>
+              <span>
+                {one.lang !== "en" && <Language code={one.lang} />}
+                {describe(one)}
+              </span>
+              {owning && <Add print={one} owning={owning} />}
+            </li>
+          ))}
+        </ul>
+      )}
     </li>
   );
 }
