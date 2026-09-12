@@ -98,6 +98,13 @@ Routes settle before the bar does, because a shared deck link outlives any
 arrangement of tabs. `/cards`, `/collection/:container`, `/decks/:deck` and
 `/lists/:list` are the commitment; their order along the bottom is not.
 
+**The bar is a bar only where a thumb reaches it.** On a laptop the same four
+destinations stand up as a rail down the left, in the same order: one
+arrangement in two shapes, not a second navigation. What sits beside it keeps a
+reading measure rather than filling the window, so what the rest of a desktop's
+width becomes — a second column of cards, a detail pane — waits until a narrow
+one proves not to be enough.
+
 ### What following and saving still need
 
 Neither has a lexicon, and both are Phase 3.
@@ -354,14 +361,6 @@ states are per copy rather than per entry, and an "any printing" entry competes
 with a print-bound one for the same stack. Greedy matching gives different
 answers by iteration order. Needs a defined resolution order: print-bound
 first, then any-printing, extras as the complement.
-
-**One column at every width.** The shell is a phone's measure centered in
-whatever viewport it gets, so a desktop and an iPad both show a narrow strip
-with a tab bar under it. What the spare width becomes is unsettled — a rail in
-place of the bar, a wider measure, or a list in more than one column — and the
-three interact, so it wants looking at across phone, tablet and desktop
-together rather than a breakpoint at a time. Marked `todo(eth0net)` in
-`web/src/index.css`.
 
 **Set completion counts printings, and some collectors count treatments.**
 A foil and a nonfoil of one printing share a Scryfall id, so counting ids

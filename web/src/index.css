@@ -29,8 +29,6 @@ body {
 /* An app shell: the page itself doesn't scroll, the list inside it does. Two
    scrolls put the footer below the fold, which is why it looked half gone.
    `dvh` rather than `vh` so mobile browser chrome doesn't cut it off. */
-/* todo(eth0net): what a tablet and a desktop do with the width this leaves
-   over — see the open question in `docs/data-model.md`. */
 main {
   box-sizing: border-box;
   display: flex;
@@ -39,6 +37,15 @@ main {
   margin: 0 auto;
   max-width: 42rem;
   padding: 1.5rem 1rem 1rem;
+}
+
+/* Takes the slack between the header and the bar, so the bar holds the bottom
+   whether the view above it grows or collapses. */
+.column {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
 }
 
 header {
@@ -65,12 +72,9 @@ footer {
   padding-top: 0.75rem;
 }
 
-/* Takes the slack, so it holds the bottom whether the view above it grows or
-   collapses, and a thumb finds it in the same place either way. */
 nav {
   display: flex;
   gap: 0.25rem;
-  margin-top: auto;
   padding-top: 0.5rem;
 }
 
@@ -579,4 +583,43 @@ dialog.wide {
 
 .detail .row {
   align-self: stretch;
+}
+
+/* Past a laptop's width no thumb reaches the bottom edge, so the bar stands up
+   as a rail beside a column that keeps its measure. */
+@media (min-width: 64rem) {
+  main {
+    column-gap: 2.5rem;
+    display: grid;
+    grid-template-columns: 11rem minmax(0, 1fr);
+    grid-template-rows: auto minmax(0, 1fr) auto;
+    max-width: 64rem;
+  }
+
+  header {
+    grid-column: 1 / -1;
+    grid-row: 1;
+  }
+
+  nav {
+    flex-direction: column;
+    grid-column: 1;
+    grid-row: 2 / -1;
+  }
+
+  nav a {
+    flex: none;
+    padding: 0.5rem 0.75rem;
+    text-align: left;
+  }
+
+  .column {
+    grid-column: 2;
+    grid-row: 2;
+  }
+
+  footer {
+    grid-column: 2;
+    grid-row: 3;
+  }
 }

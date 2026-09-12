@@ -43,52 +43,54 @@ export function App() {
         <Account account={account} />
       </header>
 
-      <CatalogUpdate status={status} />
+      <div className="column">
+        <CatalogUpdate status={status} />
 
-      {signedIn && here === "/cards" && (
-        <p className="destination">
-          <Destination
-            containers={containers}
-            owning={collection}
-            chosen={chosen}
-            onChoose={choose}
-          />
-          {collection.error && (
-            <span className="warn">{collection.error}</span>
-          )}
-        </p>
-      )}
+        {signedIn && here === "/cards" && (
+          <p className="destination">
+            <Destination
+              containers={containers}
+              owning={collection}
+              chosen={chosen}
+              onChoose={choose}
+            />
+            {collection.error && (
+              <span className="warn">{collection.error}</span>
+            )}
+          </p>
+        )}
 
-      {/* Signed out leaves this null, which is what hides every add button. */}
-      <Owning value={collection.ready ? collection : null}>
-        <div className="view">
-          {here === "/cards" &&
-            (load.status === "ready" ? (
-              <Search catalog={load.catalog} />
-            ) : load.status === "loading" ? (
-              <p>{load.step}…</p>
-            ) : (
-              <p>
-                No catalog at <code>{CATALOG}</code>: {load.error}
-              </p>
-            ))}
+        {/* Signed out leaves this null, which is what hides every add button. */}
+        <Owning value={collection.ready ? collection : null}>
+          <div className="view">
+            {here === "/cards" &&
+              (load.status === "ready" ? (
+                <Search catalog={load.catalog} />
+              ) : load.status === "loading" ? (
+                <p>{load.step}…</p>
+              ) : (
+                <p>
+                  No catalog at <code>{CATALOG}</code>: {load.error}
+                </p>
+              ))}
 
-          {here === "/collection" &&
-            (signedIn ? (
-              <Collection
-                catalog={load.status === "ready" ? load.catalog : null}
-                containers={containers}
-                owning={collection}
-                path={path}
-              />
-            ) : (
-              <p className="quiet">Sign in to see what you own.</p>
-            ))}
+            {here === "/collection" &&
+              (signedIn ? (
+                <Collection
+                  catalog={load.status === "ready" ? load.catalog : null}
+                  containers={containers}
+                  owning={collection}
+                  path={path}
+                />
+              ) : (
+                <p className="quiet">Sign in to see what you own.</p>
+              ))}
 
-          {here === "/decks" && <Soon what="Decks" />}
-          {here === "/lists" && <Soon what="Lists" />}
-        </div>
-      </Owning>
+            {here === "/decks" && <Soon what="Decks" />}
+            {here === "/lists" && <Soon what="Lists" />}
+          </div>
+        </Owning>
+      </div>
 
       <Nav path={here} />
       <Footer />
