@@ -161,7 +161,9 @@ select {
   padding: 0.5rem;
 }
 
-input[type="search"] {
+input[type="search"],
+input[type="text"],
+textarea {
   background: var(--paper);
   border: 1px solid var(--edge);
   border-radius: 0.375rem;
@@ -169,6 +171,7 @@ input[type="search"] {
   color: inherit;
   font: inherit;
   padding: 0.5rem 0.75rem;
+  resize: vertical;
   width: 100%;
 }
 
@@ -268,7 +271,8 @@ input[type="search"] {
   margin: 0.125rem 0 0;
 }
 
-.results .print {
+.results .print,
+.results .note {
   font-size: 0.8125rem;
 }
 
@@ -312,6 +316,11 @@ input[type="search"] {
   font-weight: 400;
   padding: 0 0.25rem;
   text-transform: lowercase;
+}
+
+/* Written by hand rather than chosen, so it keeps the case it was given. */
+.tag.free {
+  text-transform: none;
 }
 
 /* One circle per symbol, in the color it stands for. Sized and spaced in `em`
@@ -482,6 +491,20 @@ button:disabled {
 }
 
 .field label {
+  color: var(--quiet);
+  font-size: 0.8125rem;
+}
+
+/* A box reads as one line with its name, unlike a select wide enough to want
+   the name above it. */
+.check {
+  align-items: center;
+  display: flex;
+  gap: 0.5rem;
+  margin: 0 0 0.75rem;
+}
+
+.check label {
   color: var(--quiet);
   font-size: 0.8125rem;
 }

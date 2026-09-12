@@ -153,8 +153,15 @@ function Row({
             {one.value.condition && (
               <span className="tag">{words(one.value.condition)}</span>
             )}
+            {one.value.proxy && <span className="tag">proxy</span>}
+            {one.value.tags?.map((label) => (
+              <span className="tag free" key={label}>
+                {label}
+              </span>
+            ))}
           </h2>
           {print && <p className="print">{describe(print)}</p>}
+          {one.value.note && <p className="note">{one.value.note}</p>}
           <div className="meta">
             <span className="adjust">
               <button
@@ -192,8 +199,12 @@ function Row({
   );
 }
 
-// The two parts of a stack's identity a copy can change: where it sits, and
-// how it has worn. todo(eth0net): tags, note and proxy have no editor.
+// What the lexicon allows on a stack: tags, characters in one tag, and
+// graphemes in a note.
+const TAGS = 32;
+const TAG = 64;
+const NOTE = 300;
+
 function Edit({
   one,
   name,
@@ -205,8 +216,6 @@ function Edit({
   containers: Containers;
   owning: Holdings;
 }) {
-  const { amend } = owning;
-
   return (
     <Modal
       trigger="link"
@@ -215,19 +224,43 @@ function Edit({
       actions={
         <button
           type="button"
-          onClick={() => void amend(one.uri, { quantity: 0 })}
+          onClick={() => void owning.amend(one.uri, { quantity: 0 })}
         >
           Remove
         </button>
       }
     >
+      <Fields one={one} containers={containers} owning={owning} />
+    </Modal>
+  );
+}
+
+// Everything identity is made of bar the printing itself, so any of them can
+// land these copies on a stack that already matches.
+function Fields({
+  one,
+  containers,
+  owning,
+}: {
+  one: Stack;
+  containers: Containers;
+  owning: Holdings;
+}) {
+  const { amend } = owning;
+  const { uri, value } = one;
+  // Typing is not a write, so the free text commits when it is left.
+  const [tags, setTags] = useState((value.tags ?? []).join(", "));
+  const [note, setNote] = useState(value.note ?? "");
+
+  return (
+    <>
       <p className="field">
-        <label htmlFor={`place-${one.uri}`}>Place</label>
+        <label htmlFor={`place-${uri}`}>Place</label>
         <select
-          id={`place-${one.uri}`}
-          value={one.value.container ?? ""}
+          id={`place-${uri}`}
+          value={value.container ?? ""}
           onChange={(event) =>
-            void amend(one.uri, { container: event.target.value || undefined })
+            void amend(uri, { container: event.target.value || undefined })
           }
         >
           <option value="">{UNFILED.name}</option>
@@ -240,12 +273,12 @@ function Edit({
       </p>
 
       <p className="field">
-        <label htmlFor={`grade-${one.uri}`}>Condition</label>
+        <label htmlFor={`grade-${uri}`}>Condition</label>
         <select
-          id={`grade-${one.uri}`}
-          value={one.value.condition ?? ""}
+          id={`grade-${uri}`}
+          value={value.condition ?? ""}
           onChange={(event) =>
-            void amend(one.uri, { condition: event.target.value || undefined })
+            void amend(uri, { condition: event.target.value || undefined })
           }
         >
           <option value="">Ungraded</option>
@@ -257,10 +290,56 @@ function Edit({
         </select>
       </p>
 
-      <p className="quiet">
-        Moving these into a place that already holds the same grade of the same
-        printing merges the two.
+      <p className="field">
+        <label htmlFor={`tags-${uri}`}>Tags</label>
+        <input
+          id={`tags-${uri}`}
+          type="text"
+          value={tags}
+          placeholder="altered, misprint, signed"
+          onChange={(event) => setTags(event.target.value)}
+          onBlur={() => void amend(uri, { tags: labels(tags) })}
+        />
       </p>
-    </Modal>
+
+      <p className="field">
+        <label htmlFor={`note-${uri}`}>Note</label>
+        <textarea
+          id={`note-${uri}`}
+          rows={2}
+          maxLength={NOTE}
+          value={note}
+          onChange={(event) => setNote(event.target.value)}
+          onBlur={() => void amend(uri, { note: note.trim() || undefined })}
+        />
+      </p>
+
+      <p className="check">
+        <input
+          id={`proxy-${uri}`}
+          type="checkbox"
+          checked={value.proxy ?? false}
+          onChange={(event) =>
+            void amend(uri, { proxy: event.target.checked || undefined })
+          }
+        />
+        <label htmlFor={`proxy-${uri}`}>Proxy</label>
+      </p>
+
+      <p className="quiet">
+        Editing any of these can merge these copies into a stack that already
+        matches.
+      </p>
+    </>
   );
+}
+
+// Comma-separated in the field, a list in the record.
+function labels(text: string): string[] | undefined {
+  const tags = text
+    .split(",")
+    .map((one) => one.trim().slice(0, TAG))
+    .filter(Boolean)
+    .slice(0, TAGS);
+  return tags.length > 0 ? tags : undefined;
 }
